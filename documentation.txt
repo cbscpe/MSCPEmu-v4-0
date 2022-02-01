@@ -1,0 +1,198 @@
+##New Disk Emulator
+
+
+###MCU
+
+###FAT Library
+
+###CLI
+
+###VCB
+
+For each FAT-16 or FAT-32 volume we have a Volume Control Block (VCB). The volume
+control block are queued in the volqueue. The first vcb in the queue is the active
+volume
+
+
+recordstart	Vol
+record		Vol, link, 2		; Link List Header
+record		Vol, fatiob, 2		; Address of io control block for FAT
+record		Vol, diriob, 2		; Address of io control block for Directory
+record		Vol, part1start, 4	; Startsector of FAT partition: VBR
+record		Vol, fat1start, 4	; Startsector of 1st FAT in partition
+record		Vol, bytespsect, 2	; Bytes per sector, always 512bytes per sector
+record		Vol, reservedsect, 2	; Reserved sectors normally FAT16: 1, FAT32: 32
+;record		Vol, sectbefore, 4	; sectors before this partition (part1start)
+;record		Vol, sectpart, 4	; Sectors in this partition
+;
+; FAT16: First Sector[=part1start+reservdsect+numfat*sectperfat], FAT32: First Cluster
+;
+record		Vol, rootdir, 4		; 
+record		Vol, sectperfat, 4	; Sectors per FAT as 32-bit integer
+;
+; part1start+reservdsect+numfat*sectperfat+int((rootentries*32+bytespsect-1)/bytespsect)
+;
+record		Vol, datastart, 4	; First Sector of Data Section 
+record		Vol, DirPointer, 2	; Pointer to current directory entry
+record		Vol, DirNxtPtr, 2	; Pointer to next directory entry
+record		Vol, DirCluster, 4	; Start Cluster of Working Directory
+record		Vol, UpdatePtr, 2	; Pointer to use for updating name
+record		Vol, dirsectors, 1	; FAT16: Sectors in Root directory, FAT32: 0
+record		Vol, sectperclst, 1	; Sectors per Cluster, 1,2,4,16,32,64
+record		Vol, DirCount, 1	; Director Entry Counter
+record		Vol, Status, 1
+.equ	Vol__MBR	=	0
+.equ	Vol__VBR	=	1
+.equ	Vol__FAT32	=	2
+.equ	Vol__Long	=	3	; ??
+.equ	Vol__Linked	=	4	; Directory is Linked Cluster
+recordend	Vol, size
+
+
+There are two IO Parameter blocks assiciated with the vcb. One is used for directory
+IO and the other one is used for FAT IO. Currently each has it's own sector buffer
+
+Then there are a lot of information from the Volume Boot Record, some information
+is only kept and not used
+
+part1start	First Sector of the partition 
+fat1start	First Sector of the first FAT
+bytespsect	Bytes per Sectors, we only support 512byte sectors
+reservedsect	Reserved Sectors at the beginning of the partition after VBR
+sectbefore	Sectors before this partition on the physical media (==part1start)
+sectpart	Sectors in this partition, i.e. the size of the partition in sectors
+rootdir		FAT-16: First Sector of the root directory, FAT-32 first Cluster of
+		the root directory
+sectperfat	Sectors Per FAT (not a FAT partition typically has two or more copies of
+		the FAT as this is the most vulnerable informaiton)
+datastart	First sector of the data 
+
+DirPointer	During file name lookup this field is set to the address of the
+		directory entry in the sector buffer for directory IO if a match
+		of the name occured
+DirNxtPtr	This is the pointer to the next directory entry. This is used as the
+		starting point for ReadDir
+		
+		Note: with long file name support more then one directory entry is used
+		to describe the file. The long file name directory entries preceed the
+		real directory entry, long file name direcotry entries store a index 
+		of the portion of the name, a start long file name flag and up to 13
+		characters of the file name. The real directory entry has encoded
+		8.3 file name and all the other information used to describe the file,
+		like start cluster, filesize, create date and creation time
+
+DirCluster	this is the start cluster of the working directory all name lookups
+		start using this directory, DirCluster is set to 0 if the root
+		directory is requested. This field is updated by the 'cd' command and
+		used by the Name2DirEntry function
+		
+UpdatePtr	During a file name search the function uses this pointer to update
+		the portion of the filename in the input name with the correct
+		case as found in the directory. Updating is done by the MatchFileName
+		function when a match has occured
+
+dirsectors	the size of sectors of the root directory for FAT-16 volumes, not
+		used and set to 0 by FAT-32 volumes
+
+sectperclst	Then number of sectors that make up a cluster, a cluster is a 
+		contiguous range of sectors therefore we can read up to sectperclst
+		sectors by just incrementing the sector number of the IO parameter
+		block until we read sectperclst sectors when we need to find the
+		cluster linked to the current cluster to proceed with reading sectors
+		of the file or directory
+
+DirCount	Counter to keep track of the number of directory entries already
+		processed by ReadDir. Not that when an overflow to 32 happens this
+		requires that we read another sector from the directory and the 
+		counter is reset again
+
+Status		House-keeping and tracking flags
+
+Vol__MBR	Set when we could read the MBR of the partition
+Vol__VBR	Set when we could read the VBR of the partition
+Vol__FAT32	Set if the FAT partition is a FAT-32 partition
+Vol__Long	Set when we are collecting the junks of a long file name
+Vol__Linked	Set when the directory we currently process is a linked list
+		of clusters, in fact this flag is set except when we are reading
+		the root directory of a FAT-16 volume
+
+##FAT-Library
+
+The following are the FAT Library functions used to access a FAT-16/32 volume
+
+###OpenDir(struct* VolumeControlBlock)
+
+Opens the directory who's start cluster is placed in Vol_DirCluster for sequential
+reading of directory entries. When you want to read the root directory you just
+set Vol_DirCluster to 0
+
+###ReadDir(struct* VolumeControlBlock)
+
+When a directory has been opened we continuously call ReadDir. ReadDir will return
+a pointer to the real directory entry of the next file. If the file has a long
+file name the long file name has been constructed to the global buffer LongFileN
+and the Vol__Long flag in Vol_Status will be set
+
+###Name2DirEntry(struct* VolumeControlBlock, char* name)
+
+This routine will translate a name to a directory entry. Search will either start
+at the directory who's start cluster is stored in Vol_DirCluster or in case the name
+has an absolute path start in the root directory. The function will scan the input
+path and check that each element exists. In case there is a .. parent directory
+in the input path it will continue with the parent directory of the current directory.
+At the end Vol_DirPointer will point to the directory entry in the sector buffer
+for directory IO, which can either be the entry for a file or a directory. In case
+the root directory has been requested Vol_DirPointer is set to 0.
+
+###MatchFileName
+
+This will try to match the name of the current directory entry with the input name
+it covers the case of long file names and also the fact that a 8.3 name in the 
+directory is stored differently to the 8.3 name given in input names.
+
+###LinkedCluster
+
+Get the cluster linked to the current cluster.
+
+###Cluster2Sector
+
+Translates a cluster to the first sector in the cluster
+
+###CopyName
+
+Copies a file name to the global buffer NameBuffer from an input path. CopyName will
+copy the name until it reaches either DELIM, NULL or CR. In case the name is not 
+empty the T-Bit will be set, the name copied is NULL terminated, the pointer to 
+the input buffer is updated to point past the DELIM, NULL or CR. Copy Name will
+also return the terminating character in R24. This routine is internal to the
+FAT-library and must not be called outside
+
+###CreatePath
+
+Create Path allows to combine the input file name and the working directory to 
+one absolute path. in case the input file name contains .. to select the parent
+directory it will remove the top directory name in the resulting path. The
+final result will only have file names. Normally this routein is only called
+with a valid working directory and a validated input file name
+
+###FindFreeCluster(struct* VolumeControlBlock, uint16_t Clusters)
+
+not implemented
+
+Tries to find the number of free clusters as requested. If necessary the clusters
+returned are fragmented. However fragmentation can be controlled by the min-fragement
+parameter. FindFreeCluster will return the first cluster of the allocated cluster 
+list. The FAT will be updated.
+
+###AppendCluster(uint32_t clusterlist, uint32_t cluster)
+
+not implemented
+
+This will append a cluster to the last cluster of a cluster list, the FAT will be 
+updated
+
+###CreateDirEntry(struct* direntry, char* name)
+
+not implemented
+
+This will create a new directory entry.

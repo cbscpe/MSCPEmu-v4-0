@@ -1,0 +1,151 @@
+;	ABI Register Convetions
+;	=======================
+;	R0	is used as scratch register that need not to be restored after
+;		its usage. It must be saved and restored in interrupt service
+;		routine's (ISR) prologue and epilogue. In inline assembler you
+;		can use __tmp_reg__ for the scratch register.
+;	R1	always contains zero. During an instruction the content might be
+;		destroyed, e.g. by a MUL instruction that uses R0/R1 as implicit
+;		output register. If an inst. destroys R1, the inst. must restore
+;		R1 to zero afterwards. This register must be saved in ISR
+;		prologues and must then be set to zero because R1 might contain
+;		values other than zero. The ISR epilogue restores the value. In
+;		inline assembler you can use __zero_reg__ for the zero register.
+;	T	the T flag in the status register (SREG) is used in the same way
+;		like the temporary scratch register R0.
+;
+;	Call-Used Registers
+;	-------------------
+;		The call-used or call-clobbered general purpose registers (GPRs)
+;		are registers that might be destroyed (clobbered) by a function
+;		call.
+;
+;	R18–R27, R30, R31 (xl, xh, zl, zl)
+;		These GPRs are call clobbered. An ordinary function may use them
+;		without restoring the contents. Interrupt service routines
+;		(ISRs) must save and restore each register they use.
+;	R0, T-Flag
+;		The temporary register and the T-flag in SREG are also
+;		call-clobbered, but this knowledge is not exposed explicitly to
+;		the compiler (R0 is a fixed register). 
+;	
+;	Call-Saved Registers
+;	--------------------
+;	R2–R17, R28, R29 (yl, yh)
+;		The remaining GPRs are call-saved, i.e. a function that uses
+;		such a registers must restore its original content. This applies
+;		even if the register is used to pass a function argument.
+;
+;	Calling Convention
+;	------------------
+;	o An argument is passed either completely in registers or completely in memory.
+;	o To find the register where a function argument is passed, initialize the 
+;	  register number Rn with R26 and follow this procedure:
+;	  1. If the argument size is an odd number of bytes, round up the size to the 
+;	     next even number.
+;	  2. Subtract the rounded size from the register number Rn.
+;	  3. If the new Rn is at least R8 and the size of the object is non-zero, then
+;	     the low-byte of the argument is passed in Rn. Subsequent bytes of the
+;	     argument are passed in the subsequent registers, i.e. in increasing register
+;	     numbers.
+;	  4. If the new register number Rn is smaller than R8 or the size of
+;	     the argument is zero, the argument will be passed in memory.
+;	  5. If the current argument is passed in memory, stop the procedure:
+;	     All subsequent arguments will also be passed in memory.
+;	  6. If there are arguments left, goto 1. and proceed with the next argument.
+;	o Return values with a size of 1 byte up to and including a size of 8 bytes will
+;	  be returned in registers. Return values whose size is outside that range will
+;	  be returned in memory.
+;	o If a return value cannot be returned in registers, the caller will allocate
+;	  stack space and pass the address as implicit first pointer argument to the 
+;	  callee. The callee will put the return value into the space provided by the 
+;	  caller.
+;	o If the return value of a function is returned in registers, the same registers 
+;	  are used as if the value was the first parameter of a non-varargs function. 
+;	  For example, an 8-bit value is returned in R24 and an 32-bit value is 
+;	  returned R22...R25.
+;	o Arguments of varargs functions are passed on the stack. This
+;	  applies even to the named arguments.
+;
+;	For example, suppose a function with the following prototype:
+;
+;		int func (char a, long b);
+;
+;	then	a will be passed in R24.
+;		b will be passed in R20, R21, R22 and R23 with the LSB/MSB in R20/R23
+;		The result is returned in R24 (LSB) and R25 (MSB).
+;
+;
+;	Modules
+;	=======
+;
+;	-	All global definitions go into "main.inc"
+;	-	Data sections and module definitions go into an ".inc" file with the
+;		same name as the ".asm" file name
+;	-	A module may have local subroutines with different calling convention
+;		these subroutines must never be used outside the module
+;	-	The plan is to map section 2 (from 0,1,2,3) to the normal address
+;		space for tables so they can be accessed as they were DATA
+;
+;	Register Usage
+;	==============
+;
+;	When dealing with 16-bit or 32-bit values then use all available registers
+;	that is load first the value int r16, r17, r18, r19, r20, r21, r22 or r23
+;	and then save the values. Use the pairs r17:r16, r19:r18, r21:r20, r23:r22
+;	to hold 16-bit values and use the tuples r19:r18:r17:r16 and r23:r22:r21:r20
+;	to hold 32-bit values. If a temporary register is required then use r18
+;	for an intermediate value use r17 and use r16 as loop counter.
+;
+;	For jobs use r2...r15 to hold locally important variables.
+;
+;	Local subroutines are subroutines that are only valid within the same
+;	source file and may have local register passing convetions as well 
+;	they may use r2...r15 that are assigned to job specific values.
+;
+;	External subroutines must adhere to the ABI and must not change r2...r15,
+;	yh:yl. They can use any of the registers r16..r27, r30, r31 without saving
+;	and restoring.
+;
+;	action and subroutines to tparse are still using their own register
+;	convetion
+;
+;	- do not alter xh:xl
+;	- return the succes/fail status via the carry
+;	
+;
+
+	SPI_transfer_dummy
+	cbi	b_SS
+	SPI_transfer_dummy
+	push	yl
+	push	yh
+	ldi	r18, CMD0_CRC
+	push	r18
+	ldi	r18, byte4(CMD0_ARG)
+	push	r18
+	ldi	r18, byte3(CMD0_ARG)
+	push	r18
+	ldi	r18, byte2(CMD0_ARG)
+	push	r18
+	ldi	r18, byte1(CMD0_ARG)
+	push	r18
+	ldi	r18, CMD0
+	push	r18
+	call	SD_readRes1
+	pop	yh
+	pop	yl
+	pop	yh
+	pop	yl
+	pop	yh
+	pop	yl
+	push	r24
+	push	r24
+	rcall	SPI_transfer_dummy
+	sbi	b_SS
+	rcall	SPI_transfer_dummy
+	pop	r24
+	pop	yh
+	pop	yl
+	ret
+		
