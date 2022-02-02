@@ -240,7 +240,7 @@ initheap010:				; First init range with zero
 ;	PA0	ENA		Enables Interrupt
 ;	PF0	MEM
 ;	PF1	SIG		Alternate Function
-;	PF2	QDE		Q-Bus Data Enable Output
+;	PF2	CRDY		CPLD Enable
 ;
 ;-----------------------------------------------------------------------------
 ;
@@ -251,7 +251,6 @@ initheap010:				; First init range with zero
 .equ	DMG	= 2			; DMA Granted	
 .equ	ABO	= 3			; Abort Cycle	
 .equ	ACK	= 4			; Acknowledge Cycle
-.equ	CRDY	= 5			; Controller Ready this an internal flag only
 .equ	RTOS	= 6			; RTOS Software Interrupt	
 .equ	CLK	= 7			; CPDL Clock output
 
@@ -260,7 +259,6 @@ initheap010:				; First init range with zero
 #define i_DMG	VPORTA_IN, DMG
 #define b_ABO	VPORTA_OUT, ABO
 #define b_ACK	VPORTA_OUT, ACK
-#define b_CRDY	VPORTA_OUT, CRDY
 
 #define b_RTOS	VPORTA_OUT, RTOS
 #define	f_RTOS	VPORTA_INTFLAGS, RTOS
@@ -273,7 +271,6 @@ initheap010:				; First init range with zero
 	cbi	VPORTA_DIR, DMG
 	sbi	VPORTA_DIR, ABO
 	sbi	VPORTA_DIR, ACK
-	sbi	VPORTA_DIR, CRDY
 	sbi	VPORTA_DIR, RTOS
 	sbi	VPORTA_DIR, CLK
 	
@@ -283,7 +280,6 @@ initheap010:				; First init range with zero
 	cbi	b_ABO			; Abort any pending DMA
 	sbi	b_ACK
 	cbi	b_ACK			; Unlock Bus
-	sbi	b_CRDY
 	
 	sbi	b_RTOS			; Set Level = High 
 	sbi	f_RTOS			; Acknowledge any pending interrupt
@@ -433,14 +429,14 @@ initheap010:				; First init range with zero
 ;
 .equ	MEM	= 0			; Malloc Interrupt
 .equ	SIG	= 1			; Signal
-.equ	QDE	= 2			; Controller Ready
+.equ	CRDY	= 2			; Controller Ready
 .equ	IRQ	= 3			; Interrupt Request
 .equ	RD	= 4			; Register Read
 .equ	WR	= 5			; Register Write
 
 #define	b_MEM	VPORTF_OUT, MEM
 #define	b_SIG	VPORTF_OUT, SIG
-#define	b_QDE	VPORTF_OUT, QDE
+#define	b_CRDY	VPORTF_OUT, CRDY
 #define	b_IRQ	VPORTF_OUT, IRQ
 #define	b_RD	VPORTF_OUT, RD
 #define	b_WR	VPORTF_OUT, WR
@@ -451,13 +447,13 @@ initheap010:				; First init range with zero
 
 	sbi	VPORTF_DIR, MEM
 	sbi	VPORTF_DIR, SIG
-	sbi	VPORTF_DIR, QDE		; True CRDY
+	sbi	VPORTF_DIR, CRDY
 	sbi	VPORTF_DIR, IRQ
 	sbi	VPORTF_DIR, RD
 	sbi	VPORTF_DIR, WR
 	
 	cbi	b_SIG
-	sbi	b_QDE
+	sbi	b_CRDY
 	cbi	b_IRQ
 	cbi	b_RD
 	cbi	b_WR
@@ -1436,9 +1432,7 @@ monsdreadsector:
 	std	Z+P_Address+0, xl
 	std	Z+P_Address+1, xh
 	movw	r25:r24, zh:zl
-	cbi	b_QDE
 	call	SD_sendRead
-	sbi	b_QDE
 	cpse	r24, zero
 	rjmp	monsdread900
 	call	print

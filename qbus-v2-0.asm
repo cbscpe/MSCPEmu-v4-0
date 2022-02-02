@@ -317,13 +317,8 @@ qbus_dato_csr:
 ;
 ;	Queue Event to RT-OS
 ;
-	cbi	b_CRDY			; 1
-	cbi	b_QDE			; 1	Only read zero
-	sbis	b_GO			; 1	Go still active ?
-	sbi	b_CRDY			; 1	then show a pulse on CRDY
+	cbi	b_CRDY			; 1	Disable QBUS Interface
 	cbi	b_GO			; 1	GO
-	cbi	b_ENA			; 1	Disable Q-Bus Interrupts
-	cbi	b_CRDY
 ;
 ;	The controller is now locked and the main job can now analyze the
 ;	command and then perform the appropriate acction, now the DATI 

@@ -157,9 +157,8 @@ rlv12loop:
 	sts	CSRL, r18
 ;
 ;	Show 7 pulses on signal PIN normally there should be nothing
-;	else using the signal PIN at this moment even we have interrupts
-;	enabled, but with b_ENA cleared the interrupts that also use
-;	this pin have been disabled within the CPLD
+;	else using the signal PIN at this moment as the Q-Bus interface
+;	is disabled
 ;
 	ldi	r16, 7			;
 rlv12toggle:				;
@@ -171,9 +170,7 @@ rlv12toggle:				;
 	cli				;	Disable Interrupts
 	sbrc	r18, CSR_IE		;;; 1/2 Interrupt Enabled?
 	sbi	b_IRQ			;;; 0/1 yes then set interrupt
-	sbi	b_CRDY			;;; 1	Enable controller
-	sbi	b_QDE			;;; 1	Enable Q-Bus Data
-	sbi	b_ENA			;;; 1	Enable CPLD Interrupts
+	sbi	b_CRDY			;;; 1	Enable Controller
 	sei				;;; 1	Enable Interrupts
 					;
 	rjmp	rlv12loop		; 
@@ -1152,8 +1149,7 @@ rlv12_reset:
 	clr		zh
 	sts		CSRL, zl
 	sts		CSRH, zh
-	sbi		b_CRDY			;;; Set Controller Read
-	sbi		b_QDE
+	sbi		b_CRDY
 	sts		BARL, zh
 	sts		BARH, zh
 	sts		DARL, zh

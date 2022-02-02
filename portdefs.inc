@@ -2,21 +2,17 @@
 ;
 ;	PORT A	(Bits0..7)
 ;
-.equ	ENA	= 0			; Enable CPLD (Pin 11)
 .equ	DMR	= 1			; DMA Request	
 .equ	DMG	= 2			; DMA Granted	
 .equ	ABO	= 3			; Abort Cycle	
 .equ	ACK	= 4			; Acknowledge Cycle
-.equ	CRDY	= 5			; Controller Ready this an internal flag only
 .equ	RTOS	= 6			; RTOS Software Interrupt	
 .equ	CLK	= 7			; CPDL Clock output
 
-#define b_ENA	VPORTA_OUT, ENA
 #define b_DMR	VPORTA_OUT, DMR
 #define i_DMG	VPORTA_IN, DMG
 #define b_ABO	VPORTA_OUT, ABO
 #define b_ACK	VPORTA_OUT, ACK
-#define b_CRDY	VPORTA_OUT, CRDY
 
 #define b_RTOS	VPORTA_OUT, RTOS
 #define	f_RTOS	VPORTA_INTFLAGS, RTOS
@@ -100,14 +96,14 @@
 ;
 .equ	MEM	= 0			; Malloc Interrupt
 .equ	SIG	= 1			; Signal
-.equ	QDE	= 2			; Controller Ready
+.equ	CRDY	= 2			; Controller Ready
 .equ	IRQ	= 3			; Interrupt Request
 .equ	RD	= 4			; Register Read
 .equ	WR	= 5			; Register Write
 
 #define	b_MEM	VPORTF_OUT, MEM
 #define	b_SIG	VPORTF_OUT, SIG
-#define	b_QDE	VPORTF_OUT, QDE
+#define	b_CRDY	VPORTF_OUT, CRDY
 #define	b_IRQ	VPORTF_OUT, IRQ
 #define	b_RD	VPORTF_OUT, RD
 #define	b_WR	VPORTF_OUT, WR
