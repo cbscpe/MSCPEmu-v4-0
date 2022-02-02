@@ -1673,50 +1673,11 @@ SD_setBlock010:
 	ret
 ;=============================================================================
 ;
-;	IO Time Measurement using Timer TCB1 and TCB3
+;	IO Time Measurement using Timer TCB1 
 ;
 SD_setupTimer:
-;
-;	Setup Event Channel 0 for the TCB1 Capture flag
-;
-	ldi	r18, EVSYS_CHANNEL0_TCB1_CAPT_gc
-	sts	EVSYS_CHANNEL0, r18
-;
-;	Connect the Count Input of TCB3 to Event Channel 2, note that to
-;	connect to a channel you need to enter the channel-number +1
-;
-	ldi	r18, EVSYS_USER_CHANNEL0_gc
-	sts	EVSYS_USERTCB3COUNT, r18; To Obsever Channel 0
-;
-;	TCB3 counts the events of event channel 0 which is it counts the
-;	microseconds the SD_CARD_READ takes.
-;
-	ldi	r18, 0xFF
-	sts	TCB3_CCMPL, r18
-	sts	TCB3_CCMPH, r18
-	sts	TCB3_CNTL, zero
-	sts	TCB3_CNTH, zero
-	ldi	r18, TCB_CNTMODE_INT_gc
-	sts	TCB3_CTRLB, r18		
-	ldi	r18, TCB_ENABLE_bm + TCB_CLKSEL_EVENT_gc
-	sts	TCB3_CTRLA, r18
-;
-;	TCB1 is used to create an event every microsecond, for this
-;	we set the CCMP value to the CPU frequency -1.
-;	The counter is in Interrupt mode and the counter is reset
-;	every time it reaches CCMP. The CAPT (match of CCMP) creates
-;	an event that is connected to event channel 0
-;
-	sts	TCB1_CNTL, zero
-	sts	TCB1_CNTH, zero
-	ldi	r18, low(F_CPU/1000000-1)
-	sts	TCB1_CCMPL, r18
-	ldi	r18, high(F_CPU/1000000-1)
-	sts	TCB1_CCMPH, r18
-	ldi	r18, TCB_CNTMODE_INT_gc + TCB_CCMPEN_bm + TCB_CCMPINIT_bm
-	sts	TCB1_CTRLB, r18
-	ldi	r18, TCB_ENABLE_bm + TCB_CLKSEL_DIV1_gc
-	sts	TCB1_CTRLA, r18
+	sts	TCB1_CNTL, zero		; Just reset the count and let
+	sts	TCB1_CNTH, zero		; the timer start with zero
 	ret
 ;
 ;	Read Timer
@@ -1724,12 +1685,10 @@ SD_setupTimer:
 ;	P_Duration	int16
 ;
 SD_readTimer:
-	sts	TCB1_CTRLA, zero
-	sts	TCB3_CTRLA, zero	; Stop Timer
-	lds	r18, TCB3_CNTL
-	std	Y+P_Duration+0, r18
-	lds	r18, TCB3_CNTH
-	std	Y+P_Duration+1, r18
+	lds	r18, TCB1_CNTL		; Read the current count
+	std	Y+P_Duration+0, r18	; value which is the duration
+	lds	r18, TCB1_CNTH		; the IO operation took measured
+	std	Y+P_Duration+1, r18	; in micro-seconds
 	ret
 ;=============================================================================
 ;

@@ -40,7 +40,7 @@
 	std	Z+3, yh			; 1
 	ldi	yl, @0			; 1
 	std	Z+0, yl			; 1
-	lds	yl, TCA0_SPLIT_LCNT	; 3
+	lds	yl, TCB2_CNTL		; 3
 	std	Z+1, yl			; 1
 	adiw	zh:zl, 4		; 2
 ;	sbrc	zh,7			; 1/2
@@ -722,7 +722,7 @@ qbus_iack:
 	std	Z+3, yh			; 2
 	ldi	yl, log_iack		; 1
 	std	Z+0, yl			; 2
-	lds	yl, TCA0_SPLIT_LCNT	; 3
+	lds	yl, TCB2_CNTL		; 3
 	std	Z+1, yl			; 2
 	adiw	zh:zl, 4		; 2 
 ;	sbrc	zh,7			; 1/2
@@ -772,7 +772,7 @@ qbus_init:
 	std	Z+3, yh
 	ldi	yl, log_init
 	std	Z+0, yl
-	lds	yl, TCA0_SPLIT_LCNT
+	lds	yl, TCB2_CNTL
 	std	Z+1, yl
 	adiw	zh:zl, 4		;;; 
 ;	sbrc	zh,7

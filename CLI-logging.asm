@@ -123,9 +123,7 @@ logprintentry:
 	ldd	r18, Y+2
 	ldd	r19, Y+3
 	sts	pprint+0, r16
-	sts	pprint+1, r17		; And a negated value for timestamps
-	neg	r17			; is we use TCA0_SPLIT_LCNT as timestamp
-	sts	pprint+5, r17		; 
+	sts	pprint+1, r17		; Time stamp is now TCB1_CNTL
 	sts	pprint+2, r18
 	sts	pprint+3, r19
 	mov	zl, r16
@@ -170,12 +168,12 @@ logprintnoop:
 logprintiack:
 	call	print
 		;----+----1----+----2----+----3
-	.db	"IACK    (", 0x85, ") Vector  ", 0xa2, CR, LF, 0
+	.db	"IACK    (", 0x81, ") Vector  ", 0xa2, CR, LF, 0
 	ret
 logprintinit:
 	call	print
 		;----+----1----+----2----+----3
-	.db	"INIT    (", 0x85, ") Input 0x", 0x82, ", INTFLAGS 0x", 0x83, CR, LF, 0
+	.db	"INIT    (", 0x81, ") Input 0x", 0x82, ", INTFLAGS 0x", 0x83, CR, LF, 0
 	ret
 logprintdato:
 	lds	r16, pprint+0
@@ -185,7 +183,7 @@ logprintdato:
 	sts	pprint+0, r16
 	call	print
 		;----+----1----+----2----+----3
-	.db	"DATO    (", 0x85, ") ", 0, 0
+	.db	"DATO    (", 0x81, ") ", 0, 0
 	rcall	logaddr2name
 	call	print
 	.db	"  Value    ", 0xa2, CR, LF, 0, 0
@@ -199,7 +197,7 @@ logprintdati:
 	sts	pprint+0, r16
 	call	print
 		;----+----1----+----2----+----3
-	.db	"DATI    (", 0x85, ") ", 0, 0
+	.db	"DATI    (", 0x81, ") ", 0, 0
 	rcall	logaddr2name
 	call	print
 	.db	"  Value    ", 0xa2, CR, LF, 0, 0
@@ -228,7 +226,7 @@ logprintfnc0_020:
 	sts	pprint+0, r16
 	call	print
 		;----+----1----+----2----+----3
-	.db	"   (", 0x85, ") CSR  Value    ", 0xa2, " (", 0x90, ")",   CR, LF, 0, 0
+	.db	"   (", 0x81, ") CSR  Value    ", 0xa2, " (", 0x90, ")",   CR, LF, 0, 0
 	ret
 logprintaddress:
 	call	print
@@ -238,7 +236,7 @@ logprintaddress:
 logprintfnc2:
 	call	print
 		;----+----1----+----2----+----3
-	.db	"FNC2    (", 0x85, ") MPR    0x", 0x83, 0x82, CR, LF, 0
+	.db	"FNC2    (", 0x81, ") MPR    0x", 0x83, 0x82, CR, LF, 0
 	ret
 logprintseek:
 	ldd	r16, Y+0
@@ -247,7 +245,7 @@ logprintseek:
 	sts	pprint+4, r16
 	call	print
 		;----+----1----+----2----+----3
-	.db	"SEEK:", 0x94, "  (", 0x85, ") DAR        ", 0xa2, CR, LF, 0, 0
+	.db	"SEEK:", 0x94, "  (", 0x81, ") DAR        ", 0xa2, CR, LF, 0, 0
 	ret
 logprintpbn:
 	andi	r16, 0x0F
