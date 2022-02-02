@@ -45,14 +45,6 @@
 	.org	TCB0_INT_vect		; Ticker Interrupt
 	jmp	tick
 
-	.org	TCB1_INT_vect		; Ticker Interrupt
-	rjmp	tcb1_isr
-	.org	TCB2_INT_vect		; Ticker Interrupt
-	rjmp	tcb2_isr
-	.org	TCB3_INT_vect		; Ticker Interrupt
-	rjmp	tcb3_isr
-
-	
 	.org	PORTB_PORT_vect		; Software Interrupt Controller GO
 	jmp	go_			; Module rlv12-v2-0.asm
 
@@ -69,27 +61,6 @@
 	jmp	qbus_			; Module qbus-v2-0.asm
 	
 	.org	INT_VECTORS_SIZE
-
-tcb1_isr:
-	push	r16
-	ldi	r16, 3
-	sts	TCB1_INTFLAGS, r16
-	pop	r16
-	reti
-tcb2_isr:
-	push	r16
-	ldi	r16, 3
-	sts	TCB2_INTFLAGS, r16
-	pop	r16
-	reti
-tcb3_isr:
-	push	r16
-	ldi	r16, 3
-	sts	TCB3_INTFLAGS, r16
-	pop	r16
-	reti
-
-
 ;=============================================================================
 ;
 ;
@@ -115,15 +86,15 @@ start:
 ;
 	clr	zero
 ;
-;	Initialise RAM except for 32 bytes at the beginning
+;	Initialise RAM
 ;
-;	ldi	xl, low(RAMINITSTART+0x20)
-;	ldi	xh, high(RAMINITSTART+0x20)
+;	ldi	xl, low(RAMINITSTART)
+;	ldi	xh, high(RAMINITSTART)
 ;	ldi	yl, low(RAMINITEND)
 ;	ldi	yh, high(RAMINITEND)
 
-;	ldi	xl, low(INTERNAL_SRAM_START+0x20)
-;	ldi	xh, high(INTERNAL_SRAM_START+0x20)
+;	ldi	xl, low(INTERNAL_SRAM_START)
+;	ldi	xh, high(INTERNAL_SRAM_START)
 ;	ldi	yl, low(INTERNAL_SRAM_START+INTERNAL_SRAM_SIZE)
 ;	ldi	yh, high(INTERNAL_SRAM_START+INTERNAL_SRAM_SIZE)
 
@@ -135,8 +106,7 @@ start:
 ;	assigned does not exceed the first 4k pages
 ;
 ;	0x4xxx	is copied to 0x5xxx
-;	0x7xxx	is copied to 0x5xxx
-;	0x4xxx	is zeroized except for the first 32 bytes
+;	0x4xxx	is zeroized
 ;	0x6xxx	is zeroized
 ;	0x7xxx	is zeroized
 ;
@@ -144,8 +114,6 @@ start:
 ;
 	ldi	xl, low(0x4000)
 	ldi	xh, high(0x4000)
-	ldi	xl, low(0x7000)
-	ldi	xh, high(0x7000)
 	ldi	yl, low(0x5000)
 	ldi	yh, high(0x5000)
 	movw	r25:r24, yh:yl
@@ -236,17 +204,11 @@ initheap010:				; First init range with zero
 ;
 ;	Port Settings
 ;
-;	New CPLD Interface
-;	PA0	ENA		Enables Interrupt
-;	PF0	MEM
-;	PF1	SIG		Alternate Function
-;	PF2	CRDY		CPLD Enable
-;
 ;-----------------------------------------------------------------------------
 ;
 ;	PORT A	(Bits0..7)
 ;
-.equ	ENA	= 0			; Enable CPLD (Pin 11)
+.equ	ENA	= 0			; Signal/Debugging
 .equ	DMR	= 1			; DMA Request	
 .equ	DMG	= 2			; DMA Granted	
 .equ	ABO	= 3			; Abort Cycle	
@@ -428,7 +390,7 @@ initheap010:				; First init range with zero
 ;	PORT F (Bits0..5, Bit6 is Reset and may be used as input but not here)
 ;
 .equ	MEM	= 0			; Malloc Interrupt
-.equ	SIG	= 1			; Signal
+.equ	SIG	= 1			; Signal/Debugging
 .equ	CRDY	= 2			; Controller Ready
 .equ	IRQ	= 3			; Interrupt Request
 .equ	RD	= 4			; Register Read
@@ -462,8 +424,6 @@ initheap010:				; First init range with zero
 	sbi	f_MEM			; Acknowledge any pending interrupt
 	ldi	r18, PORT_ISC_LEVEL_gc	; Level Sense Interrupt
 	sts	c_MEM, r18		; Pin Control
-
-
 ;=============================================================================
 ;
 ;	Map Flash section 2 to Data address space
@@ -534,8 +494,6 @@ initheap010:				; First init range with zero
 ;	for the other timers. It will producde two intervalls
 ;	1usec	this will be used by TCB1 to count the IO time
 ;	4usec	this will be used by TCB2 for the time stamp
-;
-;
 ;
 ;=============================================================================
 ;
@@ -635,94 +593,6 @@ initheap010:				; First init range with zero
 ;
 	call	print
 	.db	"Starting Universal Disk Controller!", CR, LF, 0
-
-;=============================================================================
-;
-;	Print low bytes
-;
-	sbis	GPR_GPR3, 0
-	rjmp	nogpr
-	ldi	xl, low(INTERNAL_SRAM_START)
-	ldi	xh, high(INTERNAL_SRAM_START)
-	ldi	zl, low(pprint)
-	ldi	zh, high(pprint)
-	ldi	r16, 16
-gpr010:
-	ld	r18, X+
-	st	Z+, r18
-	dec	r16
-	brne	gpr010
-	call	print
-	.db	CR, LF
-	.db	"Content of uninitialized RAM"
-	.db	CR, LF
-	.db	" ", 0x80
-	.db	" ", 0x81
-	.db	" ", 0x82
-	.db	" ", 0x83
-	.db	" ", 0x84
-	.db	" ", 0x85
-	.db	" ", 0x86
-	.db	" ", 0x87
-	.db	" ", 0x88
-	.db	" ", 0x89
-	.db	" ", 0x8a
-	.db	" ", 0x8b
-	.db	" ", 0x8c
-	.db	" ", 0x8d
-	.db	" ", 0x8e
-	.db	" ", 0x8f
-	.db	0, 0
-	ldi	zl, low(pprint)
-	ldi	zh, high(pprint)
-	ldi	r16, 16
-gpr020:
-	ld	r18, X+
-	st	Z+, r18
-	dec	r16
-	brne	gpr020
-	call	print
-	.db	CR, LF
-	.db	" ", 0x80
-	.db	" ", 0x81
-	.db	" ", 0x82
-	.db	" ", 0x83
-	.db	" ", 0x84
-	.db	" ", 0x85
-	.db	" ", 0x86
-	.db	" ", 0x87
-	.db	" ", 0x88
-	.db	" ", 0x89
-	.db	" ", 0x8a
-	.db	" ", 0x8b
-	.db	" ", 0x8c
-	.db	" ", 0x8d
-	.db	" ", 0x8e
-	.db	" ", 0x8f
-	.db	CR, LF, 0, 0
-nogpr:
-	cbi	GPR_GPR3, 0
-	ldi	xl, low(INTERNAL_SRAM_START)
-	ldi	xh, high(INTERNAL_SRAM_START)
-	ldi	r16, 32
-gpr030:
-	st	X+, zero
-	dec	r16
-	brne	gpr030
-	
-
-;=============================================================================
-;
-;	Start without RTOS
-;
-;	call	rlv12_reset
-;	ldi	r24, low(usersp0)	
-;	ldi	r25, high(usersp0)	
-;	out	CPU_SPL, r24
-;	out	CPU_SPH, r25
-;	sei
-;	rjmp	readcmd
-
 ;=============================================================================
 ;
 ;	Create Main Job
@@ -900,13 +770,9 @@ main:
 	call	prtcreate
 	movw	r25:r24, zh:zl
 	call	create
-
-
-
+;--------------------------------------------------------------------------
 ;
 ;	Directly enter readcommand
-;
-;--------------------------------------------------------------------------
 ;
 ;	Adjust the existing log_pointer to a valid value, that is it must
 ;	point to the log_buffer and must be a multiple of 8.
@@ -955,7 +821,7 @@ readcmd020:
 	rjmp	readcmd020
 readcmd030:
 ;
-;	Old Calling Convention to TPARSE
+;	Use legacy Calling Convention to TPARSE
 ;
 	ldi	xl, low(InputBuffer)	; Command
 	ldi	xh, high(InputBuffer)
@@ -1057,7 +923,6 @@ dummyjob:
 ;--------------------------------------------------------------------------
 ;
 loginit:
-
 	ldi	yl, low(log_buffer)
 	ldi	yh, high(log_buffer)
 	sts	log_pointer+0, yl
@@ -1286,7 +1151,6 @@ moncrc7:
 	ret
 
 moncrc7sub:
-
 	clr	crcl
 	movw	Z, Y
 	lpm	r16, Z+
@@ -1382,7 +1246,6 @@ monstackret:
 	pop	zh
 	pop	zl
 	ret
-
 
 monstackcall:
 	ldi	r18, 0xff
@@ -1793,8 +1656,6 @@ mountcmd32info:
 	call	print
 	.db	"FAT32 Volume root dir start cluster...:", 0x83, 0x82, 0x81, 0x80, CR, LF, 0
 	ret
-
-
 ;--------------------------------------------------------------------------
 ;
 prtcreate:
@@ -1909,8 +1770,6 @@ mprint090:
 	pop	yh
 	pop	yl
 	ret
-
-
 ;--------------------------------------------------------------------------
 ;
 ;	
@@ -1937,16 +1796,18 @@ mprint090:
 .include	"readcmdline.asm"
 .include	"rlv12-v2-0.asm"
 .include	"qbus-v2-0.asm"
-
-
-.include	"crash.asm"
-
-
 ;--------------------------------------------------------------------------
 ;
 ;	The 3rd quarter of the flash will be mapped to the normal address
-;	space.
-;
+;	space. The new AVR family AVR128 allows to map a section of the
+;	flash to the data address space so we can directly read from the
+;	flash without using LPM. Note that the avrasm2 uses word addresses
+;	for the flash but the data space uses byte addresses. Therefore 
+;	when you put RO data into the mapped section you need to "translate"
+;	the addresses into a byte address. This translation of course 
+;	depends on the section you map. Here we use section 2 which starts
+;	at the flash word address 0x8000. Eventually we will move all
+;	RO data sections into the mapped section.
 ;
 	.org	0x8000
 .include "DriveTab.inc"
