@@ -627,7 +627,7 @@ qbus_dato_boot2:
 ;	As DMA is activated using b_DMR we will then check this bit
 ;	each time the PDP-11 fetches an instruction from BOOT4. If the
 ;	bit is set we will then check i_DMG to see whether the DMA has
-;	been executed. Once DMA has finished we return a CLR R0 instruction
+;	been executed. Once DMA has finished we return a CLR R1 instruction
 ;	to make sure the boot code assumes unit 0 to boot from. At the same
 ;	time we set the auto__boot flag. Next the PDP-11 will fetch an
 ;	instruction from BOOT6.
@@ -643,8 +643,8 @@ qbus_dati_boot4:
 	sbis	i_DMG			; did it finish?
 	rjmp	qbus_dati_boot4_cont	; no continue to send BR .
 	cbi	b_DMR			; remove DMA request
-	ldi	yl, low(05000)		; DMA finished return a CLR R0
-	ldi	yh, high(05000)
+	ldi	yl, low(05001)		; DMA finished return a CLR R1
+	ldi	yh, high(05001)
         sbi	GPR_GPR0, auto__boot    ; Auto Boot Requested
 qbus_dati_boot4_cont:
 	cbi	b_RS2			; 

@@ -242,6 +242,8 @@ rlv12_autobootfile:
 ;	.db	CR, LF
 ;	.db	"Boot diskimage!", CR, LF, 0
 ;	call	redraw_1
+	ldd	zl, Y+ucb_imgptr+0	; get address of partition control block
+	ldd	zh, Y+ucb_imgptr+1
 	ldd	yl, Z+fcb_iob+0		; get the address of the file control block
 	ldd	yh, Z+fcb_iob+1
 	std	Y+P_Cluster+0, zero	; start with first sector of file
