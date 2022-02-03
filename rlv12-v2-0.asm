@@ -116,6 +116,8 @@ rlv12loop:
 	ldi	r24, low(rlvlock)
 	ldi	r25, high(rlvlock)
 	call	block			; Wait for GO
+	sbic	GPR_GPR0, auto__boot	; Was Autoboot requested?
+	rjmp	rlv12_autoboot		; Yes so do autoboot
 	logptr				; Destroys r25:r24, zh:zl
 	movw	logptrh:logptrl, zh:zl	; keep it in case we want to overwrite
 	lds	r16, CSRL		; the default logging
@@ -187,6 +189,111 @@ rlv12fnctbl:
 	rjmp	rlv12_readdata
 	rjmp	rlv12_readnocheck
 
+;--------------------------------------------------------------------------
+;
+;	Autoboot Feature
+;
+;	By executing a 174414g in ODT the user can activate the autoboot
+;	of the controller. This feature will load the first block of the
+;	device that is attached to Unit 0 to the start o the PDP-11
+;	memory (address zero). For the machanics see the description in
+;	the qbus module.
+;
+rlv12_autoboot:
+
+	cbi	GPR_GPR0, auto__boot	; clear the autoboot flag
+	ldi	yl, low(unittable)	; get address of first unit
+	ldi	yh, high(unittable)	
+	ldd	r18, Y+ucb_status
+	sbrs	r18, ucb__drdy		; is unit read?
+	rjmp	rlv12_noautoboot	; no can't boot then
+	sbrc	r18, ucb__part		; is a partition attached
+	rjmp	rlv12_autobootpart	; then boot from partition
+	sbrc	r18, ucb__file		; is a file attached
+	rjmp	rlv12_autobootfile	; then boot from file
+rlv12_noautoboot:			; oops not autoboot possible
+	rjmp	rlv12loop		; done
+;
+;	boot from partition
+;
+rlv12_autobootpart:
+;	call	print
+;	.db	CR, LF
+;	.db	"Boot partition!", CR, LF, 0
+;	call	redraw_1
+	ldd	zl, Y+ucb_imgptr+0	; get address of partition control block
+	ldd	zh, Y+ucb_imgptr+1
+	ldi	yl, low(sdio)		; get IO Parameter block
+	ldi	yh, high(sdio)
+	ldd	r16, Z+pcb_start+0	; copy partition start
+	ldd	r17, Z+pcb_start+1
+	ldd	r18, Z+pcb_start+2
+	ldd	r19, Z+pcb_start+3
+	std	Y+P_Sector+0, r16	; to IO Parameter block, this is the boot
+	std	Y+P_Sector+1, r17	; sector
+	std	Y+P_Sector+2, r18
+	std	Y+P_Sector+3, r19
+	rjmp	rlv12_autoboot010	; cont
+;
+;	boot from file
+;
+rlv12_autobootfile:
+;	call	print
+;	.db	CR, LF
+;	.db	"Boot diskimage!", CR, LF, 0
+;	call	redraw_1
+	ldd	yl, Z+fcb_iob+0		; get the address of the file control block
+	ldd	yh, Z+fcb_iob+1
+	std	Y+P_Cluster+0, zero	; start with first sector of file
+	std	Y+P_Cluster+1, zero
+	std	Y+P_Cluster+2, zero
+	std	Y+P_Cluster+3, zero
+	movw	r25:r24, zh:zl
+	call	Logical2Physical	; translate using fragmentation list of FCB
+;
+;	IO Parameter Block is now setup with the sector to be read into memory
+;
+rlv12_autoboot010:
+	ldi	r16, low(sdbuffer)	; get default IO buffer
+	ldi	r17, high(sdbuffer)
+	std	Y+P_Address+0, r16	; set IO buffer address
+	std	Y+P_Address+1, r17
+	ldi	r18, led_time		; blinken lights
+	sts	led_oneshot, r18
+	sbi	b_LED
+	movw	r25:r24, yh:yl		; IO Parameter Block
+	call	SD_CARD_READ		; read sector
+	cpse	r24, zero		; test return code 
+	rjmp	rlv12_noautoboot	; something went wrong no autoboot
+;
+;	we have now the boot record in our IO buffer, while the PDP-11
+;	executes the BR . (0777) instruction at address 0 we copy 
+;	words 1..256 of the boot sector to PDP-11 address 2
+;	
+	ldi	r16, 2			; 
+	setupdmaaddress r16, zero, zero	; destroys r18!!
+	ldi	r20, 1			; need to transfer 255 words
+	ldd	xl, Y+P_Address+0
+	ldd	xh, Y+P_Address+1
+	ld	r16, X+			; keep hold of the first word
+	ld	r17, X+			; in the boot record
+rlv12_autoboot020:
+	ld	datal, X+		; now copy words 1..256. via DMA
+	ld	datah, X+		; to the PDP-11 memory
+	dmawrite datal, datah		; 
+	inc	r20			; 
+	brne	rlv12_autoboot020
+;
+;	Last but not least we need to copy the first word of the boot
+;	sector to address zero of the PDP-11 memory. This will overwrite
+;	the BR . (0777) instruction the PDP-11 is continuously executing
+;	with the first instruction of the boot sector and therefore start
+;	the boot process
+;
+	setupdmaaddress zero, zero, zero
+	dmawrite r16, r17
+	rjmp	rlv12loop
+	
 ;--------------------------------------------------------------------------
 ;
 ;	Not (yet) implemented

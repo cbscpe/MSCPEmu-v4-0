@@ -611,25 +611,84 @@ qbus_dato_boot2:
 	INTEXIT	log_dato|log_boot2
 ;------------------------------------------------------------------------------
 ;
-;	BOOT4	17774414
+;	BOOT4	17774414 (AUTOBOOT)
 ;
-;	
+;	Using the BOOT4 and BOOT6 register, that are unused by the original
+;	RLV12 controller, we implement an auto-boot feature. 
 ;
+;	The autoboot feature allows the PDP-11 to boot from the first unit
+;	attached to the RLV12 emulator by simply executing a 174414g in ODT.
+;
+;	When the PDP-11 executes the instruction at 174414 we will start to 
+;	return the instruction BR . (0777) a branch to itself. During the 
+;	time the PDP-11 is executing this loop we will transfer an identical 
+;	instruction to absolute address zero of the PDP-11. The DMA will
+;	be initiated the first time the PDP-11 accesses BOOT4 register.
+;	As DMA is activated using b_DMR we will then check this bit
+;	each time the PDP-11 fetches an instruction from BOOT4. If the
+;	bit is set we will then check i_DMG to see whether the DMA has
+;	been executed. Once DMA has finished we return a CLR R0 instruction
+;	to make sure the boot code assumes unit 0 to boot from. At the same
+;	time we set the auto__boot flag. Next the PDP-11 will fetch an
+;	instruction from BOOT6.
 ;
 qbus_dati_boot4:
-	lds	yl, CSR14+0		; 1
-	lds	yh, CSR14+1		; 1
-	cbi	b_RD			; 1
-	ldi	zl, 0xFF		; 1
-	out	dataportdir, zl		; 1
-	cbi	b_RS2			; 1
-	out	dataportout, yl		; 1
-	sbi	b_WR			; 1
-	cbi	b_WR			; 1
-	sbi	b_RS0			; 1
-	out	dataportout, yh		; 1
-	sbi	b_WR			; 1
-	cbi	b_WR			; 1
+	ldi	yl, low(0777)		; Assume DMA still pending
+	ldi	yh, high(0777)
+	cbi	b_RD			; 
+	ldi	zl, 0xFF		; 
+	out	dataportdir, zl		; 
+	sbis	b_DMR			; did we already request DMA?
+	rjmp	qbus_dati_boot4_dma	; no do it now
+	sbis	i_DMG			; did it finish?
+	rjmp	qbus_dati_boot4_cont	; no continue to send BR .
+	cbi	b_DMR			; remove DMA request
+	ldi	yl, low(05000)		; DMA finished return a CLR R0
+	ldi	yh, high(05000)
+        sbi	GPR_GPR0, auto__boot    ; Auto Boot Requested
+qbus_dati_boot4_cont:
+	cbi	b_RS2			; 
+	out	dataportout, yl		; 
+	sbi	b_WR			; Register selected is 0
+	cbi	b_WR			; 
+	sbi	b_RS0			; 
+	out	dataportout, yh		; 
+	sbi	b_WR			; Register selected is 1
+	cbi	b_WR			; 
+	INTEXIT	log_dati|log_boot4
+;
+;	The first time we read BOOT4 we start a DMA to transfer BR .
+;	instruction to adddress zero and as well return a BR. instruction.
+;	
+qbus_dati_boot4_dma:
+	clr	zl
+	out	dataportout, zl
+	sbi	b_WR			; Register selected is 4
+	cbi	b_WR
+	sbi	b_RS0
+	sbi	b_WR			; Register selected is 5
+	cbi	b_WR
+	sbi	b_RS1
+	sbi	b_WR			; Register selected is 7
+	cbi	b_WR
+	cbi	b_RS2
+	out	dataportout, yh
+	sbi	b_WR			; Register selected is 3
+	cbi	b_WR
+	out	dataportout, yl
+	cbi	b_RS0
+	sbi	b_WR			; Register selected is 2
+	cbi	b_WR
+	sbi	b_DMR			; Request DMA
+;	
+	cbi	b_RS1			; 
+	out	dataportout, yl		; 
+	sbi	b_WR			; Register selected is 0
+	cbi	b_WR			; 
+	sbi	b_RS0			; 
+	out	dataportout, yh		; 
+	sbi	b_WR			; Register selected is 1
+	cbi	b_WR			; 
 	INTEXIT	log_dati|log_boot4
 
 ;
@@ -649,25 +708,50 @@ qbus_dato_boot4:
 	INTEXIT	log_dato|log_boot4
 ;------------------------------------------------------------------------------
 ;
-;	BOOT6	17774416
+;	BOOT6	17774416 (AUTOBOOT)
 ;
-;	During Test just a normal read/write port
+;	When reading the BOOT6 register, we check whether this is due
+;	to the autoboot feature (bit auto__boot set in GPR_GPR0) and
+;	if so will start the RLV12 job be clearing the b_GO bit.
+;	In any case we will return the opcode for a CLR PC instruction.
+;	If the PDP-11 fetches an instruction from BOOT6 this will
+;	clear the PC and execution will continue at address zero.
+;	If this is the continuation of the autoboot process after
+;	executing the instruction at BOOT4 we will have a BR .
+;	instruction at absolute address zero. Therefore when we have
+;	started the RLV12 job the PDP-11 will be sent to address zero
+;	and continuously exectue this intruction and be kept in a loop
+;	at address 0. The RLV12 process will see that the auto__boot
+;	flag is set and therefore will load the boot sector of the first
+;	unit to address 0. With the first word of the boot record written
+;	only at the end to address 0, which will then overwrite the BR .
+;	instruction and execute the normal boot sector and hence boot
+;	the system from the first unit.
+;
+;	Note that access to BOOT6 should only initiate the RLV12 job
+;	if auto__boot is set. auto__boot is only set once the DMA has
+;	written a BR . instruction to PDP-11 memory address zero. As
+;	the DCJ11 always reads one instruction ahead BOOT6 will be 
+;	read even when the PDP-11 starts execution at 174414. Even when
+;	simply reading BOOT6 we always should return the value 05007
 ;
 qbus_dati_boot6:
-	lds	yl, CSR16+0		; 1
-	lds	yh, CSR16+1		; 1
-	cbi	b_RD			; 1
-	ldi	zl, 0xFF		; 1
-	out	dataportdir, zl		; 1
-	cbi	b_RS2			; 1
-	out	dataportout, yl		; 1
-	sbi	b_WR			; 1
-	cbi	b_WR			; 1
-	sbi	b_RS0			; 1
-	out	dataportout, yh		; 1
-	sbi	b_WR			; 1
-	cbi	b_WR			; 1
-	INTEXIT	log_dati|log_boot6
+        ldi     yl, low(05007)
+        ldi     yh, high(05007)         ; "CLR  PC" instruction
+        cbi     b_RD                    ; 1
+        ldi     zh, 0xFF
+        out     dataportdir, zh
+        cbi     b_RS2
+        out     dataportout, yl
+        sbi     b_WR
+        cbi     b_WR
+        sbi     b_RS0
+        out     dataportout, yh
+        sbi     b_WR
+        cbi     b_WR
+        sbic	GPR_GPR0, auto__boot    ; Auto Boot Requested
+        cbi     b_GO                    ; Trigger Main RLV12 Programm
+        INTEXIT log_dati|log_boot6	
 
 qbus_dato_boot6:
 	cbi	b_RS0			; 1
