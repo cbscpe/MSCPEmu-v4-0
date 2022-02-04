@@ -1072,37 +1072,6 @@ MatchSFNFin:
 ;	Name2DirEntry
 ;
 ;	This function takes a pointer to a path name. It walks through the 
-;	path and checks if the name exists in the current directory.
-;	-	If the name is not found it will return an error. 
-;	-	If the name found is a normal filename and the name is not the
-;		last name in the path it will return an error. Else it will 
-;		return success
-;	-	If the name found is a directory it will take the next name and 
-;		search for it in the new directory.
-;	-	If the end of the path has been reached it will return success
-;
-;	Input:
-;		Y		Pointer to data structure for directory IO
-;		X		Pointer to zero terminated path
-;
-;	Output:
-;		Directory structure updated 
-;		Y+P_StartCluster	start cluster of file/directory
-;		Y+P_DirPointer		points to the directory entry
-;		r16			the terminating character
-;
-;	Conditions:
-;		CS		file not found
-;		CC		file found
-;
-;	Registers
-;		r18
-;
-;	Version 2.0
-;
-;	Name2DirEntry
-;
-;	This function takes a pointer to a path name. It walks through the 
 ;	path and checks if the name exists in the current directory. For this
 ;	the path is split into individual file names by scanning the path for
 ;	a delimiter (DELIM).
