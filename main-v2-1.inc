@@ -370,6 +370,7 @@ heap:		.byte	4
 #define	log_boot2	0x0a
 #define log_boot4	0x0c
 #define log_boot6	0x0e
+#define log_rom		0x01
 #define	log_fnc0	0x80
 #define	log_address	0x90
 #define	log_fnc2	0xa0
