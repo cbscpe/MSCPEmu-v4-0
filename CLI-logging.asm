@@ -177,6 +177,8 @@ logprintinit:
 	ret
 logprintdato:
 	lds	r16, pprint+0
+	sbrc	r16, 0		; log_rom
+	rjmp	logprintromo
 	bst	r16, 3		; Make it "Octal"
 	bld	r16, 4
 	andi	r16, 0x16
@@ -191,6 +193,8 @@ logprintdato:
 
 logprintdati:
 	lds	r16, pprint+0
+	sbrc	r16, 0		; log_rom
+	rjmp	logprintromi
 	bst	r16, 3		; Make it "Octal"
 	bld	r16, 4
 	andi	r16, 0x16
@@ -203,6 +207,14 @@ logprintdati:
 	.db	"  Value    ", 0xa2, CR, LF, 0, 0
 	ret
 
+logprintromo:
+	call	print
+	.db	"DATO ROM(", 0x81, ")", CR, LF, 0
+	ret
+logprintromi:
+	call	print
+	.db	"DATI ROM(", 0x81, ")", CR, LF, 0
+	ret
 
 logprintfnc0:
 	lds	zl, pprint+0		; Logging Code
