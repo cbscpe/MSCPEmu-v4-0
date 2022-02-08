@@ -334,8 +334,9 @@ initheap010:				; First init range with zero
 #define	dataportout	VPORTD_OUT
 #define dataportin	VPORTD_IN
 #define dataportdir	VPORTD_DIR
-	ldi	r18, 0x00
-	out	VPORTD_DIR, r18
+	ldi	r18, 0xFF
+	out	VPORTD_DIR, r18		; default direction is output !!!
+
 ;-----------------------------------------------------------------------------
 ;
 ;	PORT E (Bits0..3)
@@ -417,7 +418,7 @@ initheap010:				; First init range with zero
 	cbi	b_SIG
 	sbi	b_CRDY
 	cbi	b_IRQ
-	cbi	b_RD
+	cbi	b_RD			; Important default is cleared!!!
 	cbi	b_WR
 	
 	sbi	b_MEM			; Set Level = High 
@@ -1794,6 +1795,7 @@ mprint090:
 .include	"FAT-library-v2-0.asm"
 .include	"FAT-fileio-v2-0.asm"
 .include	"readcmdline.asm"
+.include	"readinit.asm"
 .include	"rlv12-v2-0.asm"
 .include	"qbus-v2-0.asm"
 ;--------------------------------------------------------------------------
@@ -1821,6 +1823,8 @@ TestTabFlash:
 .equ ReadInitName = (PC - 0x8000) * 2 + 0x8000
 	.db	"RLV12.INI", NULL
 	
+.equ ReadInitSection = (PC - 0x8000) * 2 + 0x8000
+	.db	"[RLV12.INI]", NULL
 .include "Messages.inc"
 
 .equ FNCName = (PC - 0x8000) * 2 + 0x8000
