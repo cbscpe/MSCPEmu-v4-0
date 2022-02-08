@@ -23,7 +23,8 @@ checkunit:
 	ori	zl, '0'
 	sts	pprint+0, zl
 	call	print
-	.db	"Unit ", 0x90, " does not exist", 0x0d, 0x0a, 0x00
+	.db	CR, LF
+	.db	"Unit ", 0x90, " does not exist", CR, LF, 0
 	sec
 	ret
 
@@ -40,7 +41,8 @@ checkunit010:
 	ori	r18, '0'
 	sts	pprint+0, r18
 	call	print
-	.db	"Unit ", 0x90, " is busy ", 0x0d, 0x0a, 0x00
+	.db	CR, LF
+	.db	"Unit ", 0x90, " is busy ", CR, LF, 0
 	sec
 	ret
 checkunit020:

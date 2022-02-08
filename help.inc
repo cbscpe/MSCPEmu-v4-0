@@ -6,10 +6,10 @@
 .equ hello = (PC - 0x8000) * 2 + 0x8000
 ;	"----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8"
 .db	CR, LF, CR, LF
-#ifdef cpld
-.db	"Qbridge RLV12 Emulator V2 Vers 0.9.6   ",__DATE__ ,"  CPLD Interface active     ", CR, LF
+#ifdef cpldif
+.db	"Universal Disk Emulator V2 Vers 1.0.0   ",__DATE__ ,"  CPLD Interface active    ", CR, LF
 #else
-.db	"Qbridge RLV12 Emulator V2 Vers 0.9.6   ",__DATE__ ,"  CPLD Interface disabled   ", CR, LF
+.db	"Universal Disk Emulator V2 Vers 1.0.0   ",__DATE__ ,"  CPLD Interface disabled  ", CR, LF
 #endif
 .dw	0
 

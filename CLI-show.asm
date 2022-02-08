@@ -576,186 +576,23 @@ typecmd060:
 	call	ReadFileClose
 	clc
 	ret
+
 ;--------------------------------------------------------------------------
 ;
-;	Read INIT file
 ;
 ;
-readinit:
+cmdreadinit:
 	push	xl
 	push	xh
-	push	yl
-	push	yh
-	ldi	r24, low(256)
-	ldi	r25, high(256)
-	call	malloc
-	sbiw	r25:r24, 0
-	brne	readinit005
-	call	mprint
-	.dw	msgreadinitall
-	rjmp	readinitexit
-readinit005:
-	sts	InitCommand+0, r24
-	sts	InitCommand+1, r25
-
-	ldi	r22, low(ReadInitName)
-	ldi	r23, high(ReadInitName)
-	
+	ldi	r24, 0
+	call	readinit
+	sts	pprint+0, r24
 	call	print
 	.db	CR, LF
-	.db	"Read Init File: '", 0
-	movw	xh:xl, r23:r22
-readinitx10:
-	ld	r24, X+
-	tst	r24
-	breq	readinitx20
-	call	serout
-	rjmp	readinitx10
-readinitx20:
-	call	print
-	.db	"'", CR, LF, 0
-	
-	lds	r24, volqueue+0
-	lds	r25, volqueue+1
-	sbiw	r25:r24, 0
-	brne	readinit010
-	call	mprint
-	.dw	msgnovolume
-	rjmp	readinitexit
-readinit010:	
-	movw	yh:yl, r25:r24	; Save Volume control block
-;uint8_t Name2DirEntry(struct* VolumeControlBlock, char* name)
-	call	Name2DirEntry
-	tst	r24
-	breq	readinit011
-	call	mprint
-	.dw	msgreadinitfnf
-	rjmp	readinitexit
-readinit011:
-	ldd	zl, Y+Vol_DirPointer+0
-	ldd	zh, Y+Vol_DirPointer+1
-	ldd	r18, Z+D_Attr
-	sbrs	r18, A_Directory
-	rjmp	readinit012
-	call	mprint
-	.dw	msgreadinitinv
-	rjmp	readinitexit
-;
-;	Open File
-;
-readinit012:
-	movw	r25:r24, yh:yl		; Volume control block
-	call	ReadFileOpen
-	movw	yh:yl, r25:r24		; File control block
-	tst	r25			; Valid?
-	brne	readinit015		; Yes
-	sts	pprint+0, r24
-	call	mprint
-	.dw	msgreadinitope
-	rjmp	readinitexit
-readinit015:
-	call	mprint
-	.dw	msgreadinitopn
-	call	dumpfcb
-;
-;
-;
-readinit020:
-	lds	xl, InitCommand+0
-	lds	xh, InitCommand+1
-	clr	r17			; No bytes in command
-readinit030:
-	push	r17
-	push	xl
-	push	xh
-	movw	r25:r24, yh:yl
-	call	ReadFileByte
+	.db	"Readinit -- Exit-Code 0x", 0x80, CR, LF, 0
 	pop	xh
 	pop	xl
-	pop	r17
-	ldd	r25, Y+fcb_flag
-	sbrc	r25, F__ERR
-	rjmp	readinit090
-	
-	cpi	r24, LF
-	breq	readinit040
-	cpi	r24, CR
-	breq	readinit040
-	sbrc	r24, 7
-	rjmp	readinit020		; MSB set, this seems a binary file
-	st	X+, r24
-	inc	r17			; Character count++
-	brpl	readinit030
-	call	mprint
-	.dw	msgreadinitovr
-	rjmp	readinitexit
-
-readinit040:
-	tst	r17			; Anything in command line
-	breq	readinit020		; Not really
-	ldi	r24, CR
-	st	X, r24
-	rcall	readshow
-	lds	xl, InitCommand+0
-	lds	xh, InitCommand+1
-	ldi	zl, low(2*commandlist)	; Parser table
-	ldi	zh, high(2*commandlist)
-	sts	tpflags, zero
-	;call	scancommand
-	rjmp	readinit020
-;
-readinit090:
-	sbrs	r25, F__EOF		; End of file?
-	rjmp	readinit099		; No it's another error
-	tst	r17
-	breq	readinit091		; Nothing to do
-	ldi	r16, CR
-	st	X, r16
-	rcall	readshow
-	lds	xl, InitCommand+0
-	lds	xh, InitCommand+1
-	ldi	zl, low(2*commandlist)	; Parser table
-	ldi	zh, high(2*commandlist)
-	sts	tpflags, zero
-	;call	scancommand
-	rjmp	readinit091
-	
-readinit099:
-	sts	pprint+0, r24
-	call	print
-	.db	CR, LF
-	.db	"Init - Error 0x", 0x80, " reading RLV12.INI"
-	.db	CR, LF, 0, 0
-readinit091:
-	movw	r25:r24, yh:yl
-	call	ReadFileClose
 	clc
-readinitexit:
-	lds	r24, InitCommand+0
-	lds	r25, Initcommand+1
-	call	free
-	pop	yh
-	pop	yl
-	pop	xh
-	pop	xl
-	ret
-;
-;
-;
-readshow:
-	call	print
-	.db	"Init - Executing Command:'", 0, 0
-	lds	xl, InitCommand+0
-	lds	xh, InitCommand+1
-readshow010:
-	ld	r24, X+
-	cpi	r24, CR
-	breq	readshow020
-	call	serout
-	rjmp	readshow010
-readshow020:
-	call	print
-	.db	"'", CR, LF, NULL
 	ret
 ;--------------------------------------------------------------------------
 ;

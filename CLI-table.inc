@@ -152,7 +152,7 @@ cmd_dmaread:
 
 
 cmd_readinit:
-	.dw	kw_eol,		readinit, 	cmd_done
+	.dw	kw_eol,		cmdreadinit, 	cmd_done
 	.dw	0
 
 cmd_load:

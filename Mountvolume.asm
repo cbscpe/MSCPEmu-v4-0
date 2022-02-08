@@ -247,10 +247,18 @@ MountScanDone:
 ;
 	lds	yl, volqueue+0
 	lds	yh, volqueue+1
+	sbiw	yh:yl, 0
+	breq	MountAttach
+	ldi	r24, 0			; or 1 to really execute commands
+	call	readinit
+	cpi	r24, FAT_FNF		; File not found
+	brne	MountAttachDone		;
 ;
 ;	No "DISKEMU.INI" found so we proceed with attaching valid paritions to
-;	the disk units
+;	the disk units. Note we accept only the error file not found to proceed
+;	with automatically attaching partitions to units
 ;
+MountAttach:
 	lds	yl, pcbqueue+0
 	lds	yh, pcbqueue+1
 	clr	r23			; for (Unit=0;Unit<units;Unit++)

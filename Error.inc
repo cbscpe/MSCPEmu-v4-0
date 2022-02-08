@@ -17,8 +17,10 @@
 ;
 ;	Internal Errors
 ;
-#define ERR_MALLOC -255
-#define ERR_MBR -254
+#define ERR_MALLOC 128
+#define ERR_MBR 129
+#define	ERR_NOVOL 130
+#define ERR_TOOLONG 131
 
 
 #define SD_SUCCESS 0
