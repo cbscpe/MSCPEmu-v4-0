@@ -378,10 +378,7 @@ tick:
 	in	r8, CPU_SREG		;;;
 	push	zh			;;;
 	push	zl			;;; Interrupt Save
-	#ifdef timer_intflags
-	ldi	zl, TCB_CAPT_bm
-	sts	timer_intflags, zl
-	#endif
+	ack_timer_interrupt
 	lds	zl, hibjob+0
 	lds	zh, hibjob+1		;;; get job to look at
 	sbiw	zh:zl, 0		;;; subtract 0 to test for 0

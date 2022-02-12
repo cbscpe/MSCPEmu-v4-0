@@ -62,9 +62,7 @@
 ;	   the drive size.
 ;	*/
 ;
-	.org	0x8000
-DriveTabFlash:
-.equ DriveTab = (DriveTabFlash - 0x8000) * 2 + 0x8000
+.equ DriveTab = (PC - 0x8000) * 2 + 0x8000
 ;
 ;	RL01	40	2	256	5Mbyte
 ;

@@ -116,7 +116,7 @@ Vol__Linked	Set when the directory we currently process is a linked list
 		of clusters, in fact this flag is set except when we are reading
 		the root directory of a FAT-16 volume
 
-##FAT-Library
+##FAT Library
 
 The following are the FAT Library functions used to access a FAT-16/32 volume
 
@@ -196,3 +196,22 @@ updated
 not implemented
 
 This will create a new directory entry.
+
+##File IO Library
+
+###ReadFileOpen
+
+###ReadFileByte
+
+###ReadFileBlock*
+
+###ReadFileClose
+
+###WriteFileOpen*
+
+###WriteFileByte*
+
+###WriteFileBlock*
+
+###WriteFileClose*
+

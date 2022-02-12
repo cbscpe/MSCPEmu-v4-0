@@ -2,13 +2,24 @@
 ;
 ;	PORT A	(Bits0..7)
 ;
+.equ	ENA	= 0			; Signal/Debugging
 .equ	DMR	= 1			; DMA Request	
 .equ	DMG	= 2			; DMA Granted	
 .equ	ABO	= 3			; Abort Cycle	
 .equ	ACK	= 4			; Acknowledge Cycle
+;	PA5	unused	
 .equ	RTOS	= 6			; RTOS Software Interrupt	
 .equ	CLK	= 7			; CPDL Clock output
 
+#define d_ENA	VPORTA_DIR, ENA
+#define d_DMR	VPORTA_DIR, DMR
+#define d_DMG	VPORTA_DIR, DMG
+#define d_ABO	VPORTA_DIR, ABO
+#define d_ACK	VPORTA_DIR, ACK
+#define d_RTOS	VPORTA_DIR, RTOS
+#define d_CLK	VPORTA_DIR, CLK
+
+#define b_ENA	VPORTA_OUT, ENA
 #define b_DMR	VPORTA_OUT, DMR
 #define i_DMG	VPORTA_IN, DMG
 #define b_ABO	VPORTA_OUT, ABO
@@ -17,6 +28,7 @@
 #define b_RTOS	VPORTA_OUT, RTOS
 #define	f_RTOS	VPORTA_INTFLAGS, RTOS
 #define	c_RTOS	PORTA_PIN6CTRL
+#define v_RTOS	PORTA_PORT_vect
 
 #define b_CLK	VPORTA_OUT, CLK
 
@@ -31,13 +43,19 @@
 ;	PB4	unused
 .equ	GO	= 5			; GO Level1 -> Level0 signalling
 
+#define	d_RS0	VPORTB_DIR, RS0
+#define	d_RS1	VPORTB_DIR, RS1
+#define	d_RS2	VPORTB_DIR, RS2
+#define	d_GO	VPORTB_DIR, GO	
+
+
 #define	b_RS0	VPORTB_OUT, RS0
 #define	b_RS1	VPORTB_OUT, RS1
 #define	b_RS2	VPORTB_OUT, RS2
 #define	b_GO	VPORTB_OUT, GO	
 #define	f_GO	VPORTB_INTFLAGS, GO
 #define	c_GO	PORTB_PIN5CTRL
-
+#define	v_GO	PORTB_PORT_vect
 
 ;-----------------------------------------------------------------------------
 ;
@@ -52,9 +70,21 @@
 .equ	SCK	= 6
 .equ	SS	= 7
 
+#define d_TXD	VPORTC_DIR, TXD
+#define d_RXD	VPORTC_DIR, RXD
+#define d_CD	VPORTC_DIR, CD
+#define d_WP	VPORTC_DIR, WP
+#define d_MOSI	VPORTC_DIR, MOSI
+#define d_MISO	VPORTC_DIR, MISO
+#define d_SCK	VPORTC_DIR, SCK
+#define d_SS	VPORTC_DIR, SS
+
 #define	i_CD	VPORTC_IN, CD
 #define	i_WP	VPORTC_IN, WP
 #define	b_SS	VPORTC_OUT, SS
+
+#define	c_CD	PORTC_PIN2CTRL
+#define c_WP	PORTC_PIN3CTRL
 
 ;-----------------------------------------------------------------------------
 ;
@@ -75,6 +105,11 @@
 .equ	LED	= 2			; Activity LED
 .equ	INIT	= 3			; Bus INIT interrupt
 
+#define	d_INTI	VPORTE_DIR, INTI
+#define	d_INTQ	VPORTE_DIR, INTQ
+#define	d_LED	VPORTE_DIR, LED
+#define	d_INIT	VPORTE_DIR, INIT
+
 #define	i_INTI	VPORTE_IN, INTI
 #define	f_INTI	VPORTE_INTFLAGS, INTI
 #define	c_INTI	PORTE_PIN0CTRL
@@ -89,17 +124,25 @@
 #define	f_INIT	VPORTE_INTFLAGS, INIT
 #define	c_INIT	PORTE_PIN3CTRL
 
+#define v_QBUS	PORTE_PORT_vect
 
 ;-----------------------------------------------------------------------------
 ;
 ;	PORT F (Bits0..5, Bit6 is Reset and may be used as input but not here)
 ;
 .equ	MEM	= 0			; Malloc Interrupt
-.equ	SIG	= 1			; Signal
+.equ	SIG	= 1			; Signal/Debugging
 .equ	CRDY	= 2			; Controller Ready
 .equ	IRQ	= 3			; Interrupt Request
 .equ	RD	= 4			; Register Read
 .equ	WR	= 5			; Register Write
+
+#define	d_MEM	VPORTF_DIR, MEM
+#define	d_SIG	VPORTF_DIR, SIG
+#define	d_CRDY	VPORTF_DIR, CRDY
+#define	d_IRQ	VPORTF_DIR, IRQ
+#define	d_RD	VPORTF_DIR, RD
+#define	d_WR	VPORTF_DIR, WR
 
 #define	b_MEM	VPORTF_OUT, MEM
 #define	b_SIG	VPORTF_OUT, SIG
@@ -111,3 +154,4 @@
 #define b_MEM	VPORTF_OUT, MEM
 #define	f_MEM	VPORTF_INTFLAGS, MEM
 #define	c_MEM	PORTF_PIN0CTRL
+#define v_MEM	PORTF_PORT_vect

@@ -218,7 +218,7 @@ logprintromi:
 
 logprintfnc0:
 	lds	zl, pprint+0		; Logging Code
-	andi	zl, 0x0E		; Isolate Funciton code
+	andi	zl, 0x0E		; Isolate Function code
 	lsl	zl
 	lsl	zl
 	clr	zh

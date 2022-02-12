@@ -1,11 +1,11 @@
 ;
 ;	Controller specific bit definitions
 ;
-.equ	DL_DRSEEK		= 3	; Drive performs a seek
+.equ	DL_DRSEEK	= 3		; Drive performs a seek
 ;
 ;	Controller specific defintions of ucb_type
 ;
-.equ	DL_RL02			= 0	; Drive is RL02
+.equ	DL_RL02		= 0		; Drive is RL02
 
 ;
 ;	RLV12 Register bit definitions
@@ -50,8 +50,8 @@ MPRH:		.byte	1
 BAEL:		.byte	1
 BAEH:		.byte	1
 CSR12:		.byte	2		; not implemented but addressable
-CSR14:		.byte	2		; not implemented but addressable
-CSR16:		.byte	2		; not implemented but addressable
+CSR14:		.byte	2		; auto-boot
+CSR16:		.byte	2		; auto-boot
 ;
 ;	MPR Fifo for Read Header
 ;
@@ -59,4 +59,3 @@ MPR_Fifo:	.byte	8		; MPR Fifo buffer
 
 rlv12_error:	.byte	1
 HNF_Count:	.byte	1
-timestamp:	.byte	1		; 

@@ -31,6 +31,10 @@
 ;	command will disable the controller and create an interrupt only if the
 ;	transfer has completed.
 ;
+;--------------------------------------------------------------------------
+;
+;
+;
 	.macro	INTEXIT			; 22/46 cycles
 	sbis	GPR_GPR1, log__reg	; 1/2
 	rjmp	nolog			; 2/0
@@ -45,6 +49,10 @@
 	adiw	zh:zl, 4		; 2
 ;	sbrc	zh,7			; 1/2
 ;	ori	zh, 0x08		; 1/0
+	#if log_type==lollipop
+	sbrc	zh,log_overflow		; 1/2 Lollipop shaped logging buffer, once
+	ori	zh, (1<<log_upper)	; 1/0 it overflows it stays at upper half
+	#endif
 	andi	zh, high(log_size) 	; 1
 	ori	zh, high(log_buffer)	; 1
 	sts	log_pointer+0, zl	; 2
@@ -65,7 +73,41 @@ nolog:
 	sbi	f_INTQ
 	reti				; 4
 	.endm
+
+;--------------------------------------------------------------------------
+;
+;
+	.macro	DATO
+	cbi	b_RS2			; 1 Switch from CSR Address to Q-Bus Data Low
+	nop				; 1
+	nop				; 1
+	nop				; 1
+	in	yl, dataportin		; 1 Read Q-Bus Data Low
+	sbi	b_RS0			; 1 Switch to Q-Bus Data High
+	nop				; 1
+	nop				; 1
+	nop				; 1 Read Q-Bus Data Hi
+	in	yh, dataportin		; 1
+	cbi	b_RD			; 1 
+	ldi	zl, 0xFF		; 1
+	out	dataportdir, zl		; 1 Set Data Port Direction to output
+	.endmacro
 	
+	.macro	DATI
+	cbi	b_RD			; 1
+	ldi	zl, 0xFF		; 1
+	out	dataportdir, zl		; 1 Set Data Port Direction to output
+	cbi	b_RS2			; 1 Switch from CSR Address to Q-Bus Data Low
+	out	dataportout, yl		; 1
+	sbi	b_WR			; 1
+	cbi	b_WR			; 1
+	sbi	b_RS0			; 1 Switch to Q-Bus Data High
+	out	dataportout, yh		; 1
+	sbi	b_WR			; 1
+	cbi	b_WR			; 1
+	.endmacro
+;--------------------------------------------------------------------------
+;
 	.macro	pulse
 	cbi	b_SIG			; blinken lights in fast mode :-)
 	nop
@@ -280,17 +322,33 @@ qbus_busy:
 ;		bit (bit 6 of CS) is set and an error occurs (which sets 
 ;		bit 7), an interrupt will be initiated.
 ;
+qbus_dati_csr:
+	lds	yl, CSRH		; 3
+	andi	yl, driveselect		; 1
+	swap	yl			; 1
+	clr	yh			; 1
+	subi	yl, low(-unittable)	; 1
+	sbci	yh, high(-unittable)	; 1
+	ldd	zl, Y+ucb_status	; 1 Get status
+
+	lds	yl, CSRL		; 3
+	lds	yh, CSRH		; 3
+
+	bst	zl, ucb__drdy		; 1 copy drive ready from ucb status
+	bld	yl, CSR_DRVRDY		; 1 to drvie ready in CSR
+	bst	zl, ucb__de		; 1 get general drive error
+	bld	yh, CSR_DE		; 1 copy over the disks status bits
+
+	sts	CSRL, yl
+	sts	CSRH, yh
+
+	DATI
+	INTEXIT	log_dati|log_csr
+;
+;
+;
 qbus_dato_csr:
-	cbi	b_RS2			; 1
-	nop				; 1
-	nop				; 1
-	nop				; 1
-	in	yl, dataportin		; 1
-	sbi	b_RS0			; 1
-	nop				; 1
-	nop				; 1
-	nop				; 1
-	in	yh, dataportin		; 1
+	DATO
 	andi	yh, driveselect		; 1 remove error bits (they are RO)
 	sts	CSRH, yh		; 2
 	sts	CSRL, yl		; 2 update drive ready status in CSR
@@ -327,73 +385,21 @@ qbus_dato_csr:
 ;
 qbus_dato_csr_done:
 	INTEXIT	log_dato|log_csr
-;
-;
-;
-qbus_dati_csr:
-	cbi	b_RD			; 1
-	lds	yl, CSRH		; 3
-	andi	yl, driveselect		; 1
-	swap	yl			; 1
-	clr	yh			; 1
-	subi	yl, low(-unittable)	; 1
-	sbci	yh, high(-unittable)	; 1
-	ldd	zl, Y+ucb_status	; 1 Get status
-
-	lds	yl, CSRL		; 3
-	lds	yh, CSRH		; 3
-
-	bst	zl, ucb__drdy		; 1 copy drive ready from ucb status
-	bld	yl, CSR_DRVRDY		; 1 to drvie ready in CSR
-	bst	zl, ucb__de		; 1 get general drive error
-	bld	yh, CSR_DE		; 1 copy over the disks status bits
-
-	sts	CSRL, yl
-	sts	CSRH, yh
-
-	ldi	zl, 0xFF		; 1
-	out	dataportdir, zl		; 1
-	cbi	b_RS2			; 1
-	out	dataportout, yl		; 1
-	sbi	b_WR			; 1
-	cbi	b_WR			; 1
-	sbi	b_RS0			; 1
-	out	dataportout, yh		; 1
-	sbi	b_WR			; 1
-	cbi	b_WR			; 1
-	INTEXIT	log_dati|log_csr
 ;------------------------------------------------------------------------------
 ;
 ;	BAR	17774402
 ;
 qbus_dati_bar:
-	cbi	b_RD			; 1
 	lds	yl, BARL		; 1
 	lds	yh, BARH		; 1
-	ldi	zl, 0xFF		; 1
-	out	dataportdir, zl		; 1
-	cbi	b_RS2			; 1
-	out	dataportout, yl		; 1
-	sbi	b_WR			; 1
-	cbi	b_WR			; 1
-	sbi	b_RS0			; 1
-	out	dataportout, yh		; 1
-	sbi	b_WR			; 1
-	cbi	b_WR			; 1
+	DATI
 	INTEXIT	log_dati|log_bar
 ;
 ;
 ;
 qbus_dato_bar:
-	cbi	b_RS2			; 1
-	nop				; 1
-	nop				; 1
-	nop				; 1
-	in	yl, dataportin		; 1
-	sbi	b_RS0			; 1
+	DATO
 	sts	BARL, yl		; 2
-	nop				; 1
-	in	yh, dataportin		; 1
 	sts	BARH, yh
 	INTEXIT	log_dato|log_bar
 ;------------------------------------------------------------------------------
@@ -401,33 +407,16 @@ qbus_dato_bar:
 ;	DAR	17774404
 ;
 qbus_dati_dar:
-	cbi	b_RD			; 1
 	lds	yl, DARL		; 1
 	lds	yh, DARH		; 1
-	ldi	zl, 0xFF		; 1
-	out	dataportdir, zl		; 1
-	cbi	b_RS2			; 1
-	out	dataportout, yl		; 1
-	sbi	b_WR			; 1
-	cbi	b_WR			; 1
-	sbi	b_RS0			; 1
-	out	dataportout, yh		; 1
-	sbi	b_WR			; 1
-	cbi	b_WR			; 1
+	DATI
 	INTEXIT	log_dati|log_dar
 ;
 ;
 ;
 qbus_dato_dar:
-	cbi	b_RS2			; 1
-	nop				; 1
-	nop				; 1
-	nop				; 1
-	in	yl, dataportin		; 1
-	sbi	b_RS0			; 1
+	DATO
 	sts	DARL, yl		; 2
-	nop				; 1
-	in	yh, dataportin		; 1
 	sts	DARH, yh
 	INTEXIT	log_dato|log_dar
 ;------------------------------------------------------------------------------
@@ -480,17 +469,7 @@ qbus_dato_dar:
 qbus_dati_mpr:
 	lds	yl, MPR_Fifo+0		; 3
 	lds	yh, MPR_Fifo+1		; 3
-	cbi	b_RD			; 1
-	ldi	zl, 0xFF		; 1
-	out	dataportdir, zl		; 1
-	cbi	b_RS2			; 1
-	out	dataportout, yl		; 1
-	sbi	b_WR			; 1
-	cbi	b_WR			; 1
-	sbi	b_RS0			; 1
-	out	dataportout, yh		; 1
-	sbi	b_WR			; 1
-	cbi	b_WR			; 1
+	DATI
 	lds	zl, MPR_Fifo+2		; Shift Fifo, the real Fifo
 	sts	MPR_Fifo+0, zl		; on the RLV12 has 512 words
 	lds	zl, MPR_Fifo+3		; however we only need the
@@ -508,15 +487,8 @@ qbus_dati_mpr:
 ;
 ;
 qbus_dato_mpr:
-	cbi	b_RS2			; 1
-	nop				; 1
-	nop				; 1
-	nop				; 1
-	in	yl, dataportin		; 1
-	sbi	b_RS0			; 1
+	DATO
 	sts	MPRL, yl		; 2
-	nop				; 1
-	in	yh, dataportin		; 1
 	sts	MPRH, yh
 	INTEXIT	log_dato|log_mpr
 ;------------------------------------------------------------------------------
@@ -535,31 +507,14 @@ qbus_dato_mpr:
 qbus_dati_bae:
 	lds	yl, BAEL
 	lds	yh, BAEH
-	cbi	b_RD			; 1
-	ldi	zl, 0xFF		; 1
-	out	dataportdir, zl		; 1
-	cbi	b_RS2			; 1
-	out	dataportout, yl		; 1
-	sbi	b_WR			; 1
-	cbi	b_WR			; 1
-	sbi	b_RS0			; 1
-	out	dataportout, yh		; 1
-	sbi	b_WR			; 1
-	cbi	b_WR			; 1
+	DATI
 	INTEXIT	log_dati|log_bae
 ;
 ;
 ;
 qbus_dato_bae:
-	cbi	b_RS2			; 1
-	nop				; 1
-	nop				; 1
-	nop				; 1
-	in	yl, dataportin		; 1
-	sbi	b_RS0			; 1
+	DATO
 	sts	BAEL, yl
-	nop				; 1
-	in	yh, dataportin		; 1
 	sts	BAEH, yh
 ;
 ;	BA16 and BA17 can be written via CSR or BAE, we always make sure
@@ -582,31 +537,14 @@ qbus_dato_bae:
 qbus_dati_boot2:
 	lds	yl, CSR12+0		; 1
 	lds	yh, CSR12+1		; 1
-	cbi	b_RD			; 1
-	ldi	zl, 0xFF		; 1
-	out	dataportdir, zl		; 1
-	cbi	b_RS2			; 1
-	out	dataportout, yl		; 1
-	sbi	b_WR			; 1
-	cbi	b_WR			; 1
-	sbi	b_RS0			; 1
-	out	dataportout, yh		; 1
-	sbi	b_WR			; 1
-	cbi	b_WR			; 1
+	DATI
 	INTEXIT	log_dati|log_boot2
 ;
 ;
 ;
 qbus_dato_boot2:
-	cbi	b_RS2			; 1
-	nop				; 1
-	nop				; 1
-	nop				; 1
-	in	yl, dataportin		; 1
-	sbi	b_RS0			; 1
+	DATO
 	sts	CSR12+0, yl		; 2
-	nop				; 1
-	in	yh, dataportin		; 1
 	sts	CSR12+1, yh
 	INTEXIT	log_dato|log_boot2
 ;------------------------------------------------------------------------------
@@ -635,9 +573,6 @@ qbus_dato_boot2:
 qbus_dati_boot4:
 	ldi	yl, low(0777)		; Assume DMA still pending
 	ldi	yh, high(0777)
-	cbi	b_RD			; 
-	ldi	zl, 0xFF		; 
-	out	dataportdir, zl		; 
 	sbis	b_DMR			; did we already request DMA?
 	rjmp	qbus_dati_boot4_dma	; no do it now
 	sbis	i_DMG			; did it finish?
@@ -647,20 +582,17 @@ qbus_dati_boot4:
 	ldi	yh, high(05001)
         sbi	GPR_GPR0, auto__boot    ; Auto Boot Requested
 qbus_dati_boot4_cont:
-	cbi	b_RS2			; 
-	out	dataportout, yl		; 
-	sbi	b_WR			; Register selected is 0
-	cbi	b_WR			; 
-	sbi	b_RS0			; 
-	out	dataportout, yh		; 
-	sbi	b_WR			; Register selected is 1
-	cbi	b_WR			; 
+	DATI
 	INTEXIT	log_dati|log_boot4
 ;
 ;	The first time we read BOOT4 we start a DMA to transfer BR .
 ;	instruction to adddress zero and as well return a BR. instruction.
 ;	
 qbus_dati_boot4_dma:
+	#if cpldif==40
+	cbi	b_RD
+	ldi	zl, 0xFF
+	out	dataportdir, zl
 	clr	zl
 	out	dataportout, zl
 	sbi	b_WR			; Register selected is 4
@@ -689,21 +621,49 @@ qbus_dati_boot4_dma:
 	out	dataportout, yh		; 
 	sbi	b_WR			; Register selected is 1
 	cbi	b_WR			; 
+	#endif
+	#if cpldif==22
+	cbi	b_RD
+	ldi	zl, 0xFF
+	out	dataportdir, zl
+	clr	zl
+	out	dataportout, zl		; Set DMA address 0 and DMA direction write
+	cbi	b_RA0
+	cbi	b_RA1			; Clear Write Sequence		RA='b'00
+	sbi	b_RA1			; Select DMA Address Registers	RA='b'10
+	sbi	b_WR			; Latch BAL and Direction
+	cbi	b_WR
+	sbi	b_WR			; Latch BAH
+	cbi	b_WR
+	sbi	b_WR			; Latch BAE
+	cbi	b_WR
+	cbi	b_RA1			; Clear WRite Sequence		RA='b'00
+	sbi	b_RA0			; Select DMA Data Regiser	RA='b'11
+	sbi	b_RA1			;
+	out	dataportout, yl
+	sbi	b_WR			; Latch DMA Data Low
+	cbi	b_WR
+	out	dataportout, yh
+	sbi	b_WR			; Latch DMA Data High
+	cbi	b_WR
+	cbi	b_RA0			; Clear WRite Sequence		RA='b'00
+	cbi	b_RA1
+	sbi	b_RA1			; Select Q-Bus Data Regiser	RA='b'01
+	out	dataportout, yl
+	sbi	b_WR			; Latch Q-Bus Data Low
+	cbi	b_WR
+	out	dataportout, yh
+	sbi	b_WR			; Latch Q-Bus Data High
+	cbi	b_WR
+	#endif
 	INTEXIT	log_dati|log_boot4
 
 ;
 ;
 ;
 qbus_dato_boot4:
-	cbi	b_RS2			; 1
-	nop				; 1
-	nop				; 1
-	nop				; 1
-	in	yl, dataportin		; 1
-	sbi	b_RS0			; 1
+	DATO
 	sts	CSR14+0, yl		; 2
-	nop				; 1
-	in	yh, dataportin		; 1
 	sts	CSR14+1, yh
 	INTEXIT	log_dato|log_boot4
 ;------------------------------------------------------------------------------
@@ -738,31 +698,14 @@ qbus_dato_boot4:
 qbus_dati_boot6:
         ldi     yl, low(05007)
         ldi     yh, high(05007)         ; "CLR  PC" instruction
-        cbi     b_RD                    ; 1
-        ldi     zh, 0xFF
-        out     dataportdir, zh
-        cbi     b_RS2
-        out     dataportout, yl
-        sbi     b_WR
-        cbi     b_WR
-        sbi     b_RS0
-        out     dataportout, yh
-        sbi     b_WR
-        cbi     b_WR
+	DATI
         sbic	GPR_GPR0, auto__boot    ; Auto Boot Requested
         cbi     b_GO                    ; Trigger Main RLV12 Programm
         INTEXIT log_dati|log_boot6	
 
 qbus_dato_boot6:
-	cbi	b_RS0			; 1
-	nop				; 1
-	nop				; 1
-	nop				; 1
-	in	yl, dataportin		; 1
-	sbi	b_RS0			; 1
+	DATO
 	sts	CSR16+0, yl		; 2
-	nop				; 1
-	in	yh, dataportin		; 1
 	sts	CSR16+1, yh
 	INTEXIT	log_dato|log_boot6
 ;--------------------------------------------------------------------------
@@ -772,29 +715,37 @@ qbus_dato_boot6:
 ;
 qbus_iack:
 	cbi	b_IRQ			; 1 De-assert IRQ
-	cbi	b_RD			; 1
-	ldi	zl, 0xff		; 1	Data Bus Direction -> Input
-	out	dataportdir, zl		; 1
+	ldi	yl, low(0160)		; 1
+	ldi	yh, high(0160)		; 1
+	#if cpldif==40
 	cbi	b_RS0			; 1	Q-Bus Register
 	cbi	b_RS1			; 1	Q-Bus Register
 	cbi	b_RS2			; 1	Q-Bus Register
-	ldi	yl, low(0160)		; 1
-	ldi	yh, high(0160)		; 1
 	out	dataportout, yl		; 1
-	nop
 	sbi	b_WR			; 1
 	cbi	b_WR			; 1
 	sbi	b_RS0			; 1
 	out	dataportout, yh		; 1
-	nop				; 1
 	sbi	b_WR			; 1
 	cbi	b_WR			; 1
-
-	pulse
-	pulse
-
+	#endif
+	#if cpldif==22
+	cbi	b_RA0			; 1 Clear WRite Sequence	RA='b'00
+	cbi	b_RA1			; 1
+	sbi	b_RA1			; 1 Select Q-Bus Data Regiser	RA='b'01
+	out	dataportout, yl		; 1
+	sbi	b_WR			; 1 Latch Q-Bus Data Low
+	cbi	b_WR			; 1
+	out	dataportout, yh		; 1
+	sbi	b_WR			; 1 Latch Q-Bus Data High
+	cbi	b_WR			; 1
+	#endif
 	sbis	GPR_GPR1, log__iack	; 1
 	rjmp	qbus_iack_nolog		; 2
+
+	pulse
+	pulse
+
 	lds	zl, log_pointer+0	; 3
 	lds	zh, log_pointer+1	; 3
 	std	Z+2, yl			; 2
@@ -806,23 +757,24 @@ qbus_iack:
 	adiw	zh:zl, 4		; 2 
 ;	sbrc	zh,7			; 1/2
 ;	ori	zh, 0x08		; 1/0
+	#if log_type==lollipop
+	sbrc	zh,log_overflow		; 1/2 Lollipop shaped logging buffer, once
+	ori	zh, (1<<log_upper)	; 1/0 it overflows it stays at upper half
+	#endif
 	andi	zh, high(log_size) 	; 1
 	ori	zh, high(log_buffer)	; 1
 	sts	log_pointer+0, zl	; 2 
 	sts	log_pointer+1, zh	; 2 
 qbus_iack_nolog:
-	pop	yl			;; restore
-	pop	yh			;; restore
-	pop	zl			;; restore
-	pop	zh			;; restore
-	out	CPU_SREG, r8		;; restore
-	pop	r8			;; restore
+	pop	yl			; 2 restore
+	pop	yh			; 2 restore
+	pop	zl			; 2 restore
+	pop	zh			; 2 restore
+	out	CPU_SREG, r8		; 2 restore
+	pop	r8			; 2 restore
 
 	sbi	b_ACK			; 1
-	nop
 	cbi	b_ACK			; 1
-	nop
-	nop
 	cbi	b_SIG			; 1
 	sbi	f_INTI			; 1 Assert MCU Interrupt
 	reti				; 4	
@@ -836,13 +788,16 @@ qbus_init:
 	sbi	b_ABO			; BINIT does no longer clear DMA 
 	cbi	b_ABO			; so we need to do it in software
 	sbi	f_INIT			; 1 Acknowledge BINIT Interrupt 
-
-	pulse
-	pulse
-	pulse
-
+;	cbi	b_RD
+;	ldi	zl, 0xFF
+;	out	dataportdir, zl		; Set the data port to default conditions
 	sbis	GPR_GPR1, log__iack
 	rjmp	qbus_init_nolog
+
+	pulse
+	pulse
+	pulse
+
 	lds	zl, log_pointer+0	;;; Update logging buffer pointer
 	lds	zh, log_pointer+1	;;; 
 	in	yl, VPORTE_IN
@@ -856,6 +811,10 @@ qbus_init:
 	adiw	zh:zl, 4		;;; 
 ;	sbrc	zh,7
 ;	ori	zh, 0x08
+	#if log_type==lollipop
+	sbrc	zh,log_overflow		; 1/2 Lollipop shaped logging buffer, once
+	ori	zh, (1<<log_upper)	; 1/0 it overflows it stays at upper half
+	#endif
 	andi	zh, high(log_size) 	; 1
 	ori	zh, high(log_buffer)	; 1
 	sts	log_pointer+0, zl	;;; 
@@ -865,6 +824,11 @@ qbus_init_nolog:
 ;	On the falling edge of BINIT (note INIT is inverted BINIT) we need to
 ;	initialise the registers and reset the controller. When INIT is high
 ;	(set) the rjmp instruction is skipped and we do the initialisation
+;
+;	The DCJ11 pauses for 69 cycles between asserting and de-asserting BINIT.
+;	A microcycle is 4 clock cycles hence. Our CPU runs at 22Mhz, therefore
+;	BINIT is asserted for approx. 12usec. There is enough time to call
+;	and execute rlv12_reset
 ;
 	sbic	i_INIT			;;; Skip if BINIT=High i.e. rising edge
 	call	rlv12_reset		;;; reset RLV12 controller

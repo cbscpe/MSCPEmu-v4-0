@@ -1336,10 +1336,10 @@ SD_sendRead050:
 	rjmp	SD_sendRead999
 
 SD_sendRead060:
-	push	crcl
-	push	crch
-	clr	crcl
-	clr	crch
+	push	r4
+	push	r5
+	clr	r4
+	clr	r5
 	ldd	xl, Y+P_Address+0
 	ldd	xh, Y+P_Address+1
 	ldi	r24, low(512)
@@ -1354,7 +1354,7 @@ SD_sendRead080:
 	lds	r18, SPI1_DATA
 	sts	SPI1_DATA, r16		; Next dummy byte
 	st	X+, r18
-	updcrc	r18
+	crc	r18, r4, r5
 	sbiw	r25:r24, 1
 	brne	SD_sendRead080
 	
@@ -1394,7 +1394,7 @@ SD_sendRead082:
 ;		rjmp	SD_sendRead082		; and wait for byte to be received
 ;		lds	r18, SPI1_DATA		; Fetch byte
 ;		st	X+, r18			; Save Byte
-;		updcrc	r18
+;		crc	r18, r4, r5
 ;		sbiw	r25:r24, 1		; Until done but now when we received
 ;		brne	SD_sendRead081		; a byte we assume that DREIF is set
 ;
@@ -1427,10 +1427,10 @@ SD_sendRead082:
 ;		andi	r18, ~(SPI_BUFEN_bm | SPI_BUFWR_bm)
 ;		sts	SPI1_CTRLB, r18
 
-	cp	crcl, r24		;
-	cpc	crch, r25
-	pop	crch
-	pop	crcl
+	cp	r4, r24		;
+	cpc	r5, r25
+	pop	r5
+	pop	r4
 	ldi	r24, SD_SUCCESS
 	breq	SD_sendRead999
 	
@@ -1503,10 +1503,10 @@ SD_sendWrite010:
 	ldi	r24, low(512)
 	ldi	r25, high(512)
 
-	push	crcl
-	push	crch
-	clr	crcl
-	clr	crch
+	push	r4
+	push	r5
+	clr	r4
+	clr	r5
 
 
 ;
@@ -1522,13 +1522,13 @@ SD_sendWrite021:
 	sbiw	r25:r24, 1
 	brne	SD_sendWrite020
 
-	sts	SPI1_DATA, crch
+	sts	SPI1_DATA, r5
 SD_sendWrite022:
 	lds	r18, SPI1_INTFLAGS
 	sbrs	r18, SPI_IF_bp
 	rjmp	SD_sendWrite022
 
-	sts	SPI1_DATA, crcl
+	sts	SPI1_DATA, r4
 SD_sendWrite023:
 	lds	r18, SPI1_INTFLAGS
 	sbrs	r18, SPI_IF_bp
@@ -1543,7 +1543,7 @@ SD_sendWrite023:
 ;
 ;		ld	r18, X+
 ;		sts	SPI1_DATA, r18		; Start filling buffer with 1st byte
-;		updcrc	r18
+;		crc	r18, r4, r5
 ;		sbiw	r25:r24, 1		; one byte done
 ;		rjmp	SD_sendWrite021
 ;
@@ -1556,7 +1556,7 @@ SD_sendWrite023:
 ;	SD_sendWrite021:
 ;		ld	r18, X+
 ;		sts	SPI1_DATA, r18		; Send byte
-;		updcrc	r18
+;		crc	r18, r4, r5
 ;		sbiw	r25:r24, 1
 ;		brne	SD_sendWrite020		; until all bytes done
 ;
@@ -1565,14 +1565,14 @@ SD_sendWrite023:
 ;		sbrs	r18, SPI_RXCIF_bp	; byte received from the slave
 ;		rjmp	SD_sendWrite022		; off the receive buffer
 ;		lds	r18, SPI1_DATA
-;		sts	SPI1_DATA, crch	
+;		sts	SPI1_DATA, r5	
 ;
 ;	SD_sendWrite023:
 ;		lds	r18, SPI1_INTFLAGS	; First make sure we read the
 ;		sbrs	r18, SPI_RXCIF_bp	; byte received from the slave
 ;		rjmp	SD_sendWrite023		; off the receive buffer
 ;		lds	r18, SPI1_DATA
-;		sts	SPI1_DATA, crcl	
+;		sts	SPI1_DATA, r4	
 ;
 ;	SD_sendWrite024:
 ;		lds	r18, SPI1_INTFLAGS	; First make sure we read the
@@ -1586,8 +1586,8 @@ SD_sendWrite023:
 ;		andi	r18, ~(SPI_BUFEN_bm | SPI_BUFWR_bm)
 ;		sts	SPI1_CTRLB, r18
 
-	pop	crch
-	pop	crcl
+	pop	r5
+	pop	r4
 	ldi	xl, low(SD_MAX_WRITE_ATTEMPTS)	
 	ldi	xh, high(SD_MAX_WRITE_ATTEMPTS)
 SD_sendWrite030:

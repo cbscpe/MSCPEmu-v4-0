@@ -26,6 +26,8 @@
 ;	2022-01-05	Disk Emulator
 ;--------------------------------------------------------------------------
 
+.def	crcl	= r2
+.def	crch	= r3
 .def	datal	= r4			; DMA data
 .def	datah	= r5
 .def	logptrl	= r6			; Logging Buffer
@@ -47,8 +49,10 @@
 	lds	zh, log_pointer+1	;;;  3 Logging
 	movw	r25:r24, zh:zl		;;;  2
 	adiw	r25:r24, 4		;;;  2
-;	sbrc	r25,7			;;;  2 Lollipop shaped logging buffer, once
-;	ori	r25, 0x08		;;;    it overflows it stays at upper half
+	#if log_type==lollipop
+	sbrc	r25,log_overflow	;;;  2 Lollipop shaped logging buffer, once
+	ori	r25, (1<<log_upper)	;;;    it overflows it stays at upper half
+	#endif
 	andi	r25, high(log_size)	;;;  1
 	ori	r25, high(log_buffer)	;;;  1
 	sts	log_pointer+0, r24	;;;  2
@@ -853,6 +857,12 @@ rlv12_readdmaloop:
 rlv12_readdone:
 	rjmp	rlv12_rwsuccess
 ;
+rlv12_readerror:
+	ldi	r18, 0x88		; Read Data CRC or Write Check Error
+	sts	rlv12_error, r18
+	rjmp	rlv12_rwfail
+
+;
 ;	DMA Write Time-Out Handler
 ;
 rlv12_readtmo:
@@ -876,10 +886,6 @@ rlv12_readtmo:
 	sts	rlv12_error, r18
 	rjmp	rlv12_rwfail
 	ldi	r18, 0xa0		; Set error bits: NXM
-	sts	rlv12_error, r18
-	rjmp	rlv12_rwfail
-rlv12_readerror:
-	ldi	r18, 0x88		; Read Data CRC or Write Check Error
 	sts	rlv12_error, r18
 	rjmp	rlv12_rwfail
 ;--------------------------------------------------------------------------
@@ -1282,6 +1288,8 @@ rlv12_reset:
 	sts		unittable+ucb_size*3+ucb_diskaddr+1, zh	; 
 	ret
 
+.undef	crcl
+.undef	crch
 .undef	datal	
 .undef	datah	
 .undef	logptrl	

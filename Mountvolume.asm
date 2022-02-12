@@ -249,7 +249,7 @@ MountScanDone:
 	lds	yh, volqueue+1
 	sbiw	yh:yl, 0
 	breq	MountAttach
-	ldi	r24, 0			; or 1 to really execute commands
+	ldi	r24, 1			; or 1 to really execute commands
 	call	readinit
 	cpi	r24, FAT_FNF		; File not found
 	brne	MountAttachDone		;

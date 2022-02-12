@@ -1,5 +1,32 @@
 ;--------------------------------------------------------------------------
 ;
+;	To debug the RT-OS we need a debug port so we can follow the 
+;	RT-OS using a Logic Analyzer. Normally not activated.
+;
+;#define	dbg_port	VPORTD_OUT	; Use the Data Port
+;
+;#define dbg_sysret	0
+;#define dbg_sysrun	1
+;#define dbg_block	2
+;#define dbg_unblock	3
+;#define dbg_acquire	4
+;#define dbg_release	5
+;#define dbg_tick	6
+;#define dbg_sysnul	7
+
+;--------------------------------------------------------------------------
+;
+;	Reset the TICK timer interrupt, this depends on the MCU
+;
+;	AVR128DB
+;
+	.macro	ack_timer_interrupt
+	ldi	zl, TCB_CAPT_bm
+	sts	TCB0_INTFLAGS, zl
+	.endmacro
+
+;--------------------------------------------------------------------------
+;
 ;	A minimal set of routines that allow parallel jobs on a AVR
 ;	microcontroller. You need to provide at least the following
 ;	data section

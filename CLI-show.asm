@@ -653,6 +653,8 @@ cmd_showjobs:
 	ret
 
 jcbprintalt:
+	sts	pprint+8, yl
+	sts	pprint+9, yh
 	ldd	zl, Y+jcb_stack+0
 	ldd	zh, Y+jcb_stack+1
 	sts	pprint+0, zl
@@ -675,12 +677,14 @@ jcbprintalt:
 	sbrc	r18, 0
 	rjmp	jcbprint010	
 	call	print
+	.db	"Job Control Block 0x", 0x89, 0x88, CR, LF
 	.db	"Job Program Counter 0x", 0x87, 0x86, " Status 0x", 0x85, " "
 	.db	"Priority 0x", 0x84, " Stack pointer 0x", 0x81, 0x80, " "
 	.db	"Queue 0x", 0x83, 0x82, CR, LF, 0, 0
 	rjmp	jcbprint020
 jcbprint010:
 	call	print
+	.db	"Job Control Block 0x", 0x89, 0x88, CR, LF
 	.db	"Job Program Counter 0x", 0x87, 0x86, " Status 0x", 0x85, " "
 	.db	"Priority 0x", 0x84, " Stack pointer 0x", 0x81, 0x80, " "
 	.db	"Waiting 0x", 0x83, 0x82, " Ticks", CR, LF, 0, 0
