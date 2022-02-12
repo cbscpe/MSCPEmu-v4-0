@@ -36,9 +36,9 @@
 ;
 ;
 	.macro	INTEXIT			; 22/46 cycles
-	sbis	GPR_GPR1, log__reg	; 1/2
+	sbis	GPR_GPR1, log__reg	; 1/2 
 	rjmp	nolog			; 2/0
-	lds	zl, log_pointer+0	; 3
+	lds	zl, log_pointer+0	; 3 Logging is done only if log__reg is set
 	lds	zh, log_pointer+1	; 3
 	std	Z+2, yl			; 1
 	std	Z+3, yh			; 1
@@ -47,8 +47,6 @@
 	lds	yl, TCB2_CNTL		; 3
 	std	Z+1, yl			; 1
 	adiw	zh:zl, 4		; 2
-;	sbrc	zh,7			; 1/2
-;	ori	zh, 0x08		; 1/0
 	#if log_type==lollipop
 	sbrc	zh,log_overflow		; 1/2 Lollipop shaped logging buffer, once
 	ori	zh, (1<<log_upper)	; 1/0 it overflows it stays at upper half
@@ -78,6 +76,7 @@ nolog:
 ;
 ;
 	.macro	DATO
+	#if cpldif==40
 	cbi	b_RS2			; 1 Switch from CSR Address to Q-Bus Data Low
 	nop				; 1
 	nop				; 1
@@ -91,9 +90,30 @@ nolog:
 	cbi	b_RD			; 1 
 	ldi	zl, 0xFF		; 1
 	out	dataportdir, zl		; 1 Set Data Port Direction to output
+	#endif
+	#if cpldif==22
+	sbi	b_ALE			; 1 Advance from Device Register Address
+	cbi	b_ALE			; 1 to Q-Bus low byte
+	nop				; 1
+	nop				; 1
+	nop				; 1
+	in	yl, dataportin		; 1
+	sbi	b_ALE			; 1 Advance from Q-Bus low byte to Q-Bus
+	cbi	b_ALE			; 1 high byte
+	nop				; 1
+	nop				; 1
+	nop				; 1
+	in	yh, dataportin		; 1
+	cbi	b_RD			; 1 
+	ldi	zl, 0xFF		; 1
+	out	dataportdir, zl		; 1 Set Data Port Direction to output
+	#endif
 	.endmacro
 	
+
+
 	.macro	DATI
+	#if cpldif==40
 	cbi	b_RD			; 1
 	ldi	zl, 0xFF		; 1
 	out	dataportdir, zl		; 1 Set Data Port Direction to output
@@ -105,6 +125,21 @@ nolog:
 	out	dataportout, yh		; 1
 	sbi	b_WR			; 1
 	cbi	b_WR			; 1
+	#endif
+	#if cpldif==22
+	cbi	b_RD
+	ldi	zl, 0xFF
+	out	dataportdir, zl
+	cbi	b_RA0
+	cbi	b_RA1			; 1 Reset Register Select
+	sbi	b_RA0			; 1 Select Q-Bus Data Register
+	out	dataportout, yl		; 1
+	sbi	b_WR			; 1
+	cbi	b_WR			; 1
+	out	dataportout, yh		; 1
+	sbi	b_WR			; 1
+	cbi	b_WR			; 1
+	#endif
 	.endmacro
 ;--------------------------------------------------------------------------
 ;
@@ -123,20 +158,19 @@ nolog:
 ;	Z	Pointer, Temporary Register
 ;
 qbus_:					; 4-5
-
-	push	r8			;; save
-	in	r8, CPU_SREG		;; save
-	push	zh			;; save
-	push	zl			;; save
-	push	yh			;; save
-	push	yl			;; save
+	push	r8			; 1 save
+	in	r8, CPU_SREG		; 1  save
+	push	zh			; 1 save
+	push	zl			; 1 save
+	push	yh			; 1  save
+	push	yl			; 1 save
 	sbi	b_SIG			; 1
-	sbic	f_INTI			; 2
-	rjmp	qbus_iack
-	sbic	f_INTQ			; 2
-	rjmp	qbus_intq
-	sbic	f_INIT			; 2
-	rjmp	qbus_init
+	sbic	f_INTI			; 2/1
+	rjmp	qbus_iack		; 0/2
+	sbic	f_INTQ			; 2/1
+	rjmp	qbus_intq		; 0/2
+	sbic	f_INIT			; 2/1
+	rjmp	qbus_init		; 0/2
 
 ;	Pulse Legend
 ;	1	INTQ
@@ -147,22 +181,19 @@ qbus_:					; 4-5
 ;	6	Card Detect Job
 ;	7	RLV12 Processing finished
 ;
-;
-
-	pulse
+	pulse				; Signal spuriuous interrupt
 	pulse
 	pulse
 	pulse
 	pulse
 
-	pop	yl			;; restore
-	pop	yh			;; restore
-	pop	zl			;; restore
-	pop	zh			;; restore
-	out	CPU_SREG, r8		;; restore
-	pop	r8			;; restore
-
-	cbi	b_SIG			; fin
+	pop	yl			; 2 restore
+	pop	yh			; 2 restore
+	pop	zl			; 2 restore
+	pop	zh			; 2 restore
+	out	CPU_SREG, r8		; 1 restore
+	pop	r8			; 2 restore
+	cbi	b_SIG			; 1 fin
 	reti
 
 ;--------------------------------------------------------------------------
@@ -177,19 +208,19 @@ qbus_intq:
 	sbis	b_CRDY			; 1
 	rjmp	qbus_busy		; 1 Catch access before CPLD is updated
 	
-	pulse
+	pulse				; 6 always signal a Q-Bus interrupt
 
 	ldi	zl, 0x00		; 1 Data Bus Direction -> Input
 	out	dataportdir, zl		; 1
 	sbi	b_RD			; 1
 	cbi	b_RS0			; 1
 	cbi	b_RS1			; 1
-	sbi	b_RS2			; 1
+	sbi	b_RS2			; 1 Read Register 4 = Device Register Address
 	nop				; 1
 	nop				; 1
 	nop				; 1
 	in	zl, dataportin		; 1
-	andi	zl, 0x0F		; 1
+	andi	zl, 0x0F		; 1 Get BDAL3..1 and BWTBT 
 	clr	zh			; 1
 	subi	zl, low(-qbus_jmptbl)	; 1
 	sbci	zh, high(-qbus_jmptbl)	; 1
@@ -223,6 +254,10 @@ qbus_jmptbl:
 ;
 ;	Controller Busy
 ;
+;	Normally when the controller is busy the CPLD is supposed to 
+;	not create interrupts, so just in case we return zero to
+;	show the controller is busy. Show a special pulse pattern on
+;	b_SIG but do not perform any logging.
 ;
 qbus_busy:
 ;
@@ -233,14 +268,14 @@ qbus_busy:
 	cbi	b_RS1
 	cbi	b_RS2
 	ldi	zl, 0xFF
-	out	dataportdir, zl
+	out	dataportdir, zl		; If interrupted while controller busy
 	clr	zl
-	out	dataportout, zl
+	out	dataportout, zl		; Always return zero
 	sbi	b_WR
 	cbi	b_WR
 	sbi	b_RS0
 	sbi	b_WR
-	cbi	b_WR			; We always return 0 if controller is busy
+	cbi	b_WR			;
 
 	pulse
 	pulse
@@ -460,7 +495,10 @@ qbus_dato_dar:
 ;	|                              CRC                              |
 ;	+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 ;
-;	MPR during write word count (write-only)
+;	MPR during write word count (write-only) although the documentation
+;	says it only has 13-bits this is not true the hardware is in fact
+;	a 16-bit counter. But there is no sense to write a value that is
+;	larger then the number of words in one track
 ;
 ;	+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 ;	| 1 | 1 | 1 |        2's comlement of word count                |
@@ -556,6 +594,8 @@ qbus_dato_boot2:
 ;
 ;	The autoboot feature allows the PDP-11 to boot from the first unit
 ;	attached to the RLV12 emulator by simply executing a 174414g in ODT.
+;	This is similar to the autoboot feature of the Sigma SDC-RLV112
+;	controller, which is implemented by just using register BOOT6
 ;
 ;	When the PDP-11 executes the instruction at 174414 we will start to 
 ;	return the instruction BR . (0777) a branch to itself. During the 
@@ -788,9 +828,6 @@ qbus_init:
 	sbi	b_ABO			; BINIT does no longer clear DMA 
 	cbi	b_ABO			; so we need to do it in software
 	sbi	f_INIT			; 1 Acknowledge BINIT Interrupt 
-;	cbi	b_RD
-;	ldi	zl, 0xFF
-;	out	dataportdir, zl		; Set the data port to default conditions
 	sbis	GPR_GPR1, log__iack
 	rjmp	qbus_init_nolog
 
@@ -809,8 +846,6 @@ qbus_init:
 	lds	yl, TCB2_CNTL
 	std	Z+1, yl
 	adiw	zh:zl, 4		;;; 
-;	sbrc	zh,7
-;	ori	zh, 0x08
 	#if log_type==lollipop
 	sbrc	zh,log_overflow		; 1/2 Lollipop shaped logging buffer, once
 	ori	zh, (1<<log_upper)	; 1/0 it overflows it stays at upper half
