@@ -181,6 +181,7 @@ cmd_logging:
 	.dw	kw_interrupt,	0,		cmd_loginterrupt
 	.dw	kw_units,	0,		cmd_logunits
 	.dw	kw_attdev, 	a_dev,		cmd_logunit
+	.dw	kw_pbn,		0,		cmd_logpbn
 	.dw	kw_entry,	a_logentry,	cmd_logentry
 	.dw	kw_eol,		logstatus,	cmd_done
 	.dw	0
@@ -205,7 +206,11 @@ cmd_logunits:
 cmd_logunit:
 	.dw	kw_eol,		logunit,	cmd_done
 	.dw	0
-	
+
+cmd_logpbn:
+	.dw	kw_eol,		logpbn,		cmd_done
+	.dw	0	
+
 cmd_activate:
 	.dw	kw_attpar, 	a_par,		cmd_activate1
 	.dw	0
@@ -362,6 +367,7 @@ kw_volume:	P_KEYDEVICE	"VOLume"	; Keyword followed by a number and a colon
 kw_drive:	P_KEYDEVICE	"DL"
 kw_cd:		P_KEYWORD	"CD"		; Keyword
 kw_units:	P_KEYWORD	"UNIts"
+kw_pbn:		P_KEYWORD	"PBN"
 kw_hallo:	P_KEYWORD	"HALLO"
 kw_show:	P_KEYWORD	"Show"
 kw_disk:	P_SUBCMD	cmd_pack	; Element Type Sub-command

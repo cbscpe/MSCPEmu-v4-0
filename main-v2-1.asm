@@ -680,6 +680,7 @@ readcmd:
 	sts	log_pointer+0, r16
 	sts	log_pointer+1, r17	
 	ldi	r18, (1<<log__reg) | (1<<log__iack) | log__units
+	ldi	r18, (0<<log__reg) | (1<<log__iack) | log__units
 	out	GPR_GPR1, r18
 
 	sts	InputBuffer, zero

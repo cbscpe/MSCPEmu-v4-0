@@ -372,6 +372,19 @@ logunitno:
 	clc
 	ret
 
+
+logpbn:
+	lds	r18, tpflags
+	sbrc	r18, tp__no
+	rjmp	logpbnno
+	sbi	GPR_GPR1, log__pbn
+	clc
+	ret
+logpbnno:
+	cbi	GPR_GPR1, log__pbn
+	clc
+	ret
+
 logstatus:
 	lds	r18, tpflags
 	sbrc	r18, tp__no
@@ -387,6 +400,11 @@ logstatus:
 	call	print
 	.db	"Logging Interrupts .............:", NULL
 	bst	r18, log__iack
+	rcall	logstatusonoff
+;
+	call	print
+	.db	"Logging PBN ....................:", NULL
+	bst	r18, log__pbn
 	rcall	logstatusonoff
 ;
 	call	print

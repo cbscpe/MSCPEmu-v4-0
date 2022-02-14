@@ -595,7 +595,7 @@ qbus_dato_boot2:
 ;	The autoboot feature allows the PDP-11 to boot from the first unit
 ;	attached to the RLV12 emulator by simply executing a 174414g in ODT.
 ;	This is similar to the autoboot feature of the Sigma SDC-RLV112
-;	controller, which is implemented by just using register BOOT6
+;	controller, which is implemented by just using register BOOT6.
 ;
 ;	When the PDP-11 executes the instruction at 174414 we will start to 
 ;	return the instruction BR . (0777) a branch to itself. During the 
@@ -720,7 +720,7 @@ qbus_dato_boot4:
 ;	executing the instruction at BOOT4 we will have a BR .
 ;	instruction at absolute address zero. Therefore when we have
 ;	started the RLV12 job the PDP-11 will be sent to address zero
-;	and continuously exectue this intruction and be kept in a loop
+;	and continuously execute this intruction and be kept in a loop
 ;	at address 0. The RLV12 process will see that the auto__boot
 ;	flag is set and therefore will load the boot sector of the first
 ;	unit to address 0. With the first word of the boot record written
@@ -770,7 +770,7 @@ qbus_iack:
 	cbi	b_WR			; 1
 	#endif
 	#if cpldif==22
-	cbi	b_RA0			; 1 Clear WRite Sequence	RA='b'00
+	cbi	b_RA0			; 1 Clear Write Sequence	RA='b'00
 	cbi	b_RA1			; 1
 	sbi	b_RA1			; 1 Select Q-Bus Data Regiser	RA='b'01
 	out	dataportout, yl		; 1
@@ -795,8 +795,6 @@ qbus_iack:
 	lds	yl, TCB2_CNTL		; 3
 	std	Z+1, yl			; 2
 	adiw	zh:zl, 4		; 2 
-;	sbrc	zh,7			; 1/2
-;	ori	zh, 0x08		; 1/0
 	#if log_type==lollipop
 	sbrc	zh,log_overflow		; 1/2 Lollipop shaped logging buffer, once
 	ori	zh, (1<<log_upper)	; 1/0 it overflows it stays at upper half
