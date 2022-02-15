@@ -1144,7 +1144,14 @@ SD_main_done:
 	rjmp	SD_main_exit
 	ldi	r24, low(sdbuffer)
 	ldi	r25, high(sdbuffer)
-	rcall	SD_PRINT_CSD	
+	rcall	SD_PRINT_CSD
+	
+	lds	r18, SPI1_INTFLAGS
+	lds	r18, SPI1_DATA
+	sts	SPI1_CTRLA, zero	; Disable
+	ldi	r18,                SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
+	sts	SPI1_CTRLA, r18		; Re-enable at high speed
+		
 	rjmp	SD_main_exit
 SD_main_exit:
 	pop	r18;1
@@ -1344,7 +1351,8 @@ SD_sendRead060:
 	ldd	xh, Y+P_Address+1
 	ldi	r24, low(512)
 	ldi	r25, high(512)
-	
+
+	#if	spibuffered==0
 	ldi	r16, 0xFF
 	sts	SPI1_DATA, r16
 SD_sendRead080:
@@ -1370,63 +1378,71 @@ SD_sendRead082:
 	sbrs	r18, SPI_IF_bp
 	rjmp	SD_sendRead082
 	lds	r24, SPI1_DATA
-	
+	#endif
+	#if	spibuffered==1
 ;
 ;	SPI Buffered Mode
 ;
-;		lds	r18, SPI1_CTRLB
-;		ori	r18, SPI_BUFEN_bm | SPI_BUFWR_bm
-;		sts	SPI1_CTRLB, r18
-;
-;		ldi	r18, 0xFF			
-;		sts	SPI1_DATA, r18		; First write a dummy byte
-;	SD_sendRead080:
-;		lds	r18, SPI1_INTFLAGS
-;		sbrs	r18, SPI_DREIF_bp	; Wait for Data Register Empty
-;		rjmp	SD_sendRead080
-;
-;	SD_sendRead081:
-;		ldi	r18, 0xFF		; Send next dummy byte
-;		sts	SPI1_DATA, r18
-;	SD_sendRead082:
-;		lds	r18, SPI1_INTFLAGS
-;		sbrs	r18, SPI_RXCIF_bp
-;		rjmp	SD_sendRead082		; and wait for byte to be received
-;		lds	r18, SPI1_DATA		; Fetch byte
-;		st	X+, r18			; Save Byte
-;		crc	r18, r4, r5
-;		sbiw	r25:r24, 1		; Until done but now when we received
-;		brne	SD_sendRead081		; a byte we assume that DREIF is set
-;
-;		ldi	r18, 0xFF		; Send next dummy byte
-;		sts	SPI1_DATA, r18
-;	SD_sendRead083:
-;		lds	r18, SPI1_INTFLAGS	; We sent one byte more than we 
-;		sbrs	r18, SPI_RXCIF_bp	; sent in the loop therefore
-;		rjmp	SD_sendRead083		; we can now get the high byte
-;		lds	r25, SPI1_DATA		; of the CRC-16
-;		std	Y+P_Error+1, r24
-;
-;		ldi	r18, 0xFF		; Send next dummy byte
-;		sts	SPI1_DATA, r18
-;	SD_sendRead084:
-;		lds	r18, SPI1_INTFLAGS	; Next byte we retrieve is the low
-;		sbrs	r18, SPI_RXCIF_bp	; byte of the CRC-16
-;		rjmp	SD_sendRead084		; 
-;		lds	r24, SPI1_DATA		; 
-;		std	Y+P_Error+0, r24
-;
-;	SD_sendRead085:
-;		lds	r18, SPI1_INTFLAGS	; We sent one byte more than we 
-;		sbrs	r18, SPI_RXCIF_bp	; sent in the loop so wait for
-;		rjmp	SD_sendRead085		; the "dummy" answer
-;		lds	r18, SPI1_DATA		; get and discard
-;	SD_sendRead086:
-;
-;		lds	r18, SPI1_CTRLB			; Restore non-buffered mode
-;		andi	r18, ~(SPI_BUFEN_bm | SPI_BUFWR_bm)
-;		sts	SPI1_CTRLB, r18
+	
+	lds	r17, SPI1_CTRLA
+	sts	SPI1_CTRLA, zero
+	lds	r18, SPI1_CTRLB
+	ori	r18, SPI_BUFEN_bm | SPI_BUFWR_bm
+	sts	SPI1_CTRLB, r18
+	sts	SPI1_CTRLA, r17
 
+	ldi	r18, 0xFF			
+	sts	SPI1_DATA, r18		; First write a dummy byte
+SD_sendRead080:
+	lds	r18, SPI1_INTFLAGS
+	sbrs	r18, SPI_DREIF_bp	; Wait for Data Register Empty
+	rjmp	SD_sendRead080
+
+SD_sendRead081:
+	ldi	r18, 0xFF		; Send next dummy byte
+	sts	SPI1_DATA, r18
+SD_sendRead082:
+	lds	r18, SPI1_INTFLAGS
+	sbrs	r18, SPI_RXCIF_bp
+	rjmp	SD_sendRead082		; and wait for byte to be received
+	lds	r18, SPI1_DATA		; Fetch byte
+	st	X+, r18			; Save Byte
+	crc	r18, r4, r5
+	sbiw	r25:r24, 1		; Until done but now when we received
+	brne	SD_sendRead081		; a byte we assume that DREIF is set
+
+	ldi	r18, 0xFF		; Send next dummy byte
+	sts	SPI1_DATA, r18
+SD_sendRead083:
+	lds	r18, SPI1_INTFLAGS	; We sent one byte more than we 
+	sbrs	r18, SPI_RXCIF_bp	; sent in the loop therefore
+	rjmp	SD_sendRead083		; we can now get the high byte
+	lds	r25, SPI1_DATA		; of the CRC-16
+	std	Y+P_Error+1, r24
+
+	ldi	r18, 0xFF		; Send next dummy byte
+	sts	SPI1_DATA, r18
+SD_sendRead084:
+	lds	r18, SPI1_INTFLAGS	; Next byte we retrieve is the low
+	sbrs	r18, SPI_RXCIF_bp	; byte of the CRC-16
+	rjmp	SD_sendRead084		; 
+	lds	r24, SPI1_DATA		; 
+	std	Y+P_Error+0, r24
+
+SD_sendRead085:
+	lds	r18, SPI1_INTFLAGS	; We sent one byte more than we 
+	sbrs	r18, SPI_RXCIF_bp	; sent in the loop so wait for
+	rjmp	SD_sendRead085		; the "dummy" answer
+	lds	r18, SPI1_DATA		; get and discard
+SD_sendRead086:
+
+	lds	r18, SPI1_CTRLB			; Restore non-buffered mode
+	andi	r18, ~(SPI_BUFEN_bm | SPI_BUFWR_bm)
+	sts	SPI1_CTRLB, r18
+	#endif
+;
+;
+;
 	cp	r4, r24		;
 	cpc	r5, r25
 	pop	r5

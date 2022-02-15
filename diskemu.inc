@@ -22,6 +22,10 @@
 ;	Q-Bridge CPLD Version
 ;
 #define cpldif 40
+;
+;
+;
+#define spibuffered 0
 ;--------------------------------------------------------------------------
 ;
 ;	Special characters

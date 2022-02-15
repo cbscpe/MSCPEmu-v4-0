@@ -340,7 +340,7 @@ initheap010:				; First init range with zero
 	ldi     r18, NVMCTRL_FLMAP_SECTION2_gc
 	sts     NVMCTRL_CTRLB, r18
 
-	call	SPI_init
+;	call	SPI_init
 ;=============================================================================
 ;
 ;	USART 1
