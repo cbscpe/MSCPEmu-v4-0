@@ -39,20 +39,23 @@
 .equ	RS0	= 0			; Register Select 0
 .equ	RS1	= 1			; Register Select 1
 .equ	RS2	= 2			; Register Select 2
-;	PB3	unused
+.equ	POLL	= 3			; POLL Level1 -> Level0 signalling MSCP
 ;	PB4	unused
-.equ	GO	= 5			; GO Level1 -> Level0 signalling
+.equ	GO	= 5			; GO Level1 -> Level0 signalling RLV12
 
 #define	d_RS0	VPORTB_DIR, RS0
 #define	d_RS1	VPORTB_DIR, RS1
 #define	d_RS2	VPORTB_DIR, RS2
+#define	d_POLL	VPORTB_DIR, POLL
 #define	d_GO	VPORTB_DIR, GO	
 
 
 #define	b_RS0	VPORTB_OUT, RS0
 #define	b_RS1	VPORTB_OUT, RS1
 #define	b_RS2	VPORTB_OUT, RS2
+#define b_POLL	VPORTB_OUT, POLL
 #define	b_GO	VPORTB_OUT, GO	
+#define	f_POLL	VPORTB_INTFLAGS, POLL
 #define	f_GO	VPORTB_INTFLAGS, GO
 #define	c_GO	PORTB_PIN5CTRL
 #define	v_GO	PORTB_PORT_vect
