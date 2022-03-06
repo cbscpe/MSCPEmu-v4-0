@@ -62,13 +62,42 @@
 ;	   the drive size.
 ;	*/
 ;
+;	Information retrieved from mscp_drive.hpp for UniBone
+;
+;   DriveInfo g_driveTable[21] {
+;   //     Name     Blocks    MediaID     Model  RCTSize  Removable  ReadOnly
+;       { "RX50",   800,      0x25658032, 7,     0,       true,      false }, 
+;       { "RX33",   2400,     0x25658021, 10,    0,       true,      false },
+;       { "RD51",   21600,    0x25644033, 6,     36,      false,     false }, 
+;       { "RD31",   41560,    0x2564401f, 12,    3,       false,     false },
+;       { "RC25",   50902,    0x20643019, 2,     0,       true,      false },
+;       { "RC25F",  50902,    0x20643319, 3,     0,       true,      false }, 
+;       { "RD52",   60480,    0x25644034, 8,     4,       false,     false }, 
+;       { "RD32",   83236,    0x25641047, 15,    4,       false,     false },
+;	{ "RD53",   138672,   0x25644035, 9,     5,       false,     false }, 
+;       { "RA80",   237212,   0x20643019, 1,     0,       false,     false }, 
+;       { "RD54",   311200,   0x25644036, 13,    7,       false,     false }, 
+;       { "RA60",   400176,   0x22a4103c, 4,     1008,    true,      false },
+;       { "RA70",   547041,   0x20643019, 18,    198,     false,     false }, 
+;       { "RA81",   891072,   0x25641051, 5,     2856,    false,     false }, 
+;       { "RA82",   1216665,  0x25641052, 11,    3420,    false,     false }, 
+;       { "RA71",   1367310,  0x25641047, 40,    1428,    false,     false },
+;       { "RA72",   1953300,  0x25641048, 37,    2040,    false,     false }, 
+;       { "RA90",   2376153,  0x2564105a, 19,    1794,    false,     false }, 
+;       { "RA92",   2940951,  0x2564105c, 29,    949,     false,     false },
+;       { "RA73",   3920490,  0x25641049, 47,    198,     false,     false },
+;       { "", 0, 0, 0, 0, false, false } 
+;   };
+;
 .equ DriveTab = (PC - 0x8000) * 2 + 0x8000
 ;
 ;	RL01	40	2	256	5Mbyte
 ;
 	.db	"RL01"			; Name
+	.dd	0			; Media ID
 	.dd	(40*2*256/2)		; Sector Size is only 256bytes!
 	.dd	(40*2*256/2)		;
+	.dw	0			; RCT only used for MSCP Emulation
 	.db	40, 2			; Sector/Track, Track/Cylinder
 	.dw	256			; Cylinders
 	.db	0, 0			; Drive Flags, Type
@@ -76,8 +105,10 @@
 ;	RL02	40	2	512	10Mbyte
 ;
 	.db	"RL02"
+	.dd	0			; Media ID
 	.dd	(40*2*512/2)		; Sector Size is only 256bytes!
 	.dd	(40*2*512/2)
+	.dw	0			; RCT only used for MSCP Emulation
 	.db	40, 2
 	.dw	512
 	.db	0, (1<<DL__RL02) 	; Drive Flags, Type
@@ -85,8 +116,10 @@
 ;	RD31	17	4	615	20Mbyte		aka ST-225
 ;
 	.db	"RD31"
+	.dd	0			; Media ID
 	.dd	41560
 	.dd	41560
+	.dw	3			; RCT Size
 	.db	17, 4
 	.dw	615
 	.db	0, 0
@@ -94,8 +127,10 @@
 ;	RD32	17	6	820	42Mbyte		aka ST-251-01
 ;
 	.db	"RD32"
+	.dd	0			; Media ID
 	.dd	83204
 	.dd	83204
+	.dw	4			; RCT Size
 	.db	17, 6
 	.dw	820
 	.db	0, 0
@@ -103,8 +138,10 @@
 ;	RD52	18	7	450	36Mbyte		aka Quantum 540
 ;
 	.db	"RD52"
+	.dd	0			; Media ID
 	.dd	60480
 	.dd	60480
+	.dw	4			; RCT Size
 	.db	18, 8
 	.dw	512
 	.db	0, 0
@@ -112,8 +149,10 @@
 ;	RD53	17	8	1024	71Mbyte		aka Micropolis 1325
 ;
 	.db	"RD53"
+	.dd	0			; Media ID
 	.dd	138672
 	.dd	138672
+	.dw	5			; RCT Size
 	.db	17, 8
 	.dw	1024
 	.db	0, 0
@@ -121,8 +160,10 @@
 ;	RD54	17	15	1224	159Mbyte	aka Maxtor XT2190D
 ;
 	.db	"RD54"
+	.dd	0			; Media ID
 	.dd	311200
 	.dd	311200
+	.dw	7			; RCT Size
 	.db	17, 15
 	.dw	1224
 	.db	0, 0
@@ -130,8 +171,10 @@
 ;	RA70	34	11	1507	280Mbyte
 ;
 	.db	"RA70"
+	.dd	0			; Media ID
 	.dd	547041
 	.dd	547041+8
+	.dw	198			; RCT Size
 	.db	34, 11
 	.dw	1507
 	.db	0, 0
@@ -139,8 +182,10 @@
 ;	RA82	57	15	1423	622Mbyte
 ;
 	.db	"RA82"
+	.dd	0			; Media ID
 	.dd	1216665
 	.dd	1216665+8
+	.dw	3420			; RCT Size
 	.db	57, 16
 	.dw	1423
 	.db	0, 0
@@ -148,8 +193,10 @@
 ;	RA81	52	14	1248	456Mbyte
 ;
 	.db	"RA81"
+	.dd	0			; Media ID
 	.dd	891072
 	.dd	891072
+	.dw	2856			; RCT Size
 	.db	52, 14
 	.dw	1248
 	.db	0, 0
@@ -157,8 +204,10 @@
 ;	RA60	42	4	2382	205Mbyte
 ;
 	.db	"RA60"
+	.dd	0			; Media ID
 	.dd	400176
 	.dd	400176
+	.dw	1008			; RCT Size
 	.db	42, 4
 	.dw	2382
 	.db	0, 0
