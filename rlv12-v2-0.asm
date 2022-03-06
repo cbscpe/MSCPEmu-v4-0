@@ -1304,5 +1304,8 @@ rlv12_reset:
 .undef	wdcl	
 .undef	wdch
 .undef	count
+.undef	bar_l
+.undef	addrl
+.undef	addrh
 .undef	ucbl
 .undef	ucbh
