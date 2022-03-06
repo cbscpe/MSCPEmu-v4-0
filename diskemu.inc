@@ -88,6 +88,7 @@
 #define	log_init	0x20
 #define	log_dato	0x30
 #define	log_dati	0x40
+
 #define	log_csr		0x00
 #define	log_bar		0x02
 #define	log_dar		0x04
@@ -97,6 +98,7 @@
 #define log_boot4	0x0c
 #define log_boot6	0x0e
 #define log_rom		0x01
+
 #define	log_fnc0	0x80
 #define	log_address	0x90
 #define	log_fnc2	0xa0
@@ -108,6 +110,14 @@
 #define log_traceo	0xe2	; octal word
 #define log_tracebh	0xe3	; hex bytes
 #define log_tracebo	0xe4	; octal bytes
+
+
+#define	log_mscp	0x50
+#define	log_bcnt	0x51
+#define	log_buff	0x52
+#define	log_lbn		0x53
+#deinfe	log_dup		0x60
+
 ;
 ;	Logging Buffer Definitions
 ;
