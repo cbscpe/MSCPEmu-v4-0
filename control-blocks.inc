@@ -68,8 +68,8 @@ recordend	Vol, size
 ;
 
 recordstart	fcb
-record		fcb, dummy, 4
 record		fcb, iob, 2		; IO Parameter Block
+record		fcb, drvtab, 2
 record		fcb, Flag, 1
 	.equ	F__Readonly	= 0	; File is open read-only
 	.equ	F__Direct	= 1	; File is open for direct block IO
@@ -79,7 +79,6 @@ record		fcb, Flag, 1
 	.equ	F__EOF		= 6	; File Read Past End Of File
 	.equ	F__ERR		= 7	; File IO Error summary
 record		fcb, sectperclst, 1
-record		fcb, drvtab, 2
 record		fcb, filename, 2
 record		fcb, fraglist, 2
 record		fcb, position, 4
@@ -114,6 +113,7 @@ recordend	jcb, size
 ;
 recordstart	pcb
 record		pcb, queue, 2		; Queue Head
+record		pcb, drvtab, 2		; Drive Tabel Entry
 record		pcb, status, 1		; Partition Status
 	.equ	pcb__fat	= 0	; is FAT
 	.equ	pcb__attach	= 1	; is attached to unit
@@ -128,7 +128,6 @@ record		pcb, start, 4		; Partition start
 record		pcb, sectors, 4		; Number of sectors
 record		pcb, mbrsector, 4	; MBR Sector
 record		pcb, vcb, 2		; Volume Control Block
-record		pcb, drvtab, 2		; Drive Tabel Entry
 record		pcb, reserved, 8
 recordend	pcb, size
 
@@ -138,8 +137,10 @@ recordend	pcb, size
 ;
 recordstart	Drv
 record		Drv, Name, 4
+record		Drv, MediaID, 4
 record		Drv, Capacity, 4
 record		Drv, MaxCapacity, 4
+record		DRv, RCTSize, 2
 record		Drv, Sectors, 1
 record		Drv, Tracks, 1
 record		Drv, Cylinders, 2
@@ -174,9 +175,9 @@ record		ucb, status, 1
 	.equ	ucb__de		= 4	; Drive Error
 record		ucb, flags, 1		; Unit flags
 record		ucb, type, 1		; Unit specific status
-record		ucb, reserved, 1	; ...
+record		ucb, r1, 1		; ...
 record		ucb, imgptr, 2		; Pointer to partition or file control block
-record		ucb, disksize, 4	; Disk Size to report 
+record		ucb, r2, 4		; 
 record		ucb, lock, 2		; Lock word to let the unit job wait
 record		ucb, diskaddr, 2	; Unit disk address register
 record		ucb, seektimer, 2	; 
