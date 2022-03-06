@@ -116,7 +116,9 @@
 #define	log_bcnt	0x51
 #define	log_buff	0x52
 #define	log_lbn		0x53
-#deinfe	log_dup		0x60
+#define log_pkt		0x54
+#define	log_ring	0x55
+#define	log_dup		0x60
 
 ;
 ;	Logging Buffer Definitions
@@ -138,7 +140,7 @@
 ;	the overflow bit would be bit 5.
 ;
 ;
-#define	log_type	circular
+ #define	log_type	circular
 ;#define	log_type	lollipop
 .equ	log_buffer	= 0x7000
 .equ	log_overflow	= 7		; the 7th bit of the high byte address
