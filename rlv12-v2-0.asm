@@ -129,7 +129,7 @@ rlv12loop:
 	andi	r16, 0x0F		; Log Function Code
 	ori	r16, log_fnc0
 	std	Z+0, r16
-	lds	r16, TCB2_CNTL
+	lds	r16, timestamp
 	std	Z+1, r16
 	sts	rlv12_error, zero	; Assume no errors
 	lds	yl, CSRH		;

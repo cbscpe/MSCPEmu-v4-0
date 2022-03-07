@@ -120,6 +120,9 @@
 #define	log_ring	0x55
 #define	log_dup		0x60
 
+
+#define	timestamp	TCB2_CNTL
+
 ;
 ;	Logging Buffer Definitions
 ;
