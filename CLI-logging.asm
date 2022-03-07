@@ -18,7 +18,7 @@
 ;	2	000e	init	timestamp	0000
 ;	3	addr	dato	timestamp	data
 ;	4	addr	dati	timestamp	data
-;	5
+;	5	subcode	mscp	<--depends on sub code-->
 ;	6		dev	timestamp	
 ;	7	
 ;	8	fc	fnc0	timestamp	CSR	
@@ -146,7 +146,7 @@ logprinttbl:
 	rjmp	logprintinit		; 2
 	rjmp	logprintdato		; 3
 	rjmp	logprintdati		; 4
-	rjmp	logprintnoop		; 5
+	rjmp	logprintmscp		; 5
 	rjmp	logprintnoop		; 6
 	rjmp	logprintnoop		; 7
 	rjmp	logprintfnc0		; 8
@@ -442,3 +442,21 @@ logallno:
 	out	GPR_GPR1, zero
 	clc
 	ret
+;--------------------------------------------------------------------------
+;
+;	MSCP Logging
+;
+;	log_id		name	extension	value
+;	bit4..7	bit0..3
+;	5	0	mscp	timestamp	opcode, low(unit)
+;	5	1	bcnt	lower 24 bit of byte count
+;	5	2	buff	lower 24 bit of buffer address
+;	5	3	lbn	lower 24 bit of LBN
+;	5	4	pkt	
+;	5	5	ring
+;
+;
+;
+logprintmscp:
+	ret
+
