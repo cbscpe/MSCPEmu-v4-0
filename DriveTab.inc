@@ -116,7 +116,7 @@
 ;	RD31	17	4	615	20Mbyte		aka ST-225
 ;
 	.db	"RD31"
-	.dd	0			; Media ID
+	.dd	0x2564401f		; Media ID
 	.dd	41560
 	.dd	41560
 	.dw	3			; RCT Size
@@ -127,7 +127,7 @@
 ;	RD32	17	6	820	42Mbyte		aka ST-251-01
 ;
 	.db	"RD32"
-	.dd	0			; Media ID
+	.dd	0x25641047		; Media ID
 	.dd	83204
 	.dd	83204
 	.dw	4			; RCT Size
@@ -138,7 +138,7 @@
 ;	RD52	18	7	450	36Mbyte		aka Quantum 540
 ;
 	.db	"RD52"
-	.dd	0			; Media ID
+	.dd	0x25644034		; Media ID
 	.dd	60480
 	.dd	60480
 	.dw	4			; RCT Size
@@ -149,7 +149,7 @@
 ;	RD53	17	8	1024	71Mbyte		aka Micropolis 1325
 ;
 	.db	"RD53"
-	.dd	0			; Media ID
+	.dd	0x25644035		; Media ID
 	.dd	138672
 	.dd	138672
 	.dw	5			; RCT Size
@@ -160,7 +160,7 @@
 ;	RD54	17	15	1224	159Mbyte	aka Maxtor XT2190D
 ;
 	.db	"RD54"
-	.dd	0			; Media ID
+	.dd	0x25644036		; Media ID
 	.dd	311200
 	.dd	311200
 	.dw	7			; RCT Size
@@ -171,7 +171,7 @@
 ;	RA70	34	11	1507	280Mbyte
 ;
 	.db	"RA70"
-	.dd	0			; Media ID
+	.dd	0x20643019		; Media ID
 	.dd	547041
 	.dd	547041+8
 	.dw	198			; RCT Size
@@ -182,7 +182,7 @@
 ;	RA82	57	15	1423	622Mbyte
 ;
 	.db	"RA82"
-	.dd	0			; Media ID
+	.dd	0x25641052		; Media ID
 	.dd	1216665
 	.dd	1216665+8
 	.dw	3420			; RCT Size
@@ -193,7 +193,7 @@
 ;	RA81	52	14	1248	456Mbyte
 ;
 	.db	"RA81"
-	.dd	0			; Media ID
+	.dd	0x25641051		; Media ID
 	.dd	891072
 	.dd	891072
 	.dw	2856			; RCT Size
@@ -204,7 +204,7 @@
 ;	RA60	42	4	2382	205Mbyte
 ;
 	.db	"RA60"
-	.dd	0			; Media ID
+	.dd	0x22a4103c		; Media ID
 	.dd	400176
 	.dd	400176
 	.dw	1008			; RCT Size
