@@ -126,6 +126,15 @@ loaderror:
 ;	self reset processor
 ;
 cmdreset:
+	ldi	r16, 0xa5
+	ldi	r17, 0x5a
+	ldi	r18, GPR_GPR0
+	ldi	r19, GPR_GPR1
+	sts	RE_STATUS, r16
+	sts	RE_SD_STATUS, r17
+	sts	RE_GPR0, r18
+	sts	RE_GPR1, r19
+
 	ldi	r18, CPU_CCP_IOREG_gc
 	sts	CPU_CCP, r18
 	ldi	r18, RSTCTRL_SWRST_bm

@@ -85,6 +85,8 @@ cmd_port1:
 	.dw	kw_porttoggle,	0,		cmd_porttoggle
 	.dw	kw_portset,	0,		cmd_portset
 	.dw	kw_portclr,	0,		cmd_portclr
+	.dw	kw_portoutput, 	0,		cmd_portoutput
+	.dw	kw_portinput, 	0,		cmd_portinput
 	.dw	kw_eol,		cmdportshow,	cmd_done
 	.dw	0
 	
@@ -103,6 +105,14 @@ cmd_portset:
 	
 cmd_portclr:
 	.dw	kw_number,	a_portclr,	cmd_portdo
+	.dw	0
+	
+cmd_portoutput:
+	.dw	kw_number,	a_portoutput,	cmd_portdo
+	.dw	0
+	
+cmd_portinput:
+	.dw	kw_number,	a_portinput,	cmd_portdo
 	.dw	0
 	
 cmd_portdo:
@@ -416,6 +426,8 @@ ch_g:		P_CHAR		"g"
 kw_port:	P_KEYWORD	"POrt"
 kw_porttoggle:	P_KEYWORD	"Toggle"
 kw_portset:	P_KEYWORD	"SEt"
+kw_portoutput:	P_KEYWORD	"OUTput"
+kw_portinput:	P_KEYWORD	"INput"
 kw_portshow:	P_KEYWORD       "SHow"
 kw_portclr:	P_KEYWORD	"Clr"
 kw_jobs:	P_KEYWORD	"Jobs"

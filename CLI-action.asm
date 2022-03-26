@@ -195,19 +195,22 @@ a_dmaaddr:
 ;--------------------------------------------------------------------------
 ;
 	
+;--------------------------------------------------------------------------
+;
+;	port % [set|clear|toggle|output|input] n
+;
 a_port:
-	lds	r16, scanresult+2
-
+	lds	r16, scanresult+2	; Convert the port character to uppercase
 	cpi	r16, 0x60
 	brlo	a_portuc
 	andi	r16, 0x5f
 a_portuc:
-	sts	portname, r16
-	dec	r16			; Port A = 0x00
-	andi	r16, 0x0F
-	cpi	r16, 7
+	sts	portname, r16		; Save it for later
+	subi	r16, 'A'		; Valid port names are A...G
+	brmi	a_portinv		; any character less than 'A' is invalid
+	cpi	r16, 7			; And everthing higher than 'G' as well
 	brsh	a_portinv
-	swap	r16			
+	swap	r16			; 
 	lsl	r16			; Port ID * 0x20 gives offset to ports
 	sts	portaddr, r16
 	clc
@@ -218,11 +221,13 @@ a_portinv:
 	.db	CR, LF
 	.db	"Invalid Port ", CR, LF, 0
 	sec
-	ret
-
+	ret				; 
+;
+;	Set port action
+;
 a_porttoggle:
 	lds	r16, scanresult
-	cpi	r16, 8
+	cpi	r16, 8			; Pinnumber must be between 0..7
 	brsh	a_portinvpin
 	sts	portbit, r16
 	ldi	r16, 'T'
@@ -250,6 +255,27 @@ a_portclr:
 	clc
 	ret	
 	
+a_portoutput:
+	lds	r16, scanresult
+	cpi	r16, 8
+	brsh	a_portinvpin
+	sts	portbit, r16
+	ldi	r16, 'O'
+	sts	portaction, r16
+	clc
+	ret	
+	
+a_portinput:
+	lds	r16, scanresult
+	cpi	r16, 8
+	brsh	a_portinvpin
+	sts	portbit, r16
+	ldi	r16, 'I'
+	sts	portaction, r16
+	clc
+	ret	
+	
+	
 a_portinvpin:
 	lds	r16, scanresult+0
 	lds	r17, scanresult+1
@@ -263,19 +289,57 @@ a_portinvpin:
 	.db	CR, LF, "Invalid Pin number", 0xd0, CR, LF, 0
 	sec
 	ret
-
+;
+;	Execute the "port %" command to show the port status
+;
 cmdportshow:
-	lds	zl, portaddr
-	ldi	zh, high(PORTA_DIR)
-	sts	pprint+0, zl
+	lds	zl, portaddr		; Get Port Offset
+	ldi	zh, high(PORTA_DIR)	; Add Base Address
+	sts	pprint+0, zl		; 
 	sts	pprint+1, zh
 	lds	r16, portname
 	sts	pprint+2, r16
-	call	print
+	call	print			; Print basic port info
 	.db	CR, LF
-	.db	"Port ", 0x92, " (Address 0x", 0x81, 0x80, ") Bits:",TAB,"76543210", CR, LF
-	.db	TAB, TAB, TAB, "State:", TAB, 0, 0
-	ldd	r16, Z+PORT_IN_offset
+	.db	"Port ", 0x92, " (Address 0x", 0x81, 0x80, ") Bits......:"," 76543210", CR, LF
+	.db	TAB, TAB, TAB, "Direction.: ", 0
+	ldd	r16, Z+PORT_DIR_offset
+	ldi	r24, 'I'		; First show direction 
+	sbrc	r16, 7
+	ldi	r24, 'O'
+	call	serout
+	ldi	r24, 'I'
+	sbrc	r16, 6
+	ldi	r24, 'O'
+	call	serout
+	ldi	r24, 'I'
+	sbrc	r16, 5
+	ldi	r24, 'O'
+	call	serout
+	ldi	r24, 'I'
+	sbrc	r16, 4
+	ldi	r24, 'O'
+	call	serout
+	ldi	r24, 'I'
+	sbrc	r16, 3
+	ldi	r24, 'O'
+	call	serout
+	ldi	r24, 'I'
+	sbrc	r16, 2
+	ldi	r24, 'O'
+	call	serout
+	ldi	r24, 'I'
+	sbrc	r16, 1
+	ldi	r24, 'O'
+	call	serout
+	ldi	r24, 'I'
+	sbrc	r16, 0
+	ldi	r24, 'O'
+	call	serout
+	call	seroutcrlf
+	call	print
+	.db	TAB, TAB, TAB, "State.....: ", 0
+	ldd	r16, Z+PORT_IN_offset	; Then show input state
 	ldi	r24, '0'
 	sbrc	r16, 7
 	ldi	r24, '1'
@@ -311,7 +375,9 @@ cmdportshow:
 	call	seroutcrlf
 	clc
 	ret
-
+;
+;	Do all other commands changing individual pins
+;
 cmdportdo:
 	lds	zl, portaddr
 	ldi	zh, high(PORTA_DIR)
@@ -323,11 +389,20 @@ cmdportdo:
 	sts	pprint+3, r16
 	lds	r16, portaction
 	cpi	r16, 'T'
-	breq	cmdporttoggle
+	brne	PC+2
+	rjmp	cmdporttoggle
 	cpi	r16, 'C'
-	breq	cmdportclr
+	brne	PC+2
+	rjmp	cmdportclr
 	cpi	r16, 'S'
-	breq	cmdportset
+	brne	PC+2
+	rjmp	cmdportset
+	cpi	r16, 'O'
+	brne	PC+2
+	rjmp	cmdportoutput
+	cpi	r16, 'I'
+	brne	PC+2
+	rjmp	cmdportinput
 	rjmp	cmdportunknown
 
 cmdporttoggle:
@@ -356,7 +431,28 @@ cmdportclr:
 	std	Z+PORT_OUTCLR_offset, r24
 	clc
 	ret
+	
+cmdportoutput:
+	call	print
+	.db	CR, LF
+	.db	"Output ", 0x83, " of Port ", 0x92, " (Address 0x", 0x81, 0x80, ")", CR, LF, 0
+	rcall	cmdportmask
+	std	Z+PORT_DIRSET_offset, r24
+	clc
+	ret
 
+cmdportinput:
+	call	print
+	.db	CR, LF
+	.db	"Input ", 0x83, " of Port ", 0x92, " (Address 0x", 0x81, 0x80, ")", CR, LF, 0, 0
+	rcall	cmdportmask
+	std	Z+PORT_DIRCLR_offset, r24
+	clc
+	ret
+;
+;	Should never happen as we made sure only valid options have been specified 
+;	via the command parsing
+;
 cmdportunknown:
 	lds	zl, portaddr
 	clr	zh
@@ -373,7 +469,9 @@ cmdportunknown:
 	.db	" Port ", 0x92, " (Address 0x", 0x81, 0x80, ")",  CR, LF, 0, 0
 	sec
 	ret
-
+;
+;	
+;
 cmdportmask:				; Convert Bit into Mask
 	lds	r16, portbit
 	ldi	r24, 1
