@@ -123,6 +123,23 @@ loaderror:
 
 ;--------------------------------------------------------------------------
 ;
+;	
+;
+cmdsdinit:
+	call	SD_Main
+	clc
+	ret
+
+cmdmount:
+	call	MountVolume
+	clc
+	ret
+cmddismount:
+	call	DismountVolume
+	clc
+	ret
+;--------------------------------------------------------------------------
+;
 ;	self reset processor
 ;
 cmdreset:

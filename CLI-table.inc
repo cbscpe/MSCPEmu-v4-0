@@ -3,6 +3,7 @@ commandlist:
 ;
 ;		Element		Action		Next
 ;
+	.dw	kw_rlv12init,	0,		cmd_rlv12init
 	.dw	kw_insert,	0,		cmd_insert		; Selection of possible keywords
 	.dw	kw_cd,		0,		cmd_cd
 	.dw	kw_hallo,	0,		cmd_halloworld
@@ -34,9 +35,28 @@ commandlist:
 	.dw	kw_pointer,	0,		cmd_pointer
 	.dw	kw_memtest,	0,		cmd_memtest
 	.dw	kw_controller,	0,		cmd_controller
+	.dw	kw_sdinit,	0,		cmd_sdinit
+	.dw	kw_mount,	0, 		cmd_mount
+	.dw	kw_dismount,	0,		cmd_dismount
 	.dw	kw_eol,		0,		cmd_done
 	.dw	0
 
+
+cmd_rlv12init:
+	.dw	kw_eol,		0,		cmd_done
+	.dw	0
+
+cmd_sdinit:
+	.dw	kw_eol,		cmdsdinit,	cmd_done
+	.dw	0
+
+cmd_mount:
+	.dw	kw_eol,		cmdmount,	cmd_done
+	.dw	0
+
+cmd_dismount:
+	.dw	kw_eol,		cmddismount,	cmd_done
+	.dw	0
 
 cmd_controller:
 	.dw	kw_ready,	0,		cmd_contrdy
@@ -357,6 +377,7 @@ cmd_dumpblock1:
 	.dw	kw_eol,		cmddumpbl,	cmd_done
 	.dw	0
 
+kw_rlv12init:	P_KEYWORD	"[RLV12]"
 kw_no:		P_KEYWORD	"NO"
 kw_register:	P_KEYWORD	"REGister"
 kw_interrupt:	P_KEYWORD	"INTerrupt"
@@ -435,3 +456,5 @@ kw_controller:	P_KEYWORD	"CONtroller"
 kw_ready:	P_KEYWORD	"Ready"
 kw_busy:	P_KEYWORD	"Busy"	
 kw_entry:	P_KEYWORD	"Entry"
+kw_sdinit:	P_KEYWORD	"SDInit"
+kw_dismount:	P_KEYWORD	"DISMOunt"
