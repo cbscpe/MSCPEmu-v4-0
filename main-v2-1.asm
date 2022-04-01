@@ -68,6 +68,7 @@ start:
 ;	we must not re-initialise the SD-Card
 ;
 	lds	r0, RSTCTRL_RSTFR
+	sts	reset_status, r0	; Save it for later
 	sts	RSTCTRL_RSTFR, r0	; Reset the flags
 	sbrc	r0, RSTCTRL_SWRF_bp
 	rjmp	start010
@@ -360,7 +361,19 @@ initheap010:				; First init range with zero
 	ldi     r18, NVMCTRL_FLMAP_SECTION2_gc
 	sts     NVMCTRL_CTRLB, r18
 
-;	call	SPI_init
+;=============================================================================
+;
+;	SPI 1
+;
+	ldi	r18, SPI_SSD_bm
+	sts	SPI1_CTRLB, r18
+;
+;	Various Clock rates: CPUCLK/2, CPUCLK/4, CPUCLK/8
+;
+;	ldi	r18, SPI_CLK2X_bm | SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
+	ldi	r18,                SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
+;	ldi	r18, SPI_CLK2X_bm | SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV16_gc
+	sts	SPI1_CTRLA, r18		
 ;=============================================================================
 ;
 ;	USART 1
@@ -518,9 +531,15 @@ initheap010:				; First init range with zero
 ;
 ;	Print Hello Message
 ;
+	lds	r0, reset_status
+	sts	pprint+0, r0
+	lds	r0, sd_status
+	sts	pprint+1, r0
 	call	print
 	.db	CR, LF
 	.db	"RSTCTRL_RSTFR  0x", 0x80
+	.db	CR, LF
+	.db	"SD-Card Status 0x", 0x81
 	.db	CR, LF
 	.db	"Starting Universal Disk Controller!", CR, LF, 0
 ;=============================================================================
@@ -546,7 +565,7 @@ initheap010:				; First init range with zero
 
 	call	print
 	.db	"Create Main Job", CR, LF, 0
-	call	prtcreate
+	rcall	prtcreate
 
 	ldi	r18, USART_RXCIE_bm	; Enable RX interrupt for RTOS
 	sts	USART1_CTRLA, r18
@@ -641,7 +660,7 @@ main:
 	std	Z+jcb_flags, r18
 	call	print
 	.db	"Create SD-Card Detect Job", CR, LF, 0
-	call	prtcreate
+	rcall	prtcreate
 	movw	r25:r24, zh:zl
 	call	create
 
@@ -661,7 +680,7 @@ main:
 	std	Z+jcb_flags, r18
 	call	print
 	.db	"Create RLV12 Job", CR, LF, 0, 0
-	call	prtcreate
+	rcall	prtcreate
 	movw	r25:r24, zh:zl
 	call	create
 
@@ -681,7 +700,7 @@ main:
 	std	Z+jcb_flags, r18
 	call	print
 	.db	"Create Dummy Job", CR, LF, 0, 0
-	call	prtcreate
+	rcall	prtcreate
 	movw	r25:r24, zh:zl
 	call	create
 ;
@@ -765,84 +784,7 @@ readcmd050:
 readcmd060:
 	sts	InputBuffer, zero
 	rjmp	readcmd010
-;--------------------------------------------------------------------------
-;
-;	DUMMY JOB
-;
-dummyjob:
-	clr	r0
-	mov	r1, r0
-	inc	r1
-	mov	r2, r1
-	inc	r2
-	mov	r3, r2
-	inc	r3
-	mov	r4, r3
-	inc	r4
-	mov	r5, r4
-	inc	r5
-	mov	r6, r5
-	inc	r6
-	mov	r7, r6
-	inc	r7
-	mov	r8, r7
-	inc	r8
-	mov	r9, r8
-	inc	r9
-	mov	r10, r9
-	inc	r10
-	mov	r11, r10
-	inc	r11
-	mov	r12, r11
-	inc	r12
-	mov	r13, r12
-	inc	r13
-	mov	r14, r13
-	inc	r14
-	mov	r15, r14
-	inc	r15
-	mov	r16, r15
-	inc	r16
-	mov	r17, r16
-	inc	r17
-	mov	r18, r17
-	inc	r18
-	mov	r19, r18
-	inc	r19
-	mov	r20, r19
-	inc	r20
-	mov	r21, r20
-	inc	r21
-	mov	r22, r21
-	inc	r22
-	mov	r23, r22
-	inc	r23
-	mov	r24, r23
-	inc	r24
-	mov	r25, r24
-	inc	r25
-	mov	r26, r25
-	inc	r26
-	mov	r27, r26
-	inc	r27
-	mov	r28, r27
-	inc	r28
-	mov	r29, r28
-	inc	r29
-	mov	r30, r29
-	inc	r30
-	mov	r31, r30
-	inc	r31
-	rjmp	dummyjob
 
-;--------------------------------------------------------------------------
-;
-;	
-;
-.include "sdcardjob.asm"
-.include "SD-Card-Print-v1-0.asm"
-.include "SD-Card-v1-0.asm"
-.include "monitor-sub.asm"
 
 ;--------------------------------------------------------------------------
 ;
@@ -868,102 +810,22 @@ prtcreate:
 	.db	0x09, "Programm Start     0x", 0x80+jcb_joblist+1, 0x80+jcb_joblist, CR, LF
 	.db	0x09, "Priority/Flags     0x", 0x80+jcb_priority, ",0x", 0x80+jcb_flags, CR, LF, 00
 	ret
-;--------------------------------------------------------------------------
-;
-;	mprint routine to print a message
-;
-;	this is work in progress and will replace the print routine 
-;	the goal is to have something equivalent to sprint()
-;
-;	usage
-;
-;	call	mprint
-;	.dw	<msgptr>
-;
-;	It makes use of the feature of the AVR128 mcu family that can map a 32kbyte
-;	range of the flash to the normal data address space. Therefore the pointer
-;	must match the address in the data space and the messages must be put
-;	in the mapped portion of the flash
-;
-mprint:
-	push	yl			; Save two pointer registers
-	push	yh
-	push	zl
-	push	zh
-	in	yl, CPU_SPL		; get stack pointer
-	in	yh, CPU_SPH
-	ldd	zl, Y+6			; get return address
-	ldd	zh, Y+5
-	adiw	zh:zl, 1		; increment return address (skip msg pointer)
-	std	Y+6, zl			; update return address
-	std	Y+5, zh
-	sbiw	zh:zl, 1		; go back to msg pointer
-	lsl	zl			; Make byte index
-	rol	zh
-	lpm	yl, Z+			; get message pointer
-	lpm	yh, Z+
-	push	r24
-	push	r25
-	push	xl
-	push	xh
-	ldi	xl, low(pprint)
-	ldi	xh, high(pprint)
-mprint010:	
-	ld	r24, Y+
-	tst	r24
-	breq	mprint090
-	cpi	r24, '%'
-	brne	mprint080
-	ld	r24, Y+
-	tst	r24
-	breq	mprint090
-	cpi	r24, '%'
-	breq	mprint080
-	cpi	r24, 'c'
-	brne	mprint020
-	ld	r24, X+			; %c
-	rjmp	mprint080
-mprint020:
-	cpi	r24, 'x'
-	brne	mprint080		; %x
-	ldi	r24, '0'
-	call	serout
-	ldi	r24, 'x'
-	call	serout
-	ld	r24, X+
-	mov	zl, r24
-	andi	r24, 0xF0
-	swap	r24
-	ori	r24, '0'
-	cpi	r24, '9'+1
-	brlo	mprint021
-	subi	r24, ('0'-'A')
-mprint021:
-	call	serout
-	movw	r24, zl
-	andi	r24, 0xF0
-	swap	r24
-	ori	r24, '0'
-	cpi	r24, '9'+1
-	brlo	mprint080
-	subi	r24, ('0'-'A')
 
-mprint080:
-	call	serout
-	rjmp	mprint010
-mprint090:
-	pop	xh
-	pop	xl
-	pop	r25
-	pop	r24
-	pop	zh
-	pop	zl
-	pop	yh
-	pop	yl
-	ret
+
 ;--------------------------------------------------------------------------
 ;
 ;	
+;
+.include	"dummyjob.asm"		; Our dummy job that does nothing
+.include	"sdcardjob.asm"		; SD-Card Insert/Remove and LED routine
+.include	"SD-Card-Print-v1-0.asm"; Print SD-Card messages
+.include	"SD-Card-v1-0.asm"	; Main SD-Card routines
+.include	"monitor-sub.asm"	; sub-routines used by Apple II monitor
+.include	"mprint.asm"		; local mprint routine for formatted messages
+
+;--------------------------------------------------------------------------
+;
+;		RLV12 and other modules
 ;
 .include	"DMA-Macro.inc"		; CPLD DMA Macroes 
 .include	"print-v2-0.asm"	; Print Inline
@@ -990,6 +852,12 @@ mprint090:
 .include	"qbus-v2-0.asm"		; RLV12 Q-Bus Interface
 .include	"readonlydata.asm"	; Read Only Memory in flash mapped to data space
 
+;--------------------------------------------------------------------------
+;
+;	MSCP modules are just included but never used just to verify the
+;	assembler syntax
+;
+
 		.dseg
 .include	"MSCP/_ccb.inc"
 .include	"MSCP/_mscp.inc"
@@ -1010,6 +878,4 @@ mprint090:
 .include	"MSCP/douna.asm"
 .include	"MSCP/mscp.asm"
 .include	"MSCP/dup.asm"
-
-
 

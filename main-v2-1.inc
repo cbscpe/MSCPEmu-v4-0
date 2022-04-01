@@ -116,3 +116,4 @@ sd_status:	.byte	1
 .equ		sd__init	= 2	; Card could be initialised
 .equ		sd__ccs		= 3	; Card Capacity Support
 .equ		sd__reset	= 7	; Card could be reset successfully
+reset_status:	.byte	1
