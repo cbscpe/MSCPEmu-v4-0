@@ -12,11 +12,35 @@ to
 to avoid the warnings, as the avrasm2 versions for macOS do not know about the core
 versin v4
 
+Assembling 
+----------
 
 avrasm2 -v2 -fI -o main-v2-1.hex  -m main-v2-1.map  -l main-v2-1.lss  -S main-v2-1.tmp  -W+ie -I ~/AVR-Projects/include/  -iAVR128DB64def.inc    main-v2-1.asm
 
 
+Loading
+-------
 
+First you need to erase the flash. You need to specify the correct device type
+
+pymcuprog erase -d avr128db48
+pymcuprog erase -d avr128db64
+
+Then you can write the flash
+
+pymcuprog write -d avr128db48 -f main-v2-1.hex
+pymcuprog write -d avr128db64 -f main-v2-1.hex
+
+
+
+ToDo List
+=========
+
+Main must be simplified to only hold the necessary logic to include files
+depending on the Disk Emulator
+
+The correct logic for MSCP init: must be changed, as we now do several initialisation
+tasks we need to let it run in a job or part of a job, e.g. the mscp poll job itself
 
 
 Hints, History and other usefull Commands
