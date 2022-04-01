@@ -186,11 +186,11 @@ sdcardinsert:
 ;	in case of a SD-Card detection we must make sure it was not 
 ;	previously initialised.
 ;
-	lds	r16, sd_status			; 
-	sbrs	r16, sd__init			; do not re-init SD-Card
+	lds	r16, sd_status		; 
+	sbrs	r16, sd__init		; do not re-init SD-Card
 	call	SD_main
 	call	MountVolume
-	sbic	GPR_GPR0, sddetect__en		; Is CLI active
+	sbic	GPR_GPR0, sddetect__en	; Is CLI active
 	call	redraw_1
 	ret
 
@@ -201,11 +201,16 @@ sdcardremove:
 	ldi	xh, high(sdprint+8)
 	rcall	sdcardprbyte
 	call	DismountVolume
-	sbic	GPR_GPR0, sddetect__en		; Is CLI active
+	sts	sd_status, zero		; Mark sd-init required
+	sbic	GPR_GPR0, sddetect__en	; Is CLI active
 	call	redraw_1
 	ret
-
+;
+;
+;
 sdcardprbyte:
+	jmp	seroutcrlf		; print no more, it is now clear how it works
+
 	ldi	r18, 8
 sdcardprbyte000:
 	call	print
