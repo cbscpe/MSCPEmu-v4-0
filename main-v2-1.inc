@@ -3,11 +3,20 @@
 ;	This is the data segment
 ;
 ;
-
 	.dseg
 	align	8
 ;
 ;	Job Stacks
+;
+;	Note: the stacks could be made much smaller. 
+;
+;	PC	2
+;	Reg	32
+;	SREG	1
+;	Level0	9	(tick)
+;	Level1	7
+;	RT-OS	9	-> 60bytes
+;	Job	?	call/rcall nesting and push in each sub-routine
 ;
 RAMINITSTART:
 		.byte	256		; Main Job (User Interface)
@@ -59,18 +68,11 @@ pcbqueue:	.byte	2
 filequeue:	.byte	2
 volqueue:	.byte	2
 sdio:		.byte	P_Size		; Parameter Block to initialise SD-Card
-sd_status:	.byte	1
-.equ		sd__v1		= 0	; If card is a version 2 card
-.equ		sd__v2		= 1	; If card is a version 2 card
-.equ		sd__init	= 2	; Card could be initialised
-.equ		sd__ccs		= 3	; Card Capacity Support
-.equ		sd__reset	= 7	; Card could be reset successfully
 
 partitionid:	.byte	1
 volumeid:	.byte	1
 InitCommand:	.byte	2
 led_oneshot:	.byte	1
-RAMINITEND:
 
 ;--------------------------------------------------------------------------
 ;
@@ -90,3 +92,27 @@ iackcount:	.byte	1
 initcount:	.byte	1
 		.byte	4
 
+;--------------------------------------------------------------------------
+;
+;	Data Segments of external modules
+;	
+.include "monitor-v2-0.inc"		; Interactive monitor
+.include "print-v2-0.inc"		; Print routine
+.include "tparse-v2-0.inc"		; Table Driven Parser
+.include "rlv12-v2-0.inc"		; Disk Emulator
+
+RAMINITEND:
+;--------------------------------------------------------------------------
+;
+;	Re-Init Data Area
+;
+;	The Re-Init Data Area is not initialised when a software reset
+;	has been issued. Else it will be zeroized
+;	
+	align	4
+sd_status:	.byte	1
+.equ		sd__v1		= 0	; If card is a version 2 card
+.equ		sd__v2		= 1	; If card is a version 2 card
+.equ		sd__init	= 2	; Card could be initialised
+.equ		sd__ccs		= 3	; Card Capacity Support
+.equ		sd__reset	= 7	; Card could be reset successfully
