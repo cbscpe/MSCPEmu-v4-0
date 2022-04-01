@@ -154,7 +154,6 @@ recordend	Drv, Size
 ;	Unit control blocks are exactly 16 bytes. The header of UCB's are
 ;	standardized and inlcudes the status, the image pointer and the type.
 ;
-;	status has 4 standard status bits defined
 ;	image pointer either points to a partition control block or a file control block
 ;	type is used to exchange information between main programm and Q-Bus access
 ;
@@ -173,11 +172,13 @@ record		ucb, status, 1
 	.equ	ucb__file	= 2	; Unit is attached to a file
 	.equ	ucb__seek	= 3	; Seek in Progress
 	.equ	ucb__de		= 4	; Drive Error
+	.equ	ucb__onl	= 6	; MSCP
+	.equ	ucb__ofl	= 7	; MSCP
 record		ucb, flags, 1		; Unit flags
 record		ucb, type, 1		; Unit specific status
 record		ucb, r1, 1		; ...
 record		ucb, imgptr, 2		; Pointer to partition or file control block
-record		ucb, r2, 4		; 
+record		ucb, media, 4		; perhaps via drvtyp, it is a constant!
 record		ucb, lock, 2		; Lock word to let the unit job wait
 record		ucb, diskaddr, 2	; Unit disk address register
 record		ucb, seektimer, 2	; 
