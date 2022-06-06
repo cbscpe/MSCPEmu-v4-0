@@ -43,25 +43,9 @@
 ;
 ;
 ;
-	.macro	logptr			; Destroys r25:r24, zh:zl
-	cli				;;;
-	lds	zl, log_pointer+0	;;;  3 Logging
-	lds	zh, log_pointer+1	;;;  3 Logging
-	movw	r25:r24, zh:zl		;;;  2
-	adiw	r25:r24, 4		;;;  2
-	#if log_type==lollipop
-	sbrc	r25,log_overflow	;;;  2 Lollipop shaped logging buffer, once
-	ori	r25, (1<<log_upper)	;;;    it overflows it stays at upper half
-	#endif
-	andi	r25, high(log_size)	;;;  1
-	ori	r25, high(log_buffer)	;;;  1
-	sts	log_pointer+0, r24	;;;  2
-	sts	log_pointer+1, r25	;;;  2
-	sei				;;;  1	-> 19 cycles ~0.6usec
-	.endm
 ;--------------------------------------------------------------------------
 ;
-;	Pin Change Interrupt
+;	Software Triggered Pin Change Interrupt 
 ;
 ;	2022-01-08	One single job to handle all requests
 ;
@@ -122,6 +106,7 @@ rlv12loop:
 	call	block			; Wait for GO
 	sbic	GPR_GPR0, auto__boot	; Was Autoboot requested?
 	rjmp	rlv12_autoboot		; Yes so do autoboot
+;+++logging
 	logptr				; Destroys r25:r24, zh:zl
 	movw	logptrh:logptrl, zh:zl	; keep it in case we want to overwrite
 	lds	r16, CSRL		; the default logging
@@ -134,6 +119,7 @@ rlv12loop:
 	sts	rlv12_error, zero	; Assume no errors
 	lds	yl, CSRH		;
 	std	Z+3, yl			; Log error bits and driveselect
+;---logging
 	andi	yl, driveselect		; Isolate Drive Select
 	swap	yl			; Convert drive select to RL01/02
 	clr	yh			; volume entry pointer. This code
@@ -178,7 +164,6 @@ rlv12toggle:				;
 	sbi	b_IRQ			;;; 0/1 yes then set interrupt
 	sbi	b_CRDY			;;; 1	Enable Controller
 	sei				;;; 1	Enable Interrupts
-					;
 	rjmp	rlv12loop		; 
 ;
 ;
@@ -193,19 +178,17 @@ rlv12fnctbl:
 	rjmp	rlv12_readdata
 	rjmp	rlv12_readnocheck
 
-;--------------------------------------------------------------------------
+;----------------------------------------------------------------------------
 ;
 ;	Autoboot Feature
 ;
-;	By executing a 174414g in ODT the user can activate the autoboot
-;	of the controller. This feature will load the first block of the
-;	device that is attached to Unit 0 to the start o the PDP-11
-;	memory (address zero). For the machanics see the description in
-;	the qbus module.
-;
+;	By executing a 174414g in ODT the user can activate the autoboot of   
+;	the controller. This feature will load the first block of the device  
+;	that is attached to Unit 0 to the start of the PDP-11 memory (address 
+;	zero). For more information see the description in the qbus module.   
+;	
 rlv12_autoboot:
-
-	cbi	GPR_GPR0, auto__boot	; clear the autoboot flag
+	cbi	GPR_GPR0, auto__boot	; ack the autoboot flag
 	ldi	yl, low(unittable)	; get address of first unit
 	ldi	yh, high(unittable)	
 	ldd	r18, Y+ucb_status
@@ -215,16 +198,10 @@ rlv12_autoboot:
 	rjmp	rlv12_autobootpart	; then boot from partition
 	sbrc	r18, ucb__file		; is a file attached
 	rjmp	rlv12_autobootfile	; then boot from file
-rlv12_noautoboot:			; oops not autoboot possible
+rlv12_noautoboot:			; oops autoboot not possible
 	rjmp	rlv12loop		; done
 ;
-;	boot from partition
-;
-rlv12_autobootpart:
-;	call	print
-;	.db	CR, LF
-;	.db	"Boot partition!", CR, LF, 0
-;	call	redraw_1
+rlv12_autobootpart:			; Boot from Partition
 	ldd	zl, Y+ucb_imgptr+0	; get address of partition control block
 	ldd	zh, Y+ucb_imgptr+1
 	ldi	yl, low(sdio)		; get IO Parameter block
@@ -239,13 +216,7 @@ rlv12_autobootpart:
 	std	Y+P_Sector+3, r19
 	rjmp	rlv12_autoboot010	; cont
 ;
-;	boot from file
-;
-rlv12_autobootfile:
-;	call	print
-;	.db	CR, LF
-;	.db	"Boot diskimage!", CR, LF, 0
-;	call	redraw_1
+rlv12_autobootfile:			; Boot from File
 	ldd	zl, Y+ucb_imgptr+0	; get address of partition control block
 	ldd	zh, Y+ucb_imgptr+1
 	ldd	yl, Z+fcb_iob+0		; get the address of the file control block
@@ -264,9 +235,9 @@ rlv12_autoboot010:
 	ldi	r17, high(sdbuffer)
 	std	Y+P_Address+0, r16	; set IO buffer address
 	std	Y+P_Address+1, r17
-	ldi	r18, led_time		; blinken lights
+	sbi	b_LED			; blinken lights
+	ldi	r18, led_time
 	sts	led_oneshot, r18
-	sbi	b_LED
 	movw	r25:r24, yh:yl		; IO Parameter Block
 	call	SD_CARD_READ		; read sector
 	cpse	r24, zero		; test return code 
@@ -274,10 +245,10 @@ rlv12_autoboot010:
 ;
 ;	we have now the boot record in our IO buffer, while the PDP-11
 ;	executes the BR . (0777) instruction at address 0 we copy 
-;	words 1..256 of the boot sector to PDP-11 address 2
+;	words 1..256 of the boot sector to PDP-11 memory at address 2
 ;	
 	ldi	r16, 2			; 
-	setupdmaaddress r16, zero, zero	; destroys r18!!
+	dmaaddr r16, zero, zero	; destroys r18!!
 	ldi	r20, 1			; need to transfer 255 words
 	ldd	xl, Y+P_Address+0
 	ldd	xh, Y+P_Address+1
@@ -286,7 +257,7 @@ rlv12_autoboot010:
 rlv12_autoboot020:
 	ld	datal, X+		; now copy words 1..256. via DMA
 	ld	datah, X+		; to the PDP-11 memory
-	dmawrite datal, datah		; 
+	dmawrt datal, datah		; note dmawrt destroys r18!
 	inc	r20			; 
 	brne	rlv12_autoboot020
 ;
@@ -296,10 +267,9 @@ rlv12_autoboot020:
 ;	with the first instruction of the boot sector and therefore start
 ;	the boot process
 ;
-	setupdmaaddress zero, zero, zero
-	dmawrite r16, r17
+	dmaaddr zero, zero, zero
+	dmawrt r16, r17
 	rjmp	rlv12loop
-	
 ;--------------------------------------------------------------------------
 ;
 ;	Not (yet) implemented
@@ -311,11 +281,11 @@ rlv12_maintenance:
 ;	Write Check, Compare data on the disk with the data in memory
 ;
 rlv12_writecheck:
-	set				; DMA Read
+	ldi	r24, 1			; DMA Read
 	rcall	rlv12_rwsetup
+	sbi	b_LED
 	ldi	r18, led_time
 	sts	led_oneshot, r18
-	sbi	b_LED
 	call	SD_CARD_READ		; 
 	tst	r24
 	breq	rlv12_writecheck010
@@ -349,9 +319,9 @@ rlv12_writechkdmaloop:
 	brne	rlv12_writechkdmaloop	; Yes
 	movw	wdch:wdcl, r25:r24	; Update wordcount
 	rcall	rlv12_rwnextsector
+	sbi	b_LED
 	ldi	r18, led_time
 	sts	led_oneshot, r18
-	sbi	b_LED
 	movw	r25:r24, yh:yl		; 
 	call	SD_CARD_READ
 	tst	r24
@@ -373,13 +343,7 @@ rlv12_writechk_error:
 ;	DMA Read Time-Out Handler
 ;
 rlv12_writechktmo:
-	logptr
-	ldi	r16, log_trace
-	ldi	r17, 0xA0
-	std	Z+0, r16
-	std	Z+1, r17
-	std	Z+2, r24
-	std	Z+3, r25
+	logtr	0xA0, r24, r25	
 	sts	pprint+0, xl
 	sts	pprint+1, xh
 	sts	pprint+2, r24
@@ -411,7 +375,6 @@ rlv12_writechk_error010:
 	ldi	r18, 0x88				; Set error bits: WCE
 	sts	rlv12_error, r18
 	rjmp	rlv12_rwfail
-
 ;--------------------------------------------------------------------------
 ;
 ;	Get drive status
@@ -504,6 +467,7 @@ rlv12_seek:
 ;	|CA8|CA7|CA6|CA5|CA4|CA3|CA2|CA1||CA0|HS |SA5|SA4|SA3|SA2|SA1|SA0|
 ;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
 ;
+;+++logging
 	movw	zh:zl, logptrh:logptrl	; Get Log Pointer
 	lds	r17, CSRH		; Overwrite Logging with log_seek
 	andi	r17, driveselect
@@ -513,6 +477,7 @@ rlv12_seek:
 	std	Z+0, r17		
 	std	Z+2, r18
 	std	Z+3, r19		; Save DAR used with Seek command
+;---logging
 	ldd	r16, Y+ucb_diskaddr+0	; Get current disk address
 	ldd	r17, Y+ucb_diskaddr+1
 	bst	r18, DAR_SEEK_HS	; Get HS from seek command
@@ -539,6 +504,7 @@ rlv12_seekdone:
 ;
 ;	Logging
 ;
+;+++logging
 	logptr				; Destroys r25:r24, zh:zl
 	std	Z+2, r16
 	std	Z+3, r17		; new disk address
@@ -546,6 +512,7 @@ rlv12_seekdone:
 	std	Z+0, r16
 	ldd	r16, Y+ucb_status
 	std	Z+1, r16
+;---logging
 ;
 ;	Real Seek Time (optional)
 ;
@@ -568,7 +535,6 @@ rlv12_seekdone:
 	bld	r16, CSR_DRVRDY		; Copy Drive Ready
 	sts	CSRL, r16		; Update CSR low byte
 	ret
-
 ;--------------------------------------------------------------------------
 ;
 ;	Read Header
@@ -610,7 +576,6 @@ rlv12_readheader010:
 	or	r18, r16
 	std	Y+ucb_diskaddr+0, r18
 	ret
-
 ;--------------------------------------------------------------------------
 ;
 ;	The RLV12 write command can write to any 256byte sector and it also can
@@ -627,7 +592,7 @@ rlv12_readheader010:
 ;	written belong to the same track. 
 ;
 rlv12_writedata:
-	set				; DMA Read
+	ldi	r24, 1			; DMA Read
 	rcall	rlv12_rwsetup		;
 	lds	r18, DARL		; Does the write start at a SD-Card
 	sbrc	r18, 0			; Block boundary
@@ -657,9 +622,9 @@ rlv12_write010:
 ;	the SD-Card block to the buffer before we transfer the data
 ;
 rlv12_write020:
+	sbi	b_LED
 	ldi	r18, led_time
 	sts	led_oneshot, r18
-	sbi	b_LED
 	movw	r25:r24, yh:yl		; IO Parameter block in r25:r24 as per ABI
 	call	SD_CARD_READ		; 
 	tst	r24
@@ -685,9 +650,9 @@ rlv12_write030:
 ;	We have reached the end of the SD-Card buffer, therefore we need to write
 ;	the data to the SD-Card and prepare for the next SD-Card block
 ;
+	sbi	b_LED
 	ldi	r18, led_time
 	sts	led_oneshot, r18
-	sbi	b_LED
 	movw	r25:r24, yh:yl
 	call	SD_CARD_WRITE
 	tst	r24
@@ -728,9 +693,9 @@ rlv12_write050:
 ;	block of this write request is ready to be written to the SD-Card
 ;
 rlv12_write060:
+	sbi	b_LED			
 	ldi	r18, led_time
 	sts	led_oneshot, r18
-	sbi	b_LED			
 	movw	r25:r24, yh:yl		; no need to save word count it is zero now
 	call	SD_CARD_WRITE	
 	tst	r24
@@ -745,13 +710,7 @@ rlv12_writeerror:
 ;	DMA was not successfull we assume bus time-out 
 ;
 rlv12_writetmo:
-	logptr
-	ldi	r16, log_trace
-	ldi	r17, 0xA0
-	std	Z+0, r16
-	std	Z+1, r17
-	std	Z+2, r24
-	std	Z+3, r25
+	logtr	0xA0, r24, r25	
 	sts	pprint+0, xl
 	sts	pprint+1, xh
 	sts	pprint+2, r24
@@ -766,85 +725,118 @@ rlv12_writetmo:
 	rjmp	rlv12_rwfail
 ;--------------------------------------------------------------------------
 ;
-;	Read no check is the same as Read for SD-Cards
-;
-rlv12_readnocheck:
-;--------------------------------------------------------------------------
-;
 ;	Read Data
 ;
-rlv12_readdata:
+;	The following read strategies have been implemented
 ;
-;	Express Log
+;	1.	If the read starts at an odd RL01/02 sector then we use
+;		the legacy mode with intermediate buffer
+;	2.	If the read starts at an even RL01/02 sector and the 
+;		media is contiguous then we use the read multiple block
+;		function of SD-Card
+;	3.	In all other cases we read individual sectors with using
+;		the new TURBO read function which interleaves SD-Card
+;		reads and DMA writes
 ;
-;	lds	r16, CSRL
-;	lds	r17, CSRH
-;	sts	pprint+0, r16
-;	sts	pprint+1, r17
-;	lds	r16, BARL
-;	lds	r17, BARH
-;	sts	pprint+2, r16
-;	sts	pprint+3, r17
-;	lds	r16, DARL
-;	lds	r17, DARH
-;	sts	pprint+4, r16
-;	sts	pprint+5, r17
-;	lds	r16, MPRL
-;	lds	r17, MPRH
-;	sts	pprint+6, r16
-;	sts	pprint+7, r17
-;	lds	r16, BAEL
-;	lds	r17, BAEH
-;	sts	pprint+8, r16
-;	sts	pprint+9, r17
-;	call	print
-;	.db	"R:", 0xa0, " ", 0xa2, " ", 0xa4, " ", 0xa6, " ", 0xa8, CR, LF, 0
-
-	clt				; DMA Write
+;
+rlv12_readnocheck:			; Read no check 
+	ldi	r24, 0			; DMA Write
 	rcall	rlv12_rwsetup
+	ldd	r16, Y+P_Flag
+	sbr	r16, (1<<P__Nocheck)
+	std	Y+P_Flag, r16		; Do not check CRC
+	rjmp	rlv12_readdata010
+
+rlv12_readdata:				; Read for SD-Cards
+	ldi	r24, 0			; DMA Write
+	rcall	rlv12_rwsetup
+	ldd	r16, Y+P_Flag
+	cbr	r16, (1<<P__Nocheck)
+	std	Y+P_Flag, r16		; Check CRC
+rlv12_readdata010:
+	sbis	GPR_GPR1, log__rl3	; use RL3 logging as Turbo Switch
+	rjmp	rlv12_readdata060
+;
+;	Check if the sectors we need to read are contiguous. In this case
+;	we can use Read Multiple Block which is way faster then reading
+;	several single blocks
+;
+	ldd	r16, Y+P_Flag
+	sbrs	r16, P__Contig		; Do we have a contiguous area to read?
+	rjmp	rlv12_readdata020	; no so read individual blocks
+	sbi	b_LED			; turn on the activity LED
+	ldi	r18, led_time		; initiate the turn off count donw
+	sts	led_oneshot, r18
+	logtr	0x8C, wdcl, wdch
+	movw	r25:r24, yh:yl		; IO Parameter Block
+	call	SD_CARD_MULTIPLE	; Read in one go with SD-Card read and
+	rjmp	rlv12_readdone		; DMA write interleaved and then finish
+;
+;	When we do not have a contiguous area we need to translate each 
+;	logical block number to the physical block number individually
+;
+rlv12_readdata020:
+	logtr	0x88, wdcl, wdch
+rlv12_readdata030:
+	sbi	b_LED
 	ldi	r18, led_time
 	sts	led_oneshot, r18
-	sbi	b_LED
 	movw	r25:r24, yh:yl		; IO Parameter Block
-	call	SD_CARD_READ
+	call	SD_CARD_TURBO
+	ldd	r16, Y+P_Flag		; Skipping the first 256 bytes is only
+	cbr	r16, (1<<P__Skip)	; required for the first block in a
+	std	Y+P_Flag, r16		; read command
+	ldd	wdcl, Y+P_Wordcount+0	; Retrieve updated word count
+	ldd	wdch, Y+P_Wordcount+1
+	cp	wdcl, zero
+	cpc	wdch, zero		; Any Words to tranfer left
+	brne	rlv12_readdata040	; Yes more to go
+	logtr	0x8B, wdcl, wdch
+	rjmp	rlv12_readdone		; Done
+rlv12_readdata040:
+	rcall	rlv12_rwnextsector	; next sector might not be adjacent
+	logtr	0x89, wdcl, wdch
+	rjmp	rlv12_readdata030	; Check for Turbo
+;
+;	Read does not satisfy the conditions for direct transfer
+;
+rlv12_readdata060:
+	sbi	b_LED
+	ldi	r18, led_time
+	sts	led_oneshot, r18
+	movw	r25:r24, yh:yl		; IO Parameter Block
+	call	SD_CARD_READ		; First read first sector
 	tst	r24
-	breq	rlv12_readdata010
+	breq	rlv12_readdata070
 	rjmp	rlv12_readerror		; was never implemented, needs to be done
-rlv12_readdata010:
-	movw	r25:r24, wdch:wdcl	; Restore Word Count
+rlv12_readdata070:
+	movw	r25:r24, wdch:wdcl	; Get Word Count
 	movw	xh:xl, addrh:addrl	; Get buffer address
 ;
-;	We need to consider the following special cases
-;
-;	-	If the software requested an odd start sector 
-;	-	Wordcount (MPR) is not a multiple of 256
-;
-;	If read starts at an odd sector we need to skip half
-;	of the block from the SDCARD
+;	RL01/02 sectors are only 256bytes but SD-Card blocks are 521byte
+;	blocks, so if the read starts with an odd sector number we need
+;	to skip the first 256 bytes of the SD-Card block.
 ;
 	lds	r18, DARL
 	sbrs	r18, 0
 	rjmp	rlv12_readdmaloop
-	inc	xh			; Second half of block from SDCARD
-;	ldi	r18, 128		; has only 128 words
-;	mov	count, r18
-	set	
-	bld	count, 7		; has only 128 words
+	inc	xh			; skip the first 256 bytes in buffer
+	set				; we use the T-Bit to set Bit7 of count
+	bld	count, 7		; only 128 words to transfer
 rlv12_readdmaloop:
 	ld	datal, X+		; Fetch one word from buffer
 	ld	datah, X+		; Caution!!!! DMA Macros destroy r18
-	dmawrite datal, datah		; Write the Word via DMA to PDP-11 Memory
+	dmawrt datal, datah		; Write the Word via DMA to PDP-11 Memory
 	brcs	rlv12_readtmo
 	adiw	r25:r24, 1		; increment complement of requested words
 	breq	rlv12_readdone		; if eq we are really done (can use br here)
 	inc	count			; do we have still words in our buffer
 	brne	rlv12_readdmaloop	; Yes
-	movw	wdch:wdcl, r25:r24
-
-	rcall	rlv12_rwnextsector
+	movw	wdch:wdcl, r25:r24	; Save Word Count
+	rcall	rlv12_rwnextsector	; 
+	sbi	b_LED
 	ldi	r18, led_time
 	sts	led_oneshot, r18
-	sbi	b_LED
 	movw	r25:r24, yh:yl
 	call	SD_CARD_READ
 	tst	r24
@@ -866,13 +858,7 @@ rlv12_readerror:
 ;	DMA Write Time-Out Handler
 ;
 rlv12_readtmo:
-	logptr
-	ldi	r16, log_trace
-	ldi	r17, 0xA0
-	std	Z+0, r16
-	std	Z+1, r17
-	std	Z+2, r24
-	std	Z+3, r25
+	logtr	0xA0, r24, r25	
 	sts	pprint+0, xl
 	sts	pprint+1, xh
 	sts	pprint+2, r24
@@ -882,9 +868,6 @@ rlv12_readtmo:
 	.db	CR, LF
 	.db	"READ NXM 0x", 0x81, 0x80, ", WDC 0x", 0x83, 0x82, CR, LF, 0
 	call	redraw_1
-	ldi	r18, 0xa0		; Set error bits: NXM
-	sts	rlv12_error, r18
-	rjmp	rlv12_rwfail
 	ldi	r18, 0xa0		; Set error bits: NXM
 	sts	rlv12_error, r18
 	rjmp	rlv12_rwfail
@@ -927,41 +910,14 @@ rlv12_rwsuccess:
 	lds	r18, DARL
 	lds	r19, DARH
 	sub	r18, wdch
-;	mov	r17, r18
-;	andi	r17, 0x3F
-;	cpi	r17, 40
-;	brlo	rlv12_rwsuccess010	; still ok
-;	andi	r18, 0xC0		; wrap around
-;	logptr				; Destroys r25:r24, zh:zl
-;	ldi	r16, log_trace
-;	ldi	r17, 4
-;	std	Z+0, r16
-;	std	Z+1, r17
-;	std	Z+2, r18
-;	std	Z+3, r19	
-;rlv12_rwsuccess010:
-
-;	mov	r17, r18
-;	andi	r18, 0xC0		; LSB of Cyl and HS
-;	andi	r17, 0x3F		; Sector
-;	sub	r17, wdch		; wdch is 2's complement of sectors transferred
-;	cpi	r17, 40
-;	brlo	rlv12_rwsuccess010	; still ok
-;	clr	r17			; wrap around
-;rlv12_rwsuccess010:
-;	or	r18, r17		; Insert Updated sector Numbers
-
 	sts	DARL, r18
 	std	Z+ucb_diskaddr+0, r18
 	std	Z+ucb_diskaddr+1, r19
-	ldi	r24, low(dmalock)
-	ldi	r25, high(dmalock)	; 
-;	call	release
 	ret
 rlv12_rwfail:
-	ldi	r24, low(dmalock)
-	ldi	r25, high(dmalock)	; 
-;	call	release
+;
+;	Perhaps we should add some fail logging
+;
 	ret
 ;--------------------------------------------------------------------------
 ;
@@ -987,8 +943,9 @@ rlv12_rwnextsector:
 	std	Y+P_Sector+1, r17
 	std	Y+P_Sector+2, r18
 	std	Y+P_Sector+3, r19
-	sbis	GPR_GPR1, log__pbn
-	ret
+	sbis	GPR_GPR1, log__pbn	; PBN Logging requested
+	ret				; Nope just return
+;+++logging
 	logptr				; Destroys r25:r24, zh:zl
 	std	Z+3, r16
 	std	Z+2, r17
@@ -996,6 +953,7 @@ rlv12_rwnextsector:
 	andi	r19, 0x0F
 	ori	r19, log_pbn
 	std	Z+0, r19	
+;---logging
 	ret
 
 rlv12_rwnextsector010:
@@ -1020,6 +978,7 @@ rlv12_rwnextsector010:
 	ldd	r19, Y+P_Sector+3
 	sbis	GPR_GPR1, log__pbn
 	ret
+;+++logging
 	logptr				; Destroys r25:r24, zh:zl
 	std	Z+3, r16
 	std	Z+2, r17
@@ -1027,14 +986,15 @@ rlv12_rwnextsector010:
 	andi	r19, 0x0F
 	ori	r19, log_pbn
 	std	Z+0, r19	
+;---logging
 	ret				; attached to the FCB
 
-;--------------------------------------------------------------------------
+;----------------------------------------------------------------------------
 ;
 ;	Setup a read or write operation
 ;
 ;	Input:
-;		T-Bit		must be set to DMA direction (0=Write, 1=Read)
+;		r24		must be set to DMA direction (0=Write, 1=Read)
 ;		Y		points to the current RL0x unit control block
 ;
 ;	Output:
@@ -1083,17 +1043,20 @@ rlv12_rwsetup:
 ;	Setup DMA Address
 ;
 	lds	bar_l, BARL
-	bld	bar_l, 0		; T bit might not be preserved later
+	bst	r24, 0			; Copy over DMA direction
+	bld	bar_l, 0		; 
 	lds	r16, BARH
 	lds	r17, BAEL
 ;
+;+++logging
 	logptr				; Destroys r25:r24, zh:zl
 	ldi	r19, log_address
 	std	Z+0, r19
 	std	Z+1, bar_l
 	std	Z+2, r16
 	std	Z+3, r17
-	setupdmaaddress	bar_l, r16, r17	; Caution!!!! DMA Macros destroy r18
+;---logging
+	dmaaddr	bar_l, r16, r17
 ;
 	ldd	r18, Y+ucb_status
 	cbr	r18, (1<<DL_DRSEEK)
@@ -1143,6 +1106,13 @@ rlv12_rwsetup:
 	std	Y+P_Cluster+1, r17
 	std	Y+P_Cluster+2, r18
 	std	Y+P_Cluster+3, r19
+	
+	ldd	r16, Z+fcb_Flag		; 
+	bst	r16, F__Contig		;
+	ldd	r16, Y+P_Flag		;
+	bld	r16, P__Contig		;
+	std	Y+P_Flag, r16		;
+	
 	movw	r25:r24, zh:zl		; File Control Block
 	call	Logical2Physical	; Convert to PBN (pyhsical block number)
 	rjmp	rlv12_rwsetup030
@@ -1166,6 +1136,11 @@ rlv12_rwsetup020:
 	std	Y+P_Sector+1, r17
 	std	Y+P_Sector+2, r18
 	std	Y+P_Sector+3, r19
+
+	ldd	r16, Y+P_Flag		;
+	sbr	r16, (1<<P__Contig)	;
+	std	Y+P_Flag, r16		;
+
 ;
 ;	Get the number of words requested. If more words are requested than
 ;	would be available on the current track from the start sector then
@@ -1181,6 +1156,7 @@ rlv12_rwsetup020:
 ;	retrieved, reading MPR always returns values from the FIFO
 ;
 rlv12_rwsetup030:
+;+++logging
 	sbis	GPR_GPR1, log__pbn
 	rjmp	rlv12_rwsetup035
 	logptr				; Destroys r25:r24, zh:zl
@@ -1195,6 +1171,7 @@ rlv12_rwsetup030:
 	ori	r19, log_pbn
 	std	Z+0, r19
 rlv12_rwsetup035:	
+;---logging
 ;
 ;	We cannot read more than there is left on a track, therefore
 ;	we caluclate the 2's complement of words left. First we take
@@ -1241,22 +1218,22 @@ rlv12_rwsetup035:
 	lds	r18, HNF_count
 	inc	r18
 	sts	HNF_count, r18
-
-	logptr				; Destroys r25:r24, zh:zl
-	std	Z+2, wdcl
-	std	Z+3, wdch	
-	ldi	r18, log_trace
-	std	Z+0, r18
-	ldi	r18, 3
-	std	Z+1, r18
+	logtr	3, wdcl, wdch
 ;
 ;	Setup the return registers
 ;
 rlv12_rwsetup040:
+	ldd	r16, Y+P_Flag
+	lds	r18, DARL		; Get starting sector
+	bst	r18, 0			; If we start with an odd sector
+	bld	r16, P__Skip		; we need to skip the first 256bytes
+	std	Y+P_Flag, r16		; of the sector 
 	ldi	r16, low(sdbuffer)	; 
 	ldi	r17, high(sdbuffer)	; 
 	std	Y+P_Address+0, r16	; Set buffer address for SD-Card block
 	std	Y+P_Address+1, r17	; 
+	std	Y+P_Wordcount+0, wdcl	; Set word count in parameter block
+	std	Y+P_Wordcount+1, wdch
 	movw	addrh:addrl, r17:r16
 	clr	count
 	ret
