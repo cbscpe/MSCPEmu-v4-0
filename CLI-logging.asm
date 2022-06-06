@@ -15,7 +15,7 @@
 ;	bit4..7	bit0..3
 ;	0		noop
 ;	1	0000	iack	timestamp	vector
-;	2	000e	init	timestamp	0000
+;	1	0001	init	timestamp	int_port, int_flags
 ;	3	addr	dato	timestamp	data
 ;	4	addr	dati	timestamp	data
 ;	5	subcode	mscp	<--depends on sub code-->
@@ -40,8 +40,8 @@
 ;
 ;	Lollipop shaped logging buffer
 ;
-	ldi	r24, low((log_size+1)/8)
-	ldi	r25, high((log_size+1)/8)
+	ldi	r24, low((log_size)/8)
+	ldi	r25, high((log_size)/8)
 	ldi	yl, low(log_buffer)
 	ldi	yh, high(log_buffer)
 	sts	pprint+8, r24
@@ -56,8 +56,8 @@ logprint010:
 	sbiw	r25:r24, 1
 	brne	logprint010
 
-	ldi	r24, low((log_size+1)/8)
-	ldi	r25, high((log_size+1)/8)
+	ldi	r24, low((log_size)/8)
+	ldi	r25, high((log_size)/8)
 	lds	yl, log_pointer+0
 	lds	yh, log_pointer+1
 	sbrs	yh, 3
@@ -65,8 +65,8 @@ logprint010:
 
 logprint:
 
-	ldi	r24, low((log_size+1)/4)
-	ldi	r25, high((log_size+1)/4)
+	ldi	r24, low((log_size)/4)
+	ldi	r25, high((log_size)/4)
 	lds	yl, log_pointer+0
 	lds	yh, log_pointer+1
 	sts	pprint+8, r24
@@ -78,12 +78,8 @@ logprint:
 	.db	"Logging ", 0xc8, " circular entries starting at 0x", 0x8b, 0x8a, CR, LF, 0
 logprint020:
 	rcall	logprintentry
-
-;	sbrc	yh,7			;
-;	ori	yh, 0x08		;
-	andi	yh, high(log_size)	;
-	ori	yh, high(log_buffer)	;
-
+	sbrc	yh, log_overflow
+	subi	yh, high(log_size)
 	sbiw	r25:r24, 1
 	brne	logprint020
 
@@ -117,6 +113,7 @@ logentry010:
 ;
 
 logprintentry:
+	push	r25
 	push	r24
 	ldd	r16, Y+0
 	ldd	r17, Y+1
@@ -138,12 +135,13 @@ logprintentry:
 	st	Y+, zero
 	st	Y+, zero
 	pop	r24
+	pop	r25
 	ret
 	
 logprinttbl:
 	rjmp	logprintnoop		; 0
-	rjmp	logprintiack		; 1
-	rjmp	logprintinit		; 2
+	rjmp	logprintint		; 1
+	rjmp	logprintnoop		; 2
 	rjmp	logprintdato		; 3
 	rjmp	logprintdati		; 4
 	rjmp	logprintmscp		; 5
@@ -164,6 +162,12 @@ logprintnoop:
 	ret
 	
 
+logprintint:
+	cpi	r16, log_iack
+	breq	logprintiack
+	cpi	r16, log_init
+	breq	logprintinit
+	ret
 
 logprintiack:
 	call	print
@@ -209,11 +213,11 @@ logprintdati:
 
 logprintromo:
 	call	print
-	.db	"DATO ROM(", 0x81, ")", CR, LF, 0
+	.db	"DATO ROM(", 0x81, ") Value   ", 0xa2, CR, LF, 0
 	ret
 logprintromi:
 	call	print
-	.db	"DATI ROM(", 0x81, ")", CR, LF, 0
+	.db	"DATI ROM(", 0x81, ") Value   ", 0xa2, CR, LF, 0
 	ret
 
 logprintfnc0:
@@ -372,6 +376,17 @@ logunitno:
 	clc
 	ret
 
+logtrace:
+	lds	r18, tpflags
+	sbrc	r18, tp__no
+	rjmp	logtraceno
+	sbi	GPR_GPR1, log__trace
+	clc
+	ret
+logtraceno:
+	cbi	GPR_GPR1, log__trace
+	clc
+	ret
 
 logpbn:
 	lds	r18, tpflags
@@ -405,6 +420,11 @@ logstatus:
 	call	print
 	.db	"Logging PBN ....................:", NULL
 	bst	r18, log__pbn
+	rcall	logstatusonoff
+;
+	call	print
+	.db	"Logging Trace ..................:", NULL
+	bst	r18, log__trace
 	rcall	logstatusonoff
 ;
 	call	print

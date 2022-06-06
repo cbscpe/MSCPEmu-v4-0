@@ -6,7 +6,7 @@
 	align	4
 cdstring:	.byte	4
 currentdir:	.byte	4
-nbr:		.byte	4
+nbr:		.byte	8
 attunit:	.byte	1
 attpart:	.byte	1
 tpflags:	.byte	1
@@ -21,7 +21,7 @@ dirswitch:	.byte	1
 
 dumpunit:	.byte	1
 dumpblock:	.byte	4
-dmaaddr:	.byte	3
+dmapdp11:	.byte	3
 dmaflag:	.byte	2
 
 portaddr:	.byte	1

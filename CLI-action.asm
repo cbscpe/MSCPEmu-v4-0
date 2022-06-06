@@ -107,6 +107,18 @@ a_nbr:
 	clc
 	ret
 	
+a_nbr1:
+	lds	r18, scanresult+0
+	sts	nbr+4, r18
+	lds	r18, scanresult+1
+	sts	nbr+5, r18
+	lds	r18, scanresult+2
+	sts	nbr+6, r18
+	lds	r18, scanresult+3
+	sts	nbr+7, r18
+	clc
+	ret
+	
 set_no:
 	lds	r18, tpflags
 	ori	r18, (1<<tp__no)
@@ -184,11 +196,11 @@ a_dumpdev010:
 ;
 a_dmaaddr:
 	lds	r18, scanresult+0
-	sts	dmaaddr+0, r18
+	sts	dmapdp11+0, r18
 	lds	r18, scanresult+1
-	sts	dmaaddr+1, r18
+	sts	dmapdp11+1, r18
 	lds	r18, scanresult+2
-	sts	dmaaddr+2, r18
+	sts	dmapdp11+2, r18
 	clc
 	ret
 

@@ -19,8 +19,9 @@ prtnbr:
 	sts	pprint+3, r18
 
 	call	print
-	.db	CR, LF, "Number is:", 0xd0, " As PDP-11 Address ", 0xb0, 0
-
+	.db	CR, LF
+	.db	"Number is:", 0xd0, "., 0", 0xb0, ", 0x", 0x83, 0x82, 0x81, 0x80
+	.db	CR, LF, 0, 0
 	clc
 	ret
 
@@ -44,7 +45,7 @@ loadboot:
 	call	print
 	.db	CR, LF
 	.db	"LOAD Address: ", 0xb0, CR, LF, 0
-	setupdmaaddress	r22, r23, r24	
+	dmaaddr	r22, r23, r24	
 	ldi	zl, low(rom173000)
 	ldi	zh, high(rom173000)
 	clr	r17
@@ -55,7 +56,7 @@ loadboot010:
 ;	sts	pprint+1, r25
 ;	call	print
 ;	.db	0xa0, CR, LF, 0
-	dmawrite r24, r25
+	dmawrt r24, r25
 	brcs	loadbooterror
 	dec	r17
 	brne	loadboot010
@@ -85,7 +86,7 @@ loadtest:
 	call	print
 	.db	CR, LF
 	.db	"LOAD Address Test: ", 0xb0, CR, LF, 0, 0
-	setupdmaaddress	r22, r23, r24	
+	dmaaddr	r22, r23, r24	
 	ldi	zl, low(romtest)
 	ldi	zh, high(romtest)
 	ldi	r17, romtestsize
@@ -96,7 +97,7 @@ loadtest010:
 ;	sts	pprint+1, r25
 ;	call	print
 ;	.db	0xa0, CR, LF, 0
-	dmawrite r24, r25
+	dmawrt r24, r25
 	brcs	loadtesterror
 	dec	r17
 	brne	loadtest010
@@ -168,9 +169,9 @@ cmddmaread:
 	brne	cmddmaread010
 	inc	r16
 	sts	dmaflag+0, r16
-	lds	r22, dmaaddr+0
-	lds	r23, dmaaddr+1
-	lds	r24, dmaaddr+2
+	lds	r22, dmapdp11+0
+	lds	r23, dmapdp11+1
+	lds	r24, dmapdp11+2
 	andi	r22, 0xFE
 	andi	r24, 0x3F
 	sts	pprint+0, r22
@@ -180,7 +181,7 @@ cmddmaread:
 	call	print
 	.db	CR, LF
 	.db	"DMA - Set Address   ", 0xb0, 0
-	setupdmaaddress r22, r23, r24
+	dmaaddr r22, r23, r24
 cmddmaread010:
 	dmaread	r24, r25
 	sts	pprint+0, r24
@@ -199,9 +200,9 @@ cmddmawrite:
 	brne	cmddmawrite010
 	inc	r16
 	sts	dmaflag+0, r16
-	lds	r22, dmaaddr+0
-	lds	r23, dmaaddr+1
-	lds	r24, dmaaddr+2
+	lds	r22, dmapdp11+0
+	lds	r23, dmapdp11+1
+	lds	r24, dmapdp11+2
 	andi	r22, 0xFE
 	andi	r24, 0x3F
 	sts	pprint+0, r22
@@ -210,13 +211,13 @@ cmddmawrite:
 	call	print
 	.db	CR, LF
 	.db	"DMA - Set Address ", 0xb0, 0
-	setupdmaaddress r22, r23, r24
+	dmaaddr r22, r23, r24
 cmddmawrite010:
 	lds	r24, nbr+0
 	lds	r25, nbr+1
 	sts	pprint+0, r24
 	sts	pprint+1, r25
-	dmawrite r24, r25
+	dmawrt r24, r25
 	call	print
 	.db	CR, LF
 	.db	"DMA - write Data    ", 0xa0, CR, LF, 0
@@ -227,9 +228,9 @@ cmddmawrite010:
 ;	back after the block of 512bytes in the MCU memory
 ;	
 cmddmatest:
-	lds	r22, dmaaddr+0
-	lds	r23, dmaaddr+1
-	lds	r24, dmaaddr+2
+	lds	r22, dmapdp11+0
+	lds	r23, dmapdp11+1
+	lds	r24, dmapdp11+2
 	andi	r22, 0xFE
 	andi	r24, 0x3F
 	sts	pprint+0, r22
@@ -238,7 +239,7 @@ cmddmatest:
 	call	print
 	.db	CR, LF
 	.db	"DMA - Set Address ", 0xb0, 0
-	setupdmaaddress r22, r23, r24
+	dmaaddr r22, r23, r24
 
 
 	lds	xl, nbr+0
@@ -247,22 +248,22 @@ cmddmatest:
 cmddmatest010:
 	ld	r24, X+
 	ld	r25, X+
-	dmawrite r24, r25
+	dmawrt r24, r25
 	adiw	r25:r24, 2
 	dec	r17
 	brne	cmddmatest010
 	
 	
-	lds	r22, dmaaddr+0
-	lds	r23, dmaaddr+1
-	lds	r24, dmaaddr+2
+	lds	r22, dmapdp11+0
+	lds	r23, dmapdp11+1
+	lds	r24, dmapdp11+2
 	andi	r22, 0xFE
 	ori	r22, 0x01
 	andi	r24, 0x3F
 	sts	pprint+0, r22
 	sts	pprint+1, r23
 	sts	pprint+2, r24
-	setupdmaaddress r22, r23, r24
+	dmaaddr r22, r23, r24
 
 cmddmatest020:
 	dmaread	r24, r25
@@ -288,26 +289,31 @@ cmdmemtest:
 	call	print
 	.db	CR, LF
 	.db	"Memory Test - Set Address ", 0xb0, 0
-	setupdmaaddress r22, r23, r24	; DMA Macro's destry r18
+	dmaaddr r22, r23, r24
 ;
 ;	Write 512 words to PDP-11 Memory
 ;
 	ldi	r24, low(512)
 	ldi	r25, high(512)
-	ldi	xl, low(531)
-	ldi	xh, high(531)	; just a number
+	ldi	xl, low(0111222)
+	ldi	xh, high(0111222)	; just a number
 cmdmemtest010:
-	dmawrite xl, xh
-	adiw	xh:xl, 1
+	dmawrt xl, xh
+	inc	xl
+	inc	xh
 	sbiw	r25:r24, 1
 	brne	cmdmemtest010
+
+	ldi	r24, low(10)
+	ldi	r25, high(10)
+	call	delay
 
 	lds	r22, nbr+0
 	lds	r23, nbr+1
 	lds	r24, nbr+2
 	ori	r22, 0x01
 	andi	r24, 0x3F
-	setupdmaaddress r22, r23, r24	; DMA Macro's destry r18
+	dmaaddr r22, r23, r24
 
 	ldi	r24, low(512)
 	ldi	r25, high(512)
@@ -320,11 +326,14 @@ cmdmemtest020:
 	sbiw	r25:r24, 1
 	brne	cmdmemtest020
 	
+	ldi	r24, low(10)
+	ldi	r25, high(10)
+	call	delay
 
 	ldi	r24, low(512)
 	ldi	r25, high(512)
-	ldi	xl, low(531)
-	ldi	xh, high(531)		; just a number
+	ldi	xl, low(0111222)
+	ldi	xh, high(0111222)	; just a number
 	ldi	zl, low(0x5000)		; Test Memory
 	ldi	zh, high(0x5000)	; Test Memory
 	ldi	r23, 32			; error counter
@@ -341,7 +350,8 @@ cmdmemtest030:
 
 	rcall	cmdmemtesterror
 cmdmemtest040:
-	adiw	xh:xl, 1
+	inc	xl
+	inc	xh
 	sbiw	r25:r24, 1
 	brne	cmdmemtest030
 cmdmemtest090:

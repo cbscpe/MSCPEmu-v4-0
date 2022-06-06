@@ -38,9 +38,22 @@ commandlist:
 	.dw	kw_sdinit,	0,		cmd_sdinit
 	.dw	kw_mount,	0, 		cmd_mount
 	.dw	kw_dismount,	0,		cmd_dismount
+	.dw	kw_sdread,	0,		cmd_sdread
 	.dw	kw_eol,		0,		cmd_done
 	.dw	0
 
+
+cmd_sdread:
+	.dw	kw_number, 	a_nbr,		cmd_sdread1
+	.dw	0
+	
+cmd_sdread1:
+	.dw	kw_number, 	a_nbr1,		cmd_sdread2
+	.dw	0
+	
+cmd_sdread2:
+	.dw	kw_eol,		cmdsdread,	cmd_done
+	.dw	0
 
 cmd_rlv12init:
 	.dw	kw_eol,		0,		cmd_done
@@ -212,6 +225,7 @@ cmd_logging:
 	.dw	kw_units,	0,		cmd_logunits
 	.dw	kw_attdev, 	a_dev,		cmd_logunit
 	.dw	kw_pbn,		0,		cmd_logpbn
+	.dw	kw_trace,	0,		cmd_logtrace
 	.dw	kw_entry,	a_logentry,	cmd_logentry
 	.dw	kw_eol,		logstatus,	cmd_done
 	.dw	0
@@ -236,6 +250,10 @@ cmd_logunits:
 cmd_logunit:
 	.dw	kw_eol,		logunit,	cmd_done
 	.dw	0
+
+cmd_logtrace:
+	.dw	kw_eol,		logtrace,		cmd_done
+	.dw	0	
 
 cmd_logpbn:
 	.dw	kw_eol,		logpbn,		cmd_done
@@ -458,3 +476,5 @@ kw_busy:	P_KEYWORD	"Busy"
 kw_entry:	P_KEYWORD	"Entry"
 kw_sdinit:	P_KEYWORD	"SDInit"
 kw_dismount:	P_KEYWORD	"DISMOunt"
+kw_sdread:	P_KEYWORD	"SDRead"
+kw_trace:	P_KEYWORD       "TRace"

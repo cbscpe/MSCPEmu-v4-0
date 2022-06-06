@@ -213,6 +213,12 @@ cmd_showunitfile010:
 	rjmp	cmd_showunitfile010
 cmd_showunitfile020:
 	call	seroutcrlf
+	ldd	r16, Z+fcb_Flag
+	sbrs	r16, F__Contig
+	rjmp	cmd_showunitfile030
+	call	print
+	.db	"  File is continguous.", CR, LF, 0, 0
+cmd_showunitfile030:
 	push	yl
 	push	yh
 	movw	yh:yl, zh:zl
