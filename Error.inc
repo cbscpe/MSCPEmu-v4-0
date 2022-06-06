@@ -30,6 +30,7 @@
 #define SD_ERR_INV_TOKEN 2
 #define SD_ERR_NO_TOKEN 3
 #define SD_ERR_CRC 4
+#define SD_ERR_NXM 5
 
 #define SD_ERR_DATA_RSP_TMO 2
 #define SD_ERR_DATA_REJ 3
