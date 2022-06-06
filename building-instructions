@@ -1,3 +1,23 @@
+Instructions
+============
+
+Current Instructions
+--------------------
+
+Assembling:
+
+avrasm2 -v2 -fI -o main-v2-1.hex  -m main-v2-1.map  -l main-v2-1.lss  -S main-v2-1.tmp  -W+ie -I ~/AVR-Projects/include/  -iAVR128DB48def.inc  -I ~/AVR-Projects/avrasminclude/  main-v2-1.asm
+
+Programming:
+
+pymcuprog erase -d avr128db48
+pymcuprog write -d avr128db48 -f main-v2-1.hex
+
+Using a AVR128DA Curiosity Nano as programmer works even with my Mac Mini (Peter)
+
+History
+-------
+
 Current Build Commands
 ======================
 
