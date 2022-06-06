@@ -9,6 +9,7 @@
 recordstart	P
 record		P, Address, 2		; Address of the IO Buffer
 record		P, Sector, 4
+record		P, Wordcount, 2		; IO Wordcount for TURBO and MULTIPLE
 record		P, Error, 2
 record		P, Duration, 2
 
@@ -16,6 +17,25 @@ record		P, Cluster, 4		; Current Cluster
 record		P, Extended, 4		; During Mount Volume
 					;
 record		P, Flag, 1
+;
+;	28-05-2022	New IO paramter block flags. With TURBO and MULTIPLE
+;			we have two SD_CARD_READ routines that interleave
+;			reading data from the SD-Card with DMA, so we need
+;			to signal some actions
+;		P__Skip	As the sector size of RL01/02 is 256bytes and the 
+;			blocksize of SD-Cards is 512bytes the data requested
+;			might start in the second half of the SD-Card block
+;		P__NoCheck When Read No Check is requested we must not check
+;			the CRC of the block retrieved from the SD-Card
+;		P__Contig is set if the IO fits within a contiguous blocks
+;			of SD-Card blocks, which is the case for partitions
+;			and contiguous disk images, might as well extend this
+;			to disk image fragments that hold the complete IO
+;			in the future, if set then we can use MULTIPLE
+;
+	.equ	P__Skip		= 2	; Skip first half of block for DMA
+	.equ	P__NoCheck	= 3	; Ignore CRC Errors when reading blocks
+	.equ	P__Contig	= 4	; Either a partition or contiguous file
 	.equ	Part__Next	= 5	; Analyze next extended partition table
 	.equ	Part__Ext	= 7	; Current MBR has Extended Partition
 record		P, NumSect, 1		; Housekeeping Counter
@@ -75,6 +95,7 @@ record		fcb, Flag, 1
 	.equ	F__Direct	= 1	; File is open for direct block IO
 	.equ	F__Sequential	= 2	; File is open for sequential access
 	.equ	F__Image	= 3	; File is a valid diskimage
+	.equ	F__Contig	= 4	; File is contiguous
 	.equ	F__IOE		= 5	; File IO Error
 	.equ	F__EOF		= 6	; File Read Past End Of File
 	.equ	F__ERR		= 7	; File IO Error summary
@@ -172,6 +193,7 @@ record		ucb, status, 1
 	.equ	ucb__file	= 2	; Unit is attached to a file
 	.equ	ucb__seek	= 3	; Seek in Progress
 	.equ	ucb__de		= 4	; Drive Error
+	.equ	ucb__log	= 5	; Logging Active for this unit
 	.equ	ucb__onl	= 6	; MSCP
 	.equ	ucb__ofl	= 7	; MSCP
 record		ucb, flags, 1		; Unit flags
