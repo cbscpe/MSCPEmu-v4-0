@@ -435,8 +435,8 @@ detachunitfile:
 	breq	detachunit090
 	call	free
 detachunit090:
-	movw	Z, Y
-	adiw	Z, fcb_fraglist
+	movw	r25:r24, Y
+	adiw	r25:r24, fcb_fraglist
 	call	FreeList
 	ldd	zl, Y+fcb_iob+0
 	ldd	zh, Y+fcb_iob+1
