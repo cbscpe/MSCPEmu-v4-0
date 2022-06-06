@@ -535,7 +535,7 @@ acquire100:			; 100$:
 	brne	acquire110		; bne	110$
 	std	Z+0, yl			;
 	std	Z+1, yh			; mov	r0, (r1)
-	std	Y+0, xl
+	std	Y+0, xl			; Note xh:xl is actually zero here
 	std	Y+1, xh			; clr	(r0)
 	rjmp	acquire120		; br	120$
 acquire110:			; 110$:
@@ -890,7 +890,7 @@ create_:
 ;
 ;	We start using the -Y addressing mode as the address required for the
 ;	stack should point past the top of stack
-
+;
 	st	-Y, r0			; Program Counter aka Start address
 	st	-Y, r1			; 
 	st	-Y, r8			; During OS calls the top of the stack
@@ -941,8 +941,8 @@ create_:
 	std	Z+jcb_stack+1, yh	; Keep fingers crossed we did it right
 	clr	yl
 	std	Z+jcb_flags, yl		; Initialise the flags
-	std	Z+0, zero		; Initialise link head
-	std	Z+1, zero
+	std	Z+0, yl			; Initialise link head
+	std	Z+1, yl
 	ldi	yl, low(runjob)
 	ldi	yh, high(runjob)	; Initial queue
 	std	Z+jcb_joblist+0, yl
