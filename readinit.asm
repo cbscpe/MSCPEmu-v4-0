@@ -159,7 +159,7 @@ readinit099:
 	.db	CR, LF, 0, 0
 	movw	r25:r24, yh:yl
 	call	ReadFileClose
-	ldi	r24, FAT_READ
+	ldi	r24, FAT_RDE
 	rjmp	readinitexit1
 
 readinit091:
