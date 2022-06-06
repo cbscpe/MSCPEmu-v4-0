@@ -148,17 +148,6 @@ dirsetcluster:
 	ret
 	
 
-dircmd_nad:
-	call	mprint
-	.dw	msgdirnad
-	clc
-	rjmp	dircmdexit
-
-dircmd_fnf:
-	call	mprint
-	.dw	msgdirfnf
-	clc
-	rjmp	dircmdexit
 
 ;
 ;
@@ -206,15 +195,20 @@ dircmd110:
 	call	Name2DirEntry
 	tst	r24
 	breq	dircmd120
-	rjmp	dircmd_fnf
+	call	mprint
+	.dw	msgdirfnf
+	rjmp	dircmdexit
 dircmd120:
 	ldd	zl, Y+Vol_DirPointer+0
 	ldd	zh, Y+Vol_DirPointer+1
 	sbiw	zh:zl, 0
 	breq	dircmd125
 	ldd	r18, Z+D_Attr
-	sbrs	r18, A_Directory
-	rjmp	dircmd_nad
+	sbrc	r18, A_Directory
+	rjmp	dircmd125
+	call	mprint
+	.dw	msgdirnad
+	rjmp	dircmdexit
 dircmd125:
 	ldi	xl, low(Path)
 	ldi	xh, high(Path)
@@ -308,7 +302,7 @@ pwdcmdexit:
 printdirentry:
 	ldd	zl, Y+Vol_DirPointer+0
 	ldd	zh, Y+Vol_DirPointer+1
-	ldd	r16, Y+Vol_Status			
+	ldd	r16, Y+Vol_Status
 	sbrc	r16, Vol__Long
 	lds	r16, LongFileN		; Long file name
 	sbrs	r16, Vol__Long
