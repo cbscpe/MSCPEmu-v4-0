@@ -22,12 +22,10 @@
 ;	Data Segment
 ;	
 .include "main-v2-1.inc"		; Disk Emulator Data section
-;
 
 ;=============================================================================
 ;
 ;	Flash Begin
-;
 ;
 ;	Interrupt Vector Table
 ;
@@ -76,7 +74,7 @@ start:
 ;	Not a Software Reset
 ;
 	clr	r0
-	sts	sd_status, r0
+	sts	sd_status, r0		; Require a full initialisation
 	cbi	GPR_GPR0, auto__boot
 	cbi	GPR_GPR0, sddetect__en
 	rjmp	start100
@@ -110,42 +108,30 @@ start100:
 ;	Constants
 ;
 	clr	zero
-;
-;	Initialise RAM
-;
-;	ldi	xl, low(RAMINITSTART)
-;	ldi	xh, high(RAMINITSTART)
-;	ldi	yl, low(RAMINITEND)
-;	ldi	yh, high(RAMINITEND)
-
-;	ldi	xl, low(INTERNAL_SRAM_START)
-;	ldi	xh, high(INTERNAL_SRAM_START)
-;	ldi	yl, low(INTERNAL_SRAM_START+INTERNAL_SRAM_SIZE)
-;	ldi	yh, high(INTERNAL_SRAM_START+INTERNAL_SRAM_SIZE)
 
 ;=============================================================================
+;
+;	Initialize RAM
 ;
 ;	During debugging we do the following. We assume that the RAM range
 ;	assigned does not exceed the first 4k pages
 ;
 ;	0x4xxx	is copied to 0x5xxx
 ;	RAMINIT	is zeroized
-;	0x6xxx	is zeroized
-;	0x7xxx	is zeroized
 ;
-;	we don't care about SRAM definitions
+;	Memory above RAMINITEND to 0x4FFF is not initialized 
 ;
 	ldi	xl, low(0x4000)
 	ldi	xh, high(0x4000)
 	ldi	yl, low(0x5000)
 	ldi	yh, high(0x5000)
 	movw	r25:r24, yh:yl
-ramcopy010:
+raminit100:
 	ld	r16, X+
 	st	Y+, r16
 	cp	xl, r24
 	cpc	xh, r25
-	brlo	ramcopy010
+	brlo	raminit100
 	
 	lds	r16, log_pointer+0
 	lds	r17, log_pointer+1
@@ -156,25 +142,11 @@ ramcopy010:
 	ldi	xh, high(RAMINITSTART)
 	ldi	yl, low(RAMINITEND)
 	ldi	yh, high(RAMINITEND)
-raminit100:
-	st	X+, zero
-	cp	xl, yl
-	cpc	xh, yh
-	brlo	raminit100
-
-	ldi	xl, low(0x6000)
-	ldi	xh, high(0x6000)
-	ldi	yl, low(0x8000)
-	ldi	yh, high(0x8000)
 raminit110:
 	st	X+, zero
 	cp	xl, yl
 	cpc	xh, yh
 	brlo	raminit110
-
-	ldi	r18, 0xff
-	sts	nguard, r18
-	sts	pprint+0, r0
 ;--------------------------------------------------------------------------
 ;
 ;	Initialise heap
@@ -203,47 +175,71 @@ initheap010:				; First init range with zero
 	std	Y+1, xh
 	std	Y+2, zero		; Just one block for now, no more
 	std	Y+3, zero
-;--------------------------------------------------------------------------
-;
-;	Initialise pcb queue
-;
-	sts	pcbqueue+0, zero
-	sts	pcbqueue+1, zero
-	sts	partitionid, zero
-	sts	volqueue+0, zero
-	sts	volqueue+1, zero
-	ldi	r18, 'C'
-	sts	volumeid, r18
-;--------------------------------------------------------------------------
-;
-;	Initialise command history
-;
 	
-	sts	HistoryBuffer, zero
+;--------------------------------------------------------------------------
+;
+;	Initialize Logging
+;
+	ldi	yl, low(log_buffer)
+	ldi	yh, high(log_buffer)
+	sts	log_pointer+0, yl
+	sts	log_pointer+1, yh
+	ldi	r24, low(log_size)
+	ldi	r25, high(log_size)
+loginit010:
+	st	Y+, zero
+	sbiw	r25:r24, 1
+	brne	loginit010
+
+;	ldi	r18, (1<<log__pbn) | (1<<log__reg) | (1<<log__iack) | log__units
+	ldi	r18, (0<<log__pbn) | (0<<log__reg) | (1<<log__iack) | log__units
+	out	GPR_GPR1, r18
+
+;--------------------------------------------------------------------------
+;
+;	Initialize RAM values
+;
+	ldi	r18, 0xff
+	sts	nguard, r18		; Null Job Stack Guard Byte
 ;=============================================================================
 ;
 ;	Port Settings
 ;
 ;	Normal GPIO Pins
 ;
+#if cpldif==40
 	sbi	d_ENA			; Enable Interrupts -> no longer used
+#endif
 	sbi	d_DMR			; DMA Request
 	cbi	d_DMG			; DMA Granted
 	sbi	d_ABO			; DMA Abort
 	sbi	d_ACK			; Interrupt Acknowledge
 	sbi	d_CLK			; CPU Clock Output
 	
+#if cpldif==40
 	sbi	b_ENA			; Enable Q-Bus Interrupts - > no longer used
+#endif
 	cbi	b_DMR			; No DMA request
 	sbi	b_ABO
 	cbi	b_ABO			; Abort any pending DMA
 	sbi	b_ACK			; Acknowledge eventually pending interrupt
 	cbi	b_ACK			; Unlock Q-Bus
 
+#if cpldif==40
 	sbi	d_RS0			; Register Select 0
-	sbi	d_RS1			; Register Select 0
-	sbi	d_RS2			; Register Select 0
-
+	sbi	d_RS1			; Register Select 1
+	sbi	d_RS2			; Register Select 2
+#endif
+#if cpldif==22
+	sbi	d_ALER			; Read Register Address Latch
+	cbi	b_ALER
+	sbi	d_ALEW			; Write Register Address Latch
+	cbi	b_ALEW
+	sbi	d_T3
+	sbi	d_T4
+	cbi	b_T3
+	cbi	b_T4
+#endif
 	sbi	d_LED			; Activity LED
 	cbi	b_LED
 
@@ -270,6 +266,7 @@ initheap010:				; First init range with zero
 	cbi	d_CD			; SD-Card Card Detect
 	cbi	d_WP			; SD-Card Write Protect
 	sbi	d_MOSI			; SD-Card
+	sbi	b_MOSI			; SD-Card
 	cbi	d_MISO			; SD-Card
 	sbi	d_SCK			; SD-Card
 	sbi	d_SS			; SD-Card
@@ -303,12 +300,12 @@ initheap010:				; First init range with zero
 	ldi	r18, CLKCTRL_CLKOUT_bm	; Clock Out
 	sts	CLKCTRL_MCLKCTRLA, r18
 ;
-;	Q-Bus Level 1 to RT-OS Level 0 signalling to unblock the disk emulator job
-;	The Q-Bus Level 1 interrupt must not call any external routines and must
-;	especially not make any calls to the RT-OS, therefore it will set a 
-;	soft level 0 interrupt that will be executed after the Level 1 Q-Bus
-;	Service Routine has finished and an eventually running Level 0 service
-;	routine that has been interrupted by the Level 1 interrupt. 
+;	Q-Bus Level 1 to RT-OS Level 0 signalling to unblock the disk emulator
+;	job. The Q-Bus Level 1 interrupt must not call any external routines   
+;	and must especially not make any calls to the RT-OS, therefore it will
+;	set a soft level 0 interrupt that will be executed after the Level 1  
+;	Q-Bus Service Routine has finished and an eventually running Level 0  
+;	service routine that has been interrupted by the Level 1 interrupt.   
 ;
 	sbi	d_GO			; GO Soft Interrupt
 	sbi	b_GO			; Set Level = High 
@@ -365,7 +362,7 @@ initheap010:				; First init range with zero
 ;
 ;	SPI 1
 ;
-	ldi	r18, SPI_SSD_bm
+	ldi	r18, SPI_SSD_bm;  | SPI_BUFEN_bm
 	sts	SPI1_CTRLB, r18
 ;
 ;	Various Clock rates: CPUCLK/2, CPUCLK/4, CPUCLK/8
@@ -395,10 +392,8 @@ initheap010:				; First init range with zero
 	sts	USART1_CTRLA, r18
 ;
 ;	Driver usage is controlled by GPR_GPR0
-;	Logging uses GPR_GPR1
-;	Level1 interrupt uses GPR_GPR2 and GPR-GPR3
 ;
-	cbi	GPR_GPR0, serin__drv		; Polled 
+	cbi	GPR_GPR0, serin__drv	; Polled 
 	cbi	GPR_GPR0, serout__drv
 
 ;=============================================================================
@@ -409,13 +404,13 @@ initheap010:				; First init range with zero
 ;	very small and we only have a limited number of active timers at
 ;	each moment, so the overhead is still less than 5%.  
 ;	Compared to the Atmega1248P used in the RLV12 emulator we have 
-;	more CPU power (about 30% as we overclock to 32MHz) this more
+;	more CPU power (about 15% as we overclock to 28MHz) this more
 ;	than compensates the tick overhead, on the other hand 1ms tick
 ;	allows very small delays required by IO without hogging the CPU.
 ;
-	ldi	r18, low(F_CPU/1000)	; 1ms
+	ldi	r18, low(F_CPU/1000-1)	; 1ms
 	sts	TCB0_CCMPL, r18
-	ldi	r18, high(F_CPU/1000)
+	ldi	r18, high(F_CPU/1000-1)
 	sts	TCB0_CCMPH, r18
 
 	ldi	r18, 0
@@ -444,32 +439,30 @@ initheap010:				; First init range with zero
 ;	We want TCB1 to directly measure the time of SD-Card IO 
 ;	operations in micro seconds. 
 ;
-;	TCB2 is used as the timestamp for the logging. As logging
-;	never takes place faster than the PDP-11 accesses the device
-;	register a granularity of approx 4 micro seconds is fine to
-;	notice an increase in the timestamp of consecutive reads or
-;	writes of device registers. On the other hand it should not
-;	be too short, so we can detect gaps as long as possible
-;	as we only use the low-byte of TCB2 in the timestamp of
-;	log messages this will let us know if access to device
-;	registers are appart as much as 256*4 = 1024, wnich is
-;	more than 1ms, a very long time for a PDP-11.
+;	TCB2 is used as the timestamp for the logging. As logging never  
+;	takes place faster than the PDP-11 accesses the device register a           
+;	granularity of approx 4 micro seconds is sufficient to notice an      
+;	increase in the timestamp of consecutive reads or writes to device    
+;	registers. On the other hand it should not be too short, so we can    
+;	detect gaps as long as possible, as we only use the low-byte of TCB2  
+;	in the timestamp of log messages, this will let us know if access to  
+;	device registers are appart as much as 256*4 = 1024, wnich is more    
+;	than 1ms, a very long time for a PDP-11.                              
+;	
+;	For this we operate Timer A in split mode and set the period of the   
+;	lower counter to 1usec and the period of the upper counter to 4usec   
+;	based on the F_CPU variable                                           
 ;
-;	For this we operate Timer A in split mode and set the 
-;	period of the lower counter to 1usec and the period of the
-;	upper counter to 4usec based on the F_CPU variable
+;	Although you cannot control Timer A in split mode via events Timer A  
+;	still can create events independently for each half of the timer.     
+;	                                                                      
+;	The timer is clocked by the CPU frequency and hence the period of the 
+;	lower half is set to 27 and the period of the upper half is set to    
+;	111. Note that a period cannot exceed 255 as each half only has 8-bits
+;	and that counters in split mode count downwards.
 ;
-;	Although you cannot control Timer A in split mode via
-;	events Timer A still can create events independently for
-;	each half of the timer.
-;
-;	The timer is clocked by the CPU frequency and hence the
-;	period of the lower half is set to 31 and the period of
-;	the upper half is set to 127. Note that a period cannot
-;	exceed 255 as each half only has 8-bits
-;
-	ldi	r18, TCA_SPLIT_SPLITM_bm	; We only need a 8-bit counter
-	sts	TCA0_SINGLE_CTRLD, r18
+	ldi	r18, TCA_SPLIT_SPLITM_bm	; Set TCA0 into split mode as
+	sts	TCA0_SINGLE_CTRLD, r18		; we need two 8-bit counters
 
 	ldi	r18, low(F_CPU/1000000-1)	; Low Counter = 1usec
 	sts	TCA0_SPLIT_LPER, r18		; Period in normal mode
@@ -529,6 +522,20 @@ initheap010:				; First init range with zero
 	sts	TCB2_CTRLA, r18
 ;=============================================================================
 ;
+;	Disable/Enable Boot ROM
+;
+	ldi	r16, 7
+	out	dataportout, r16
+	sbi	b_ALEW
+	cbi	b_ALEW
+	ldi	r16, 1			; 0=disable, 1=enable
+	out	dataportout, r16
+	sts	romstatus, r16
+	sbi	b_WR
+	cbi	b_WR
+	
+;=============================================================================
+;
 ;	Print Hello Message
 ;
 	lds	r0, reset_status
@@ -576,23 +583,6 @@ initheap010:				; First init range with zero
 	call	create			; This call will never return
 ;=============================================================================
 ;
-;
-;
-;--------------------------------------------------------------------------
-loginit:
-	ldi	yl, low(log_buffer)
-	ldi	yh, high(log_buffer)
-	sts	log_pointer+0, yl
-	sts	log_pointer+1, yh
-	ldi	r24, low(log_size+1)
-	ldi	r25, high(log_size+1)
-loginit010:
-	st	Y+, zero
-	sbiw	r25:r24, 1
-	brne	loginit010
-	ret
-;=============================================================================
-;
 ;	Serial In/Out Support routines
 ;
 seroutcrlf:
@@ -637,13 +627,15 @@ serin100:				; Else proceed with polled IO
 ;
 ;-----------------------------------------------------------------------------
 ;
-;	
+;	Main program in fact is the interactive command line interpreter
+;
 main:
 	call	print
 	.db	CR, LF, "Hallo RTOS on Universal Disk Emulator ", CR, LF, 0, 0
-
 	call	rlv12_reset
-
+;
+;	Card Detect Job
+;
 	ldi	r18, 9
 	ldi	zl, low(jcb1)
 	ldi	zh, high(jcb1)
@@ -663,8 +655,10 @@ main:
 	rcall	prtcreate
 	movw	r25:r24, zh:zl
 	call	create
-
-	ldi	r18, 2
+;
+;	RLV12 Emulator Job
+;
+	ldi	r18, 2			; should be less than the priority of CLI
 	ldi	zl, low(jcb2)
 	ldi	zh, high(jcb2)
 	ldi	xl, low(rlv12job)	; start address requires word address
@@ -675,7 +669,7 @@ main:
 	std	Z+jcb_stack+1, r25
 	std	Z+jcb_joblist+0, xl
 	std	Z+jcb_joblist+1, xh
-	std	Z+jcb_priority, r18	; carddetect job
+	std	Z+jcb_priority, r18	; rlv12 emulator job
 	clr	r18
 	std	Z+jcb_flags, r18
 	call	print
@@ -683,8 +677,10 @@ main:
 	rcall	prtcreate
 	movw	r25:r24, zh:zl
 	call	create
-
-	ldi	r18, 1
+;
+;	Dummy Job
+;
+	ldi	r18, 1			; Must be the lowest priority
 	ldi	zl, low(jcb3)
 	ldi	zh, high(jcb3)
 	ldi	xl, low(dummyjob)	; start address requires word address
@@ -703,28 +699,11 @@ main:
 	rcall	prtcreate
 	movw	r25:r24, zh:zl
 	call	create
+;--------------------------------------------------------------------------
 ;
 ;	Main Job - User Interface
 ;
-;	Adjust the existing log_pointer to a valid value, that is it must
-;	point to the log_buffer and must be a multiple of 8.
-;
 readcmd:
-	lds	r16, RSTCTRL_RSTFR
-	sbrc	r16, RSTCTRL_PORF_bp
-	rcall	loginit
-
-	lds	r16, log_pointer+0	; Make sure log pointer starts
-	lds	r17, log_pointer+1	; at a 8 byte boundary
-	andi	r16, 0xF8
-	andi	r17, high(log_size)
-	ori	r17, high(log_buffer)
-	sts	log_pointer+0, r16
-	sts	log_pointer+1, r17	
-	ldi	r18, (1<<log__reg) | (1<<log__iack) | log__units
-	ldi	r18, (0<<log__reg) | (1<<log__iack) | log__units
-	out	GPR_GPR1, r18
-
 	sts	InputBuffer, zero
 	sbi	GPR_GPR0, sddetect__en		; Enable SD detect
 readcmd010:
@@ -785,7 +764,6 @@ readcmd060:
 	sts	InputBuffer, zero
 	rjmp	readcmd010
 
-
 ;--------------------------------------------------------------------------
 ;
 prtcreate:
@@ -805,12 +783,15 @@ prtcreate:
 	sts	pprint+7, r18
 
 	call	print
-	.db	0x09, "Job Control Block  0x", 0x81, 0x80, CR, LF
-	.db	0x09, "Initial Stack      0x", 0x80+jcb_stack+1, 0x80+jcb_stack, CR, LF
-	.db	0x09, "Programm Start     0x", 0x80+jcb_joblist+1, 0x80+jcb_joblist, CR, LF
-	.db	0x09, "Priority/Flags     0x", 0x80+jcb_priority, ",0x", 0x80+jcb_flags, CR, LF, 00
+	.db	0x09, "Job Control Block  0x"
+	.db	0x81, 0x80, CR, LF
+	.db	0x09, "Initial Stack      0x"
+	.db	0x80+jcb_stack+1, 0x80+jcb_stack, CR, LF
+	.db	0x09, "Programm Start     0x"
+	.db	0x80+jcb_joblist+1, 0x80+jcb_joblist, CR, LF
+	.db	0x09, "Priority/Flags     0x"
+	.db	0x80+jcb_priority, "/0x", 0x80+jcb_flags, CR, LF, 00
 	ret
-
 
 ;--------------------------------------------------------------------------
 ;
@@ -820,8 +801,11 @@ prtcreate:
 .include	"sdcardjob.asm"		; SD-Card Insert/Remove and LED routine
 .include	"SD-Card-Print-v1-0.asm"; Print SD-Card messages
 .include	"SD-Card-v1-0.asm"	; Main SD-Card routines
+.include	"SD-Card-Multiple-v1-0.asm"
+.include	"SD-Card-Turbo-v1-0.asm"
+.include	"CRC-Tables.inc"
 .include	"monitor-sub.asm"	; sub-routines used by Apple II monitor
-.include	"mprint.asm"		; local mprint routine for formatted messages
+.include	"mprint.asm"		; local formatted messages routine
 
 ;--------------------------------------------------------------------------
 ;
@@ -844,20 +828,20 @@ prtcreate:
 .include	"CLI-fdisk.asm"		; fdisk
 .include	"CLI-logging.asm"	; Logging
 .include	"CLI-commands.asm"	; Various Other commands
+.include	"CLI-sdcard.asm"	; Read Multiple Block Test
 .include	"FAT-library-v2-0.asm"	; FAT Volume Library
 .include	"FAT-fileio-v2-0.asm"	; File IO Routines
 .include	"readcmdline.asm"	; Read Command Line
 .include	"readinit.asm"		; Read Init File
 .include	"rlv12-v2-0.asm"	; RLV12 Disk Emulation
 .include	"qbus-v2-0.asm"		; RLV12 Q-Bus Interface
-.include	"readonlydata.asm"	; Read Only Memory in flash mapped to data space
+.include	"readonlydata.asm"	; Read Only Memory mapped to data space
 
 ;--------------------------------------------------------------------------
 ;
-;	MSCP modules are just included but never used just to verify the
-;	assembler syntax
+;	MSCP modules are just included just to verify the assembler syntax 
+;	but not actually used for the moment
 ;
-
 		.dseg
 .include	"MSCP/_ccb.inc"
 .include	"MSCP/_mscp.inc"
@@ -878,4 +862,3 @@ prtcreate:
 .include	"MSCP/douna.asm"
 .include	"MSCP/mscp.asm"
 .include	"MSCP/dup.asm"
-

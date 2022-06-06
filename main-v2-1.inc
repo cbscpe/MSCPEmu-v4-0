@@ -73,20 +73,15 @@ partitionid:	.byte	1
 volumeid:	.byte	1
 InitCommand:	.byte	2
 led_oneshot:	.byte	1
-
+romstatus:	.byte	1
 ;--------------------------------------------------------------------------
 ;
-;	Queue Header for malloc() and free()
+;	
 ;
-heap:		.byte	4
-.equ	heapstart	= 0x6000
-.equ	heapsize	= 0x1000
-
-
-
 	align	4
+heap:		.byte	4		; Queue Header for malloc() and free()
 log_pointer:	.byte	2		; current pointer into circular logging buffer
-daticount:	.byte	1
+daticount:	.byte	1		; debugging counter
 datocount:	.byte	1
 iackcount:	.byte	1
 initcount:	.byte	1
@@ -111,9 +106,4 @@ RAMINITEND:
 ;	
 	align	4
 sd_status:	.byte	1
-.equ		sd__v1		= 0	; If card is a version 2 card
-.equ		sd__v2		= 1	; If card is a version 2 card
-.equ		sd__init	= 2	; Card could be initialised
-.equ		sd__ccs		= 3	; Card Capacity Support
-.equ		sd__reset	= 7	; Card could be reset successfully
 reset_status:	.byte	1
