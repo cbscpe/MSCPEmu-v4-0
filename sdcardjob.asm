@@ -59,45 +59,25 @@ carddetect100:
 ;
 	lds	r16, led_oneshot
 	dec	r16
-	brpl	carddetect105
+	brpl	carddetect110
 	clr	r16
 	cbi	b_LED
-carddetect105:
+carddetect110:
 	sts	led_oneshot, r16
 
 ;
 ;	Keep the last 7 states for sdremove and sdinsert in a FIFO
 ;
-	lds	r16, sdprint+6
-	sts	sdprint+7, r16
-	lds	r16, sdprint+5
-	sts	sdprint+6, r16
-	lds	r16, sdprint+4
-	sts	sdprint+5, r16
-	lds	r16, sdprint+3
-	sts	sdprint+4, r16
-	lds	r16, sdprint+2
-	sts	sdprint+3, r16
-	lds	r16, sdprint+1
-	sts	sdprint+2, r16
-	lds	r16, sdprint+0
-	sts	sdprint+1, r16
-
-	lds	r16, sdprint+14
-	sts	sdprint+15, r16
-	lds	r16, sdprint+13
-	sts	sdprint+14, r16
-	lds	r16, sdprint+12
-	sts	sdprint+13, r16
-	lds	r16, sdprint+11
-	sts	sdprint+12, r16
-	lds	r16, sdprint+10
-	sts	sdprint+11, r16
-	lds	r16, sdprint+9
-	sts	sdprint+10, r16
-	lds	r16, sdprint+8
-	sts	sdprint+9, r16
-
+	ldi	r18, 7
+	ldi	zl, low(sdprint+7)
+	ldi	zh, high(sdprint+7)
+carddetect120:
+	ld	r16, -Z		; sdprint+6, 5, 4, 3, 2, 1, 0
+	std	Z+1, r16	; sdprint+7, 6, 5, 4, 3, 2, 1
+	ldd	r16, Z+8	; sdprint+14, 13, 12, 11, 10, 9, 8
+	std	Z+9, r16	; sdprint+15, 14, 13, 12, 11, 10, 9
+	dec	r18
+	brne	carddetect120
 ;
 ;	From "Debouncing Tutorial" the following routine gets called
 ;	regularly and returns true once a leading edge of the switch
@@ -133,14 +113,14 @@ carddetect105:
 ;
 	ori	yl, 0xe0		; and look for a rising edge 
 	cpi	yl, 0xf0
-	brne	carddetect110
+	brne	carddetect150
 ;
 ;	We have detected a leading key press so the SD-Card has just been
 ;	inserted
 ;
 	sbi	GPR_GPR0, sdcard__insert; set card insertion flag
 	inc	r12
-carddetect110:
+carddetect150:
 ;
 ;	Now we need to do the inverted logic to detect the falling edge.
 ;	For this we just need the true value of RawKeyPressed and proceed
@@ -154,10 +134,10 @@ carddetect110:
 	sts	sdprint+8, yh		; store to state FIFO
 	ori	yh, 0xe0		; and look for a falling edge (inverted)
 	cpi	yh, 0xf0
-	brne	carddetect120
+	brne	carddetect160
 	sbi	GPR_GPR0, sdcard__remove; set card removal flag
 	inc	r13
-carddetect120:
+carddetect160:
 ;
 ;	We could have dealt with the edges directly but for the moment
 ;	I decided to first detect the edges and then process it. I
@@ -186,10 +166,10 @@ sdcardinsert:
 ;	in case of a SD-Card detection we must make sure it was not 
 ;	previously initialised.
 ;
-	lds	r16, sd_status		; 
+	lds	r16, sd_status		; get SD-Card status
 	sbrs	r16, sd__init		; do not re-init SD-Card
-	call	SD_main
-	call	MountVolume
+	call	SD_main			; initialise SD-Card
+	call	MountVolume		; 
 	sbic	GPR_GPR0, sddetect__en	; Is CLI active
 	call	redraw_1
 	ret
@@ -209,7 +189,7 @@ sdcardremove:
 ;
 ;
 sdcardprbyte:
-	jmp	seroutcrlf		; print no more, it is now clear how it works
+;	jmp	seroutcrlf		; print no more, it is now clear how it works
 
 	ldi	r18, 8
 sdcardprbyte000:
