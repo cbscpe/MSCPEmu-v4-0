@@ -215,10 +215,10 @@ ReadFileClose:
 ;	Output
 ;
 ;	CS	Error
-;	r16	Error Code, most important 0x1a for end-of-file
+;	r24	Error Code, most important 0x1a for end-of-file
 ;
 ;	CC	Error
-;	r16	Byte
+;	r24	Byte
 ;
 ;	Registers
 ;	
@@ -228,6 +228,10 @@ ReadFileClose:
 ;	Input:
 ;	r25:r24	struct* filecontrolblock
 ;	
+;	01-06-2022 New Return Value
+;
+;	uint16_t
+;
 ReadFileByte:
 ;
 ;	First check if we already reached end-of-file

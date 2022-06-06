@@ -290,37 +290,19 @@ BuildFragList:
 	push	r15
 	push	yl
 	push	yh
-
-	sts	pprint+0, r24		; File Control Block
-	sts	pprint+1, r25
-	movw	zh:zl, r25:r24		; Copy File Control Block
-
+	movw	r15:r14, r25:r24	; Keep FCB in a save place
+	movw	zh:zl, r25:r24		; Copy File Control Block to pointer
 	ldd	yl, Z+fcb_Volume+0	; 
 	ldd	yh, Z+fcb_Volume+1
-	sts	pprint+2, yl		; Volume Control Block
-	sts	pprint+3, yh
 	ldd	r11, Y+Vol_sectperclst	;
 
 	movw	r13:r12, yh:yl		; Save Volume Control Block
 	ldd	yl, Z+fcb_iob+0
 	ldd	yh, Z+fcb_iob+1
-	sts	pprint+4, yl		; IO Parameter Block
-	sts	pprint+5, yh
-	adiw	Z, fcb_fraglist		; Queue Head Address
-	movw	r15:r14, zh:zl		; In case of failure we need this
-	sts	pprint+6, zl
-	sts	pprint+7, zh
-
-;	call	print
-;	.db	CR, LF, "debugBuildFragList  FCB 0x", 0x81, 0x80
-;	.db	", VCB 0x", 0x83, 0x82, ", IOB 0x", 0x85, 0x84
-;	.db	", FRL 0x", 0x87, 0x86
-;	.db	CR, LF, 0, 0
-;	ldi	r24, low(500)
-;	ldi	r25, high(500)
-;	call	delay
-	
-;
+	ldd	r16, Z+fcb_Flag	;
+	sbr	r16, (1<<F__Contig)	; Assume Continguous File
+	std	Z+fcb_Flag, r16
+	adiw	zh:zl, fcb_fraglist
 BuildFragListNext:
 	ldi	r24, low(Fr_Size)	; Get a memory block for one fragment entry
 	ldi	r25, high(Fr_Size)
@@ -328,17 +310,12 @@ BuildFragListNext:
 	sbiw	r25:r24, 0
 	brne	BuildFragList010
 	movw	r25:r24, r15:r14
+	adiw	r25:r24, fcb_fraglist	; Queue Head Address
 	rcall	FreeList	
 	ldi	r24, -1
 	rjmp	BuildFragListExit
 	
 BuildFragList010:
-;	sts	pprint+0, r24
-;	sts	pprint+1, r25
-;	sts	pprint+2, zl
-;	sts	pprint+3, zh
-;	call	print
-;	.db	"debugBuildFragList store 0x", 0x81, 0x80, " to 0x", 0x83, 0x82, CR, LF, 0
 	std	Z+Fr_List+0, r24	; Copy address to the previous queue head
 	std	Z+Fr_List+1, r25
 	movw	zh:zl, r25:r24		; New queue head
@@ -365,8 +342,6 @@ BuildFragList010:
 	std	Z+Fr_Start+1, r17
 	std	Z+Fr_Start+2, r18
 	std	Z+Fr_Start+3, r19
-;-	rcall	debugBuildFragList1
-
 BuildFragListLoop:
 	ldd	r16, Y+P_Cluster+0
 	ldd	r17, Y+P_Cluster+1
@@ -387,7 +362,6 @@ BuildFragListLoop:
 	pop	zl
 	cpi	r24, FAT_EOF
 	breq	BuildFragListDone	; No more clusters
-;-	rcall	debugBuildFragList2
 	ldd	r16, Y+P_Sector+0	; Get previous cluster
 	ldd	r17, Y+P_Sector+1	; 
 	ldd	r18, Y+P_Sector+2	; 
@@ -407,6 +381,12 @@ BuildFragListLoop:
 	ldd	r20, Y+P_Cluster+3
 	cpc	r20, r19
 	breq	BuildFragList020
+	movw	r25:r24, Z		; Save Z
+	movw	Z, r15:r14		; get FCB
+	ldd	r16, Z+fcb_Flag	;
+	cbr	r16, (1<<F__Contig)	; File is _not_ continguous
+	std	Z+fcb_Flag, r16
+	movw	Z, r24:r25		; Restore Z
 	rjmp	BuildFragListNext	; need new fragement entry
 ;
 BuildFragList020:
@@ -435,62 +415,6 @@ BuildFragListExit:
 	pop	r12
 	pop	r11
 	ret
-	
-debugBuildFragList1:
-	ldd	r16, Z+Fr_Length+0	; Length of current fragment
-	ldd	r17, Z+Fr_Length+1
-	ldd	r18, Z+Fr_Length+2	
-	ldd	r19, Z+Fr_Length+3
-
-	sts	pprint+0, r16
-	sts	pprint+1, r17
-	sts	pprint+2, r18
-	sts	pprint+3, r19
-
-	ldd	r16, Z+Fr_Start+0
-	ldd	r17, Z+Fr_Start+1
-	ldd	r18, Z+Fr_Start+2	
-	ldd	r19, Z+Fr_Start+3	; Save current cluster in the P_Sector
-
-	sts	pprint+4, r16
-	sts	pprint+5, r17
-	sts	pprint+6, r18
-	sts	pprint+7, r19
-	
-	sts	pprint+8, zl
-	sts	pprint+9, zh
-
-	call	print
-	.db	"debugBuildFragList1 0x", 0x89, 0x88
-	.db	" Start 0x", 0x87, 0x86, 0x85, 0x84, "," 
-	.db	" Length 0x", 0x83, 0x82, 0x81, 0x80, CR, LF, 0, 0
-	ret
-	
-debugBuildFragList2:
-	ldd	r16, Y+P_Sector+0
-	ldd	r17, Y+P_Sector+1
-	ldd	r18, Y+P_Sector+2
-	ldd	r19, Y+P_Sector+3
-	
-	sts	pprint+0, r16
-	sts	pprint+1, r17
-	sts	pprint+2, r18
-	sts	pprint+3, r19
-	
-	ldd	r16, Y+P_Cluster+0
-	ldd	r17, Y+P_Cluster+1
-	ldd	r18, Y+P_Cluster+2
-	ldd	r19, Y+P_Cluster+3
-	
-	sts	pprint+4, r16
-	sts	pprint+5, r17
-	sts	pprint+6, r18
-	sts	pprint+7, r19
-	
-	call	print
-	.db	"debugBuildFragList2 0x",0x83, 0x82, 0x81, 0x80
-	.db	" -> 0x", 0x87, 0x86, 0x85, 0x84, CR, LF, 0, 0
-	ret
 ;--------------------------------------------------------------------------
 ;
 ;	This routine disposes a list of packets from a given point. This can
@@ -514,19 +438,20 @@ FreeList:
 	push	zh
 ;	
 FreeListNext:
-	ldd	yl, Z+0				; Get next packet address
+	ldd	yl, Z+0			; Get next packet address
 	ldd	yh, Z+1
-	movw	r25:r24, Y			; 
-	ldd	zl, Y+0				; Get linked packet address
+	movw	r25:r24, Y		; 
+	ldd	zl, Y+0			; Get linked packet address
 	ldd	zh, Y+1
-	call	free				; Free this packet
-	cp	zl, zero			; Check next packet address
-	cpc	zh, zero
-	brne	FreeListNext			; there is still another one
+	call	free			; Free this packet
+;	cp	zl, zero		; Check next packet address
+;	cpc	zh, zero
+	sbiw	zh:zl, 0
+	brne	FreeListNext		; there is still another one
 ;
 	pop	zh
 	pop	zl
-	std	Z+0, zero			; Clear the list head
+	std	Z+0, zero		; Clear the list head
 	std	Z+1, zero
 	pop	yh
 	pop	yl
@@ -536,30 +461,19 @@ FreeListNext:
 ;	Translate logical block to physical sector using the fragment list
 ;	of the file entry
 ;
-;	2019-07-26	Input changed from P_Sector to P_Cluster so we can keep the
-;			logical block number in P_Cluster. As this is only used for
-;			block IO files P_Cluster is not used as we have a fragment
-;			list to access the sectors of the file.
-;
-;	Input:
-;	Y		Pointer to data structure for file IO
-;	Y+P_Cluster	Logical Block Number
-;
-;	Output
-;
-;	Y+P_Sector	Physical Sector Number
-;	r24		return code
-;
 ;	Ver2.0
 ;
 ;	Input:
-;	r25:r24		File Control Block
-;	P_Cluster of IOB set to Logical Block Number
-;
+;	r25:r24		Pointer to data structure for file IO the field P_Cluster
+;			in the associated IO control block must be set to the LBN
+;			(Logical Block Number)
+;			
 ;	Output:
-;	P_Sector of IOB set to physical Block Number
-;	r24		return code
 ;
+;	P_Sector	of the assosiated IO control block is set to the PBN
+;			(Physical Sector/Block Number)
+;	r24		return code
+;	(r25:r24	size)
 ;
 Logical2Physical:
 	push	yl
