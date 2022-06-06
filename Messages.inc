@@ -1,4 +1,3 @@
-
 ;--------------------------------------------------------------------------
 ;
 ;	Macro to create messages addresses for messages that can be read
