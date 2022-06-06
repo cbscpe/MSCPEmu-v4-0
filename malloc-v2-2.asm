@@ -26,13 +26,6 @@
 ;			Level0 interrupts cannot interrupt other Level0
 ;			interrupts the RTOS cannot interrupt malloc and free.
 ;
-;	Input:
-;			r25:r24	Number of bytes, must be at least 2
-;	Output:
-;			r25:r24	pointer to the buffer
-;	Registers:
-;			none
-;
 
 malloc:
 	set
@@ -40,7 +33,6 @@ malloc:
 	sbis	b_MEM			; check ISR has been executed
 	rjmp	PC-1			; 
 	ret
-
 
 free:
 	clt
@@ -56,11 +48,20 @@ mem_:
 	reti				; should never happen
 	brts	malloc_
 	rjmp	free_
-
-
+;--------------------------------------------------------------------------
+;
+;	malloc()
+;
+;	Input:
+;			r25:r24	Number of bytes, must be at least 2
+;	Output:
+;			r25:r24	pointer to the buffer, zero if not enough memory
+;	Registers:
+;			none
+;
 malloc_:
-	sbi	b_MEM
-	push	r16
+	sbi	b_MEM		; de-assert software interrupt
+	push	r16		; save registers
 	push	r17
 	push	xl
 	push	xh
@@ -68,7 +69,7 @@ malloc_:
 	push	yh
 	push	zl
 	push	zh
-	sbi	f_MEM
+	sbi	f_MEM		; acknowledge interrupt
 	sbiw	r25:r24, 2	; need to request at least 2 bytes
 	brmi	mfailed		; invalid amount
 	adiw	r25:r24, 2+2	; Minimal Size incl. header
@@ -98,14 +99,14 @@ mloop:
 ;
 	sbiw	yh:yl, 0
 	breq	mlistend	; reached the end check if we have a block
-	ldd	r16, Y+0		; Get length of next block
-	ldd	r17, Y+1		;
+	ldd	r16, Y+0	; Get length of next block
+	ldd	r17, Y+1	;
 	cp	r16, r24
 	cpc	r17, r25
 	brlo	mloop		; too short
 	adiw	r25:r24, 4	; 
 	cp	r16, r24
-	cpc	r17, r25		; big enough for a split
+	cpc	r17, r25	; big enough for a split
 	brlo	mfit		; no so we have a best fit
 	sbiw	r25:r24, 4	; 
 	set			; We have a block
@@ -117,10 +118,10 @@ mloop:
 mfit:
 	movw	r25:r24, Y	; Copy pointer
 	adiw	r25:r24, 2	; Skip Header
-	ldd	r16, Y+2		; Get the pointer to the next block
+	ldd	r16, Y+2	; Get the pointer to the next block
 	ldd	r17, Y+3
-	std	Z+2, r16		; And let the previous block point to
-	std	Z+3, r17		; it, ie. we just remove the block from list.
+	std	Z+2, r16	; And let the previous block point to
+	std	Z+3, r17	; it, ie. we just remove the block from list.
 	clc			; r17:r16 might be 0 as well if by coincidence
 	rjmp	mfinish		; the last block is a best fit
 ;
