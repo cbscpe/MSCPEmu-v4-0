@@ -210,7 +210,7 @@ qbus_intq:
 ;	Fetch Address, even when the controller is busy this might
 ;	be a DATI/DATO to the Boot ROM at 173000
 ;
-	waitin				; 3-5
+	waitin				; 3-5 cycles
 	in	zl, dataportin		; 1
 ;
 ;	+---+---+---+---+---+---+---+---+
@@ -221,11 +221,13 @@ qbus_intq:
 .equ	LB	= 6			; Don't Write Lower Byte
 .equ	ROM	= 5			; Boot ROM
 .equ	WTBT	= 0			; Write i.e. DATO
+#if cpldif==22
 ;
 ;	Check if this as access to the boot ROM
 ;
 	sbrc	zl, ROM			; 2/1
 	rjmp	qbus_rom		; 0/2
+#endif
 ;
 ;	In case the controller is busy skip processing of register access
 ;
@@ -762,6 +764,7 @@ qbus_dato_boot6:
 ;
 ;	Boot ROM
 ;
+#if cpldif==22
 qbus_rom:
 	sbrc	zl, WTBT
 	rjmp	qbus_romo
@@ -802,15 +805,6 @@ qbus_rom:
 ;	DATO is just logged but not yet written to a RAM Range
 ;
 qbus_romo:
-	#if cpldif==40
-	cbi	b_RS2			; 1 Switch from CSR Address to Q-Bus Data Low
-	waitin				; 3-5
-	in	yl, dataportin		; 1 Read Q-Bus Data Low
-	sbi	b_RS0			; 1 Switch to Q-Bus Data High
-	waitin				; 3-5
-	in	yh, dataportin		; 1
-	#endif
-	#if cpldif==22
 	sbi	b_ALER
 	cbi	b_ALER
 	waitin				; 3-5
@@ -819,7 +813,6 @@ qbus_romo:
 	cbi	b_ALER
 	waitin				; 3-5
 	in	yh, dataportin		; Next Register is Q-Bus High
-	#endif
 	sbi	b_ALER
 	cbi	b_ALER
 	lds	zl, log_pointer+0
@@ -852,6 +845,7 @@ qbus_romx:
 	cbi	b_SIG			; 1
 	sbi	f_INTQ			; 1 Assert MCU Interrupt
 	reti				; 4	
+#endif
 ;--------------------------------------------------------------------------
 ;
 ;	IACK
