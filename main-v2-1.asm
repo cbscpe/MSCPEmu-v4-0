@@ -190,11 +190,8 @@ loginit010:
 	st	Y+, zero
 	sbiw	r25:r24, 1
 	brne	loginit010
-
-;	ldi	r18, (1<<log__pbn) | (1<<log__reg) | (1<<log__iack) | log__units
-	ldi	r18, (0<<log__pbn) | (0<<log__reg) | (1<<log__iack) | log__units
+	ldi	r18, logging
 	out	GPR_GPR1, r18
-
 ;--------------------------------------------------------------------------
 ;
 ;	Initialize RAM values
@@ -368,8 +365,9 @@ loginit010:
 ;	Various Clock rates: CPUCLK/2, CPUCLK/4, CPUCLK/8
 ;
 ;	ldi	r18, SPI_CLK2X_bm | SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
-	ldi	r18,                SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
+;	ldi	r18,                SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
 ;	ldi	r18, SPI_CLK2X_bm | SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV16_gc
+	ldi	r18, spispeed
 	sts	SPI1_CTRLA, r18		
 ;=============================================================================
 ;
@@ -524,6 +522,7 @@ loginit010:
 ;
 ;	Disable/Enable Boot ROM
 ;
+	#if	cpldif==22
 	ldi	r16, 7
 	out	dataportout, r16
 	sbi	b_ALEW
@@ -533,6 +532,7 @@ loginit010:
 	sts	romstatus, r16
 	sbi	b_WR
 	cbi	b_WR
+	#endif
 	
 ;=============================================================================
 ;

@@ -15,8 +15,8 @@
 ;	reliable. For the moment we will leave it at 28MHz which is
 ;	still fast enough.
 ;
-.equ	F_CLK	=	CLKCTRL_FREQSEL_28M_gc
-.equ	F_CPU	=	28000000
+.equ	F_CLK	=	CLKCTRL_FREQSEL_32M_gc
+.equ	F_CPU	=	32000000
 ;
 ;	Baud Rate Generator with fractional baud-rate generator
 ;
@@ -41,10 +41,19 @@
 ;
 ;	Q-Bridge CPLD Version
 ;
-;#define cpldif 40
-#define cpldif 22
+#define cpldif 40
+;#define cpldif 22
 ;
 ;
+;--------------------------------------------------------------------------
+;	
+;	SPI SD-Card Speed and other settings
+;
+;	Various Clock rates: CPUCLK/2, CPUCLK/4, CPUCLK/8
+;
+;#define spispeed SPI_CLK2X_bm | SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
+#define spispeed                SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
+;#define spispeed SPI_CLK2X_bm | SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV16_gc
 ;
 #define spibuffered 0
 ;--------------------------------------------------------------------------
@@ -207,6 +216,10 @@
 .equ	log__iack	= 5		; Log Interrupt Ack and bus INIT
 .equ	log__pbn	= 6		; Log physical block number
 .equ	log__reg	= 7		; Log Device Register IO
+;
+;#define logging (1<<log__pbn) | (0<<log__trace) | (1<<log__reg) | (1<<log__iack) | log__units
+;#define logging (0<<log__pbn) | (0<<log__trace) | (0<<log__reg) | (1<<log__iack) | log__units
+#define logging (1<<log__pbn) | (1<<log__trace) | (1<<log__reg) | (1<<log__iack) | log__units
 
 .if (log_begin & 0xFF >0)
 	.error " Invalid non-circular buffer size"
