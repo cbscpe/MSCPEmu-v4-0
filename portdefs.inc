@@ -12,7 +12,7 @@
 .equ	DMG	= 2			; DMA Granted	
 .equ	ABO	= 3			; Abort Cycle	
 .equ	ACK	= 4			; Acknowledge Cycle
-;	PA5	unused	
+;	PA5	unused			; PIN1 Red Kinar Wire
 .equ	RTOS	= 6			; RTOS Software Interrupt	
 .equ	CLK	= 7			; CPDL Clock output
 
@@ -108,7 +108,7 @@
 ;
 .equ	INTI	= 0			; IACK cycle interrupt
 .equ	INTQ	= 1			; DATI/DATO cycle interrupt
-.equ	LED	= 2			; Activity LED
+.equ	LED	= 2			; Activity LED PIN32 Yellow Kinar Wire
 .equ	INIT	= 3			; Bus INIT interrupt
 
 #define	d_INTI	VPORTE_DIR, INTI
