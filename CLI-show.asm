@@ -40,6 +40,7 @@ cmd_showint010:
 	rcall	cmd_showintprint
 cmd_showint020:
 	rcall	cmd_showintirqs
+	rcall	cmd_showintports
 
 cmd_showintexit:
 	pop	yh
@@ -66,7 +67,7 @@ cmd_showintirqs:
 	.db	TAB, "DATI     0x", 0x80, CR, CR, LF
 	.db	TAB, "DATO     0x", 0x81, CR, CR, LF
 	.db	TAB, "IACK     0x", 0x82, CR, CR, LF
-	.db	TAB, "INIT     0x", 0x83, CR, CR, LF
+	.db	TAB, "INIT     0x", 0x83, CR, CR, LF, 0, 0
 	sts	daticount, zero
 	sts	datocount, zero
 	sts	iackcount, zero
@@ -126,6 +127,15 @@ cmd_showintprint:
 	.db	TAB, "DirPointer.. 0x", 0x8d, 0x8c, CR, LF
 	.db	TAB, "Num Sector.. 0x", 0x8e, SPACE, CR, LF
 	.db	TAB, "Dir Count... 0x", 0x8f, CR, LF, 0
+	ret
+	
+cmd_showintports:
+	ldi	r16, '0'
+	sbic	b_CRDY
+	ldi	r16, '1'
+	sts	pprint+0, r16
+	call	print
+	.db	TAB, "CRDY ..........:", 0x90, CR, LF, 0, 0
 	ret
 ;--------------------------------------------------------------------------
 ;
