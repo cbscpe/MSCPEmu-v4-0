@@ -27,7 +27,38 @@
 ;	bytes, in the meantime the program starts a DMA write with the        
 ;	previous word.
 ;
+;
+;----------------------------------------------------------------------------
+;
+;	Wrap writing dummy bytes into a macro as it seems we need to make 
+;	sure we check DRE
+;
+.macro	stspi
+l1:
+	lds	r18, SPI1_INTFLAGS
+	sbrs	r18, SPI_DREIF_bp
+	rjmp	l1
+	ldi	r18, 0xff
+	sts	SPI1_DATA, r18
+.endmacro
+;
+;	Wrap reading data as well into a macro. The two marcro's are used
+;	during the transfer where we use 16-bit transfers form the SD-Card
+;	to the MCU
+;
+.macro	ldspi
+l1:
+	lds	r18, SPI1_INTFLAGS	; Wait until we have a byte to read
+	sbrs	r18, SPI_RXCIF_bp
+	rjmp	l1			; Wait for first byte received
+	lds	@0, SPI1_DATA
+.endmacro
+;
+;
+;
 SD_CARD_MULTIPLE:
+	push	r3
+	clr	r3			; credits
 	push	r4			; Save Registers
 	push	r5
 	push	yl
@@ -55,6 +86,8 @@ SD_CARD_MULTIPLE:
 	pop	r18;4
 	pop	r18;5
 	pop	r18;6
+	clr	zl
+	clr	zh
 	rcall	SD_readRes1		; Get R1 result
 	cpi	r24, SD_READY		; Was it ok
 	breq	SD_CARD_MULTIPLE010	; yes -> continue
@@ -93,53 +126,36 @@ SD_CARD_MULTIPLE040:
 	ldd	r16, Y+P_Flag		; Possibly skip the first RL01/02
 	sbrs	r16, P__Skip		; sector in first block
 	rjmp	SD_CARD_MULTIPLE080	; no read starts at a even RL01/02 sector
-	clr	r4			; prepare CRC and word count
-	clr	r5
+	clr	r4			; prepare CRC and block word count
+	clr	r5			; in this case just to skip first half of it
 	clr	r19
 SD_CARD_MULTIPLE050:
-	ldi	r18, 0xFF			
-	sts	SPI1_DATA, r18		; Write two dummy bytes in order
-	sts	SPI1_DATA, r18		; to request two bytes from the SD-Card
-	rjmp	PC+1
-	rjmp	PC+1
-SD_CARD_MULTIPLE060:
-	lds	r18, SPI1_INTFLAGS	; Wait until we have a byte to read
-	sbrs	r18, SPI_RXCIF_bp
-	rjmp	SD_CARD_MULTIPLE060	; Wait for first byte received
-	lds	r16, SPI1_DATA
-SD_CARD_MULTIPLE070:
-	lds	r18, SPI1_INTFLAGS	; and another one
-	sbrs	r18, SPI_RXCIF_bp
-	rjmp	SD_CARD_MULTIPLE070	; Wait for second byte received
-	lds	r17, SPI1_DATA
+	stspi
+	stspi
+	ldspi	r16
+	ldspi	r17
 	crc	r16, r4, r5		;
 	crc	r17, r4, r5		;
-	inc	r19			; And skip 128 words
-	brpl	SD_CARD_MULTIPLE050	;
+	inc	r19			;
+	brpl	SD_CARD_MULTIPLE050	; And skip 128 words
 	rjmp	SD_CARD_MULTIPLE090	; Continue to transfer 2nd half of block
+;
+;	Entry point to read one full block, so first initialise CRC and block
+;	word count, this is also the start when reading the next block so we
+;	have to do it always
+;
 SD_CARD_MULTIPLE080:			; Start transferring a full block
 	clr	r4
 	clr	r5
 	clr	r19
 SD_CARD_MULTIPLE090:			; Continue 
-	ldi	r18, 0xFF			
-	sts	SPI1_DATA, r18		; Write two dummy bytes in order
-	sts	SPI1_DATA, r18		; to request two bytes from the SD-Card
-	rjmp	PC+1
-	rjmp	PC+1
+	stspi
+	stspi
 SD_CARD_MULTIPLE100:
-	lds	r18, SPI1_INTFLAGS	; Wait until we have a byte to read
-	sbrs	r18, SPI_RXCIF_bp
-	rjmp	SD_CARD_MULTIPLE100	; Wait for first byte received
-	lds	r16, SPI1_DATA
-SD_CARD_MULTIPLE110:
-	lds	r18, SPI1_INTFLAGS	; and another one
-	sbrs	r18, SPI_RXCIF_bp
-	rjmp	SD_CARD_MULTIPLE110	; Wait for second byte received
-	lds	r17, SPI1_DATA
-	ldi	r18, 0x0FF
-	sts	SPI1_DATA, r18		; Write two dummy bytes in order
-	sts	SPI1_DATA, r18		; to request two bytes from the SD-Card
+	ldspi	r16
+	ldspi	r17
+	stspi
+	stspi
 	#if cpldif==40	
 	cli				;
 	cbi	b_RS0			; Write DMA Data Register
@@ -191,17 +207,11 @@ SD_CARD_MULTIPLE130:
 	rjmp	SD_CARD_MULTIPLE170	;
 SD_CARD_MULTIPLE135:
 	inc	r19			; do another word
-	brne	SD_CARD_MULTIPLE100
+	breq	SD_CARD_MULTIPLE140
+	rjmp	SD_CARD_MULTIPLE100
 SD_CARD_MULTIPLE140:
-	lds	r18, SPI1_INTFLAGS	; Now we retrieve the CRC-16
-	sbrs	r18, SPI_RXCIF_bp
-	rjmp	SD_CARD_MULTIPLE140	; Wait for first byte received
-	lds	r17, SPI1_DATA		; High Byte CRC first
-SD_CARD_MULTIPLE150:
-	lds	r18, SPI1_INTFLAGS
-	sbrs	r18, SPI_RXCIF_bp
-	rjmp	SD_CARD_MULTIPLE150	; Wait for second byte received
-	lds	r16, SPI1_DATA
+	ldspi	r17			; Retrieve CRC-16, high-byte first
+	ldspi	r16
 	cp	r4, r16			; Match?
 	cpc	r5, r17			; 
 	breq	SD_CARD_MULTIPLE160	; CRC matches
@@ -233,15 +243,8 @@ SD_CARD_MULTIPLE165:
 ;	Retrieve the two pending bytes before we proceed
 ;
 SD_CARD_MULTIPLE170:			; remove 2 bytes
-	lds	r18, SPI1_INTFLAGS
-	sbrs	r18, SPI_RXCIF_bp
-	rjmp	SD_CARD_MULTIPLE170
-	lds	r16, SPI1_DATA
-SD_CARD_MULTIPLE171:
-	lds	r18, SPI1_INTFLAGS
-	sbrs	r18, SPI_RXCIF_bp
-	rjmp	SD_CARD_MULTIPLE171
-	lds	r16, SPI1_DATA
+	ldspi	r16
+	ldspi	r16
 SD_CARD_MULTIPLE180:
 	mov	r4, r24			; Save Return Code
 	std	Y+P_Wordcount+0, xl	; Return Remaining Word Count
@@ -301,4 +304,5 @@ SD_CARD_MULTIPLE999:
 	pop	yl
 	pop	r5
 	pop	r4
+	pop	r3
 	ret
