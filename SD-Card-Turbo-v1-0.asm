@@ -213,7 +213,7 @@ SD_CARD_TURBO161:
 	cpc	r5, r17			; 
 	ldi	r24, SD_SUCCESS		; Assume yes
 	breq	SD_CARD_TURBO170	; yeah!
-	ldi	r24, SD_ERR_CRC		; oh no CRC error
+	ldi	r24, SD_ERR_CRC		; oh no! CRC error
 SD_CARD_TURBO170:
 	lds	r17, SPI1_CTRLA		; Reset Buffered Mode
 	sts	SPI1_CTRLA, zero
