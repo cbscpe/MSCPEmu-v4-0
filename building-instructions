@@ -15,11 +15,8 @@ pymcuprog write -d avr128db48 -f main-v2-1.hex
 
 Using a AVR128DA Curiosity Nano as programmer works even with my Mac Mini (Peter)
 
-History
--------
-
-Current Build Commands
-======================
+Modified Include Files 
+-----------------------
 
 Note: I have copied AVR128DB48def.inc and AVR128DB64.inc to the include/ and modified
 
@@ -31,6 +28,30 @@ to
 
 to avoid the warnings, as the avrasm2 versions for macOS do not know about the core
 versin v4
+
+Debug Port Qbridge 4.0
+----------------------
+Pin	Color	Description
+1	red	PA5 not currently used
+2	yellow	b_LED
+3	yellow	i_INTI
+4	orange	b_ENA
+5	blue	b_ACK
+6	black	i_INIT
+7	red	b_MEM
+8	green	i_INTQ
+9	blue	b_CRDY
+10	red	b_SIG
+
+SPI
+---
+
+Von oben nach unten
+MOSI
+MISO
+SCK
+-SS
+
 
 Assembling 
 ----------
