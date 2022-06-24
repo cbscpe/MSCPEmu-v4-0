@@ -671,6 +671,18 @@ cmd_showjobs:
 jcbprintalt:
 	sts	pprint+8, yl
 	sts	pprint+9, yh
+	ldd	zl, Y+jcb_jobname+0
+	ldd	zh, Y+jcb_jobname+1
+	call	print
+	.db	CR, LF
+	.db	"Job Name:", 0
+jcbprintname010:	
+	ld	r24, Z+
+	tst	r24
+	breq	jcbprintname020
+	call	serout
+	rjmp	jcbprintname010
+jcbprintname020:
 	ldd	zl, Y+jcb_stack+0
 	ldd	zh, Y+jcb_stack+1
 	sts	pprint+0, zl

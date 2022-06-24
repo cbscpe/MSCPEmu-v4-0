@@ -218,8 +218,8 @@
 .equ	log__reg	= 7		; Log Device Register IO
 ;
 ;#define logging (1<<log__pbn) | (0<<log__trace) | (1<<log__reg) | (1<<log__iack) | log__units
-;#define logging (0<<log__pbn) | (0<<log__trace) | (0<<log__reg) | (1<<log__iack) | log__units
-#define logging (1<<log__pbn) | (1<<log__trace) | (1<<log__reg) | (1<<log__iack) | log__units
+#define logging (0<<log__pbn) | (0<<log__trace) | (0<<log__reg) | (1<<log__iack) | log__units
+;#define logging (1<<log__pbn) | (1<<log__trace) | (1<<log__reg) | (1<<log__iack) | log__units
 
 .if (log_begin & 0xFF >0)
 	.error " Invalid non-circular buffer size"

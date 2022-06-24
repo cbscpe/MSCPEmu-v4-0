@@ -1108,9 +1108,9 @@ rlv12_rwsetup:
 	std	Y+P_Cluster+3, r19
 	
 	ldd	r16, Z+fcb_Flag		; 
-	bst	r16, F__Contig		;
+	bst	r16, F__Contig		; Get the file is contiguous flag
 	ldd	r16, Y+P_Flag		;
-	bld	r16, P__Contig		;
+	bld	r16, P__Contig		; Mark contiguous SD-Card transfer
 	std	Y+P_Flag, r16		;
 	
 	movw	r25:r24, zh:zl		; File Control Block
@@ -1139,7 +1139,7 @@ rlv12_rwsetup020:
 
 	ldd	r16, Y+P_Flag		;
 	sbr	r16, (1<<P__Contig)	;
-	std	Y+P_Flag, r16		;
+	std	Y+P_Flag, r16		; Partitions are always contiguous
 
 ;
 ;	Get the number of words requested. If more words are requested than

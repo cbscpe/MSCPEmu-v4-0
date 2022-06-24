@@ -15,6 +15,10 @@ pymcuprog write -d avr128db48 -f main-v2-1.hex
 
 Using a AVR128DA Curiosity Nano as programmer works even with my Mac Mini (Peter)
 
+With avrdude 7.0 Catalina works again
+
+avrdude -v -p avr128db48 -c atmelice_updi -U flash:w:main-v2-1.hex
+
 Modified Include Files 
 -----------------------
 

@@ -124,7 +124,7 @@ record		jcb, stack, 2		; Stack Pointer
 record		jcb, joblist, 2		; Job Queue
 record		jcb, priority, 1	; Priority
 record		jcb, flags, 1		; Flags, not used
-;record		jcb, alljob, 2		; 
+record		jcb, jobname, 2		; 
 recordend	jcb, size
 
 

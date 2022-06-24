@@ -569,6 +569,10 @@ loginit010:
 	std	Z+jcb_joblist+1, xh
 	std	Z+jcb_priority, r18
 	std	Z+jcb_flags, zero
+	ldi	r24, low(jobmain)
+	ldi	r25, high(jobmain)
+	std	Z+jcb_jobname+0, r24
+	std	Z+jcb_jobname+1, r25
 
 	call	print
 	.db	"Create Main Job", CR, LF, 0
@@ -650,6 +654,10 @@ main:
 	std	Z+jcb_priority, r18	; carddetect job
 	clr	r18
 	std	Z+jcb_flags, r18
+	ldi	r24, low(jobsdcard)
+	ldi	r25, high(jobsdcard)
+	std	Z+jcb_jobname+0, r24
+	std	Z+jcb_jobname+1, r25
 	call	print
 	.db	"Create SD-Card Detect Job", CR, LF, 0
 	rcall	prtcreate
@@ -672,6 +680,10 @@ main:
 	std	Z+jcb_priority, r18	; rlv12 emulator job
 	clr	r18
 	std	Z+jcb_flags, r18
+	ldi	r24, low(jobrlv12)
+	ldi	r25, high(jobrlv12)
+	std	Z+jcb_jobname+0, r24
+	std	Z+jcb_jobname+1, r25
 	call	print
 	.db	"Create RLV12 Job", CR, LF, 0, 0
 	rcall	prtcreate
@@ -692,6 +704,10 @@ main:
 	std	Z+jcb_joblist+0, xl
 	std	Z+jcb_joblist+1, xh
 	std	Z+jcb_priority, r18	; carddetect job
+	ldi	r24, low(jobdummy)
+	ldi	r25, high(jobdummy)
+	std	Z+jcb_jobname+0, r24
+	std	Z+jcb_jobname+1, r25
 	clr	r18
 	std	Z+jcb_flags, r18
 	call	print
