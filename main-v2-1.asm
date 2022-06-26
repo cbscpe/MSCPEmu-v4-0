@@ -231,10 +231,10 @@ loginit010:
 	cbi	b_ALER
 	sbi	d_ALEW			; Write Register Address Latch
 	cbi	b_ALEW
-	sbi	d_T3
-	sbi	d_T4
-	cbi	b_T3
-	cbi	b_T4
+;	sbi	d_T3
+;	sbi	d_T4
+;	cbi	b_T3
+;	cbi	b_T4
 #endif
 	sbi	d_LED			; Activity LED
 	cbi	b_LED
