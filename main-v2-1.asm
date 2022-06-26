@@ -14,7 +14,6 @@
 ;	Definitions
 ;
 .include "diskemu.inc"			; Global Definitions
-.include "portdefs.inc"			; IO Port definitions
 .include "control-blocks.inc"		; Control Blocks
 .include "error.inc"			; Error code definitions
 ;--------------------------------------------------------------------------
