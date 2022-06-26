@@ -41,9 +41,9 @@
 ;
 ;	Q-Bridge CPLD Version
 ;
-;.include	"portdefs40.inc"	; CPLD Interface 4.0 PDP-11/Hack
+.include	"portdefs40.inc"	; CPLD Interface 4.0 PDP-11/Hack
 ;.include	"portdefs22b.inc"	; CPLD Interface 2.2 RLV12 Emu 2.0 Adapter B
-.include	"portdefs22c.inc"	; CPLD Interface 2.2 RLV12 Emu 2.0 Adapter C
+;.include	"portdefs22c.inc"	; CPLD Interface 2.2 RLV12 Emu 2.0 Adapter C
 ;
 ;--------------------------------------------------------------------------
 ;	
@@ -55,7 +55,6 @@
 #define spispeed                SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
 ;#define spispeed SPI_CLK2X_bm | SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV16_gc
 ;
-#define spibuffered 0
 ;--------------------------------------------------------------------------
 ;
 ;	SD-Card status byte bit definitions
