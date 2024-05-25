@@ -47,8 +47,8 @@ l1:
 ;
 .macro	ldspi
 l1:
-	lds	r18, SPI1_INTFLAGS	; Wait until we have a byte to read
-	sbrs	r18, SPI_RXCIF_bp
+	lds	@0, SPI1_INTFLAGS	; Wait until we have a byte to read
+	sbrs	@0, SPI_RXCIF_bp
 	rjmp	l1			; Wait for first byte received
 	lds	@0, SPI1_DATA
 .endmacro
@@ -114,14 +114,14 @@ SD_CARD_MULTIPLE030:
 SD_CARD_MULTIPLE040:
 	ldd	xl, Y+P_Wordcount+0	; Get Word Count
 	ldd	xh, Y+P_Wordcount+1	;
-	lds	r17, SPI1_CTRLA
+	lds	r21, SPI1_CTRLA
 	sts	SPI1_CTRLA, zero
 	lds	r18, SPI1_CTRLB
 	sbr	r18, SPI_BUFEN_bm	; Set SPI buffered mode so we can do the
 	sts	SPI1_CTRLB, r18		; transfer in 16-bit chunks
-	sts	SPI1_CTRLA, r17
-	ldd	r16, Y+P_Flag		; Possibly skip the first RL01/02
-	sbrs	r16, P__Skip		; sector in first block
+	sts	SPI1_CTRLA, r21
+	ldd	r20, Y+P_Flag		; Possibly skip the first RL01/02
+	sbrs	r20, P__Skip		; sector in first block
 	rjmp	SD_CARD_MULTIPLE080	; no read starts at a even RL01/02 sector
 	clr	r4			; prepare CRC and block word count
 	clr	r5			; in this case just to skip first half of it
@@ -129,10 +129,10 @@ SD_CARD_MULTIPLE040:
 SD_CARD_MULTIPLE050:
 	stspi
 	stspi
-	ldspi	r16
-	ldspi	r17
-	crc	r16, r4, r5		;
-	crc	r17, r4, r5		;
+	ldspi	r20
+	ldspi	r21
+	crc	r20, r4, r5		;
+	crc	r21, r4, r5		;
 	inc	r19			;
 	brpl	SD_CARD_MULTIPLE050	; And skip 128 words
 	rjmp	SD_CARD_MULTIPLE090	; Continue to transfer 2nd half of block
@@ -149,8 +149,8 @@ SD_CARD_MULTIPLE090:			; Continue
 	stspi
 	stspi
 SD_CARD_MULTIPLE100:
-	ldspi	r16
-	ldspi	r17
+	ldspi	r20
+	ldspi	r21
 	stspi
 	stspi
 	#if cpldif==40	
@@ -158,11 +158,11 @@ SD_CARD_MULTIPLE100:
 	cbi	b_RS0			; Write DMA Data Register
 	sbi	b_RS1			;
 	cbi	b_RS2			;
-	out	dataportout, r16	;
+	out	dataportout, r20	;
 	sbi	b_WR			;
 	cbi	b_WR			;
 	sbi	b_RS0			;
-	out	dataportout, r17	;
+	out	dataportout, r21	;
 	sbi	b_WR			;
 	cbi	b_WR			;
 	sei				;
@@ -173,18 +173,18 @@ SD_CARD_MULTIPLE100:
 	out	dataportout, r18	;
 	sbi	b_ALEW			;
 	cbi	b_ALEW			;
-	out	dataportout, r16	;
+	out	dataportout, r20	;
 	sbi	b_WR			;
 	cbi	b_WR			;
-	out	dataportout, r17	;
+	out	dataportout, r21	;
 	sbi	b_WR			;
 	cbi	b_WR			;
 	sei				;
 	#endif
 	sbi	b_DMR			; In the meantime we start the DMA
 	ldi	r18, dmatmo		;
-	crc	r16, r4, r5		; During DMA we first calculate the CRC
-	crc	r17, r4, r5		; each byte requires 11 cycles
+	crc	r20, r4, r5		; During DMA we first calculate the CRC
+	crc	r21, r4, r5		; each byte requires 11 cycles
 SD_CARD_MULTIPLE120:			;
 	dec	r18			; Then we wait for the DMA to finish or
 	sbis	i_DMG			; time-out
@@ -207,16 +207,16 @@ SD_CARD_MULTIPLE135:
 	breq	SD_CARD_MULTIPLE140
 	rjmp	SD_CARD_MULTIPLE100
 SD_CARD_MULTIPLE140:
-	ldspi	r17			; Retrieve CRC-16, high-byte first
-	ldspi	r16
-	cp	r4, r16			; Match?
-	cpc	r5, r17			; 
+	ldspi	r21			; Retrieve CRC-16, high-byte first
+	ldspi	r20
+	cp	r4, r20			; Match?
+	cpc	r5, r21			; 
 	breq	SD_CARD_MULTIPLE160	; CRC matches
-	ldd	r16, Y+P_Flag
-	sbrc	r16, P__Nocheck		; 
+	ldd	r20, Y+P_Flag
+	sbrc	r20, P__Nocheck		; 
 	rjmp	SD_CARD_MULTIPLE160	; We don't care about CRC
 	logtr	0x77, r4, r5
-	logtr	0x78, r16, r17
+	logtr	0x78, r20, r21
 	ldi	r24, SD_ERR_CRC		; oh no CRC error
 	rjmp	SD_CARD_MULTIPLE180	; 
 ;
@@ -229,30 +229,30 @@ SD_CARD_MULTIPLE165:
 	lds	r18, SPI1_INTFLAGS
 	sbrs	r18, SPI_RXCIF_bp
 	rjmp	SD_CARD_MULTIPLE165
-	lds	r16, SPI1_DATA
-	cpi	r16, 0xFF		; Still Busy
+	lds	r20, SPI1_DATA
+	cpi	r20, 0xFF		; Still Busy
 	breq	SD_CARD_MULTIPLE160	; Yes try another one
 	ldi	r24, SD_ERR_INV_TOKEN	; Assume invalid Token
-	cpi	r16, SD_START_TOKEN	; Data Token?
+	cpi	r20, SD_START_TOKEN	; Data Token?
 	brne	SD_CARD_MULTIPLE180	; not good
 	rjmp	SD_CARD_MULTIPLE080	; Got a token get next block
 ;
 ;	Retrieve the two pending bytes before we proceed
 ;
 SD_CARD_MULTIPLE170:			; remove 2 bytes
-	ldspi	r16
-	ldspi	r16
+	ldspi	r20
+	ldspi	r20
 SD_CARD_MULTIPLE180:
 	mov	r4, r24			; Save Return Code
 	std	Y+P_Wordcount+0, xl	; Return Remaining Word Count
 	std	Y+P_Wordcount+1, xh
 	logtr	0x79, xl, xh
-	lds	r17, SPI1_CTRLA		; Reset Buffered Mode
+	lds	r21, SPI1_CTRLA		; Reset Buffered Mode
 	sts	SPI1_CTRLA, zero
 	lds	r18, SPI1_CTRLB
 	cbr	r18, SPI_BUFEN_bm
 	sts	SPI1_CTRLB, r18
-	sts	SPI1_CTRLA, r17
+	sts	SPI1_CTRLA, r21
 	clr	r18
 	push	r18;6
 	push	r18;5
@@ -278,7 +278,7 @@ SD_CARD_MULTIPLE200:
 	lds	r18, SPI1_INTFLAGS	; Just ommit next byte
 	sbrs	r18, SPI_RXCIF_bp
 	rjmp	SD_CARD_MULTIPLE200
-	lds	r16, SPI1_DATA
+	lds	r20, SPI1_DATA
 	ldi	r19, 16			; We expect a status within 16 bytes
 SD_CARD_MULTIPLE210:
 	rcall	SD_readRes1		; Get R1 result
