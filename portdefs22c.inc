@@ -18,7 +18,6 @@
 .equ	SCK0	= 6
 .equ	CLK	= 7			; CLKOUT
 
-
 #define d_DMG	VPORTA_DIR, DMG
 #define i_DMG	VPORTA_IN, DMG
 
