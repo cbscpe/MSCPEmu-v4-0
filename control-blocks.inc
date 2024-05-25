@@ -161,7 +161,7 @@ record		Drv, Name, 4
 record		Drv, MediaID, 4
 record		Drv, Capacity, 4
 record		Drv, MaxCapacity, 4
-record		DRv, RCTSize, 2
+record		Drv, RCTSize, 2
 record		Drv, Sectors, 1
 record		Drv, Tracks, 1
 record		Drv, Cylinders, 2
@@ -193,12 +193,13 @@ record		ucb, status, 1
 	.equ	ucb__file	= 2	; Unit is attached to a file
 	.equ	ucb__seek	= 3	; Seek in Progress
 	.equ	ucb__de		= 4	; Drive Error
-	.equ	ucb__log	= 5	; Logging Active for this unit
 	.equ	ucb__onl	= 6	; MSCP
 	.equ	ucb__ofl	= 7	; MSCP
 record		ucb, flags, 1		; Unit flags
 record		ucb, type, 1		; Unit specific status
-record		ucb, r1, 1		; ...
+record		ucb, log, 1		; Logging
+	.equ	ucb__log	= 0	; Logging Active for this unit
+	.equ	ucb__pbn	= 1	; Logging Physical Blocks
 record		ucb, imgptr, 2		; Pointer to partition or file control block
 record		ucb, media, 4		; perhaps via drvtyp, it is a constant!
 record		ucb, lock, 2		; Lock word to let the unit job wait
