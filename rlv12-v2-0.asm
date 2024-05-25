@@ -107,7 +107,7 @@ rlv12loop:
 	sbic	GPR_GPR0, auto__boot	; Was Autoboot requested?
 	rjmp	rlv12_autoboot		; Yes so do autoboot
 ;+++logging
-	logptr				; Destroys r25:r24, zh:zl
+	logptr	zl, zh, r25, r24	; Destroys r25:r24, zh:zl
 	movw	logptrh:logptrl, zh:zl	; keep it in case we want to overwrite
 	lds	r16, CSRL		; the default logging
 	std	Z+2, r16
@@ -505,7 +505,7 @@ rlv12_seekdone:
 ;	Logging
 ;
 ;+++logging
-	logptr				; Destroys r25:r24, zh:zl
+	logptr	zl, zh, r25, r24	; Destroys r25:r24, zh:zl
 	std	Z+2, r16
 	std	Z+3, r17		; new disk address
 	ldi	r16, log_diskaddr
@@ -754,7 +754,7 @@ rlv12_readdata:				; Read for SD-Cards
 	cbr	r16, (1<<P__Nocheck)
 	std	Y+P_Flag, r16		; Check CRC
 rlv12_readdata010:
-	sbis	GPR_GPR1, log__rl3	; use RL3 logging as Turbo Switch
+	sbis	GPR_GPR1, log__turbo	; use RL3 logging as Turbo Switch
 	rjmp	rlv12_readdata060
 ;
 ;	Check if the sectors we need to read are contiguous. In this case
@@ -946,7 +946,7 @@ rlv12_rwnextsector:
 	sbis	GPR_GPR1, log__pbn	; PBN Logging requested
 	ret				; Nope just return
 ;+++logging
-	logptr				; Destroys r25:r24, zh:zl
+	logptr	zl, zh, r25, r24	; Destroys r25:r24, zh:zl
 	std	Z+3, r16
 	std	Z+2, r17
 	std	Z+1, r18
@@ -979,7 +979,7 @@ rlv12_rwnextsector010:
 	sbis	GPR_GPR1, log__pbn
 	ret
 ;+++logging
-	logptr				; Destroys r25:r24, zh:zl
+	logptr	zl, zh, r25, r24	; Destroys r25:r24, zh:zl
 	std	Z+3, r16
 	std	Z+2, r17
 	std	Z+1, r18
@@ -1049,7 +1049,7 @@ rlv12_rwsetup:
 	lds	r17, BAEL
 ;
 ;+++logging
-	logptr				; Destroys r25:r24, zh:zl
+	logptr	zl, zh, r25, r24	; Destroys r25:r24, zh:zl
 	ldi	r19, log_address
 	std	Z+0, r19
 	std	Z+1, bar_l
@@ -1159,7 +1159,7 @@ rlv12_rwsetup030:
 ;+++logging
 	sbis	GPR_GPR1, log__pbn
 	rjmp	rlv12_rwsetup035
-	logptr				; Destroys r25:r24, zh:zl
+	logptr	zl, zh, r25, r24	; Destroys r25:r24, zh:zl
 	ldd	r16, Y+P_Sector+0	; Set start sector for read or write
 	ldd	r17, Y+P_Sector+1
 	ldd	r18, Y+P_Sector+2
