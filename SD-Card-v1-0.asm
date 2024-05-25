@@ -183,14 +183,14 @@ SD_commandCRC:
 ; uint8_t SD_commandCRC(uint8_t *cmd)
 	movw	xh:xl, r25:r24
 	ldi	r24, 0x40		; Initiate CRC with start of Bit7=0, Bit6=1
-	ldi	r16, 5			; 5 bytes
+	ldi	r18, 5			; 5 bytes
 SD_commandCRC010:
-	ld	r17, X+			; Get Next Command byte
-	eor	r24, r17		; xor
+	ld	r19, X+			; Get Next Command byte
+	eor	r24, r19		; xor
 	mov	zl, r24			; make index
 	ldi	zh, high(2*crc7table)	; translate
 	lpm	r24, Z			; new CRC
-	dec	r16
+	dec	r18
 	brne	SD_commandCRC010
 	ret				; r24 contains CRC7 left-adjusted
 ;-----------------------------------------------------------------------------
@@ -395,8 +395,9 @@ SD_sendOpCond:; uint8_t SD_sendOpCond()
 ;	Monitor Test Routines
 ;
 SD_main:
-	push	r5
 	push	r4			; Call saved register
+	push	r5
+	push	r16
 	rcall	SD_powerUpSeq
 	call	print
 	.db	"Sending CMD0...", CR, LF, "Response:", CR, LF, 0, 0
@@ -507,8 +508,9 @@ SD_main_exit:
 	pop	r18;4
 	pop	r18;5
 	pop	r18;6
-	pop	r4
+	pop	r16
 	pop	r5			; restore call saved register
+	pop	r4
 	ret
 	
 SD_readCSD:
@@ -699,14 +701,14 @@ SD_sendRead060:
 	ldd	xh, Y+P_Address+1
 	ldi	r24, low(512)
 	ldi	r25, high(512)
-	ldi	r16, 0xFF
-	sts	SPI1_DATA, r16
+	ldi	r19, 0xFF
+	sts	SPI1_DATA, r19
 SD_sendRead080:
 	lds	r18, SPI1_INTFLAGS
 	sbrs	r18, SPI_IF_bp
 	rjmp	SD_sendRead080
 	lds	r18, SPI1_DATA
-	sts	SPI1_DATA, r16		; Next dummy byte
+	sts	SPI1_DATA, r19		; Next dummy byte
 	st	X+, r18
 	crc	r18, r4, r5
 	sbiw	r25:r24, 1
@@ -717,7 +719,7 @@ SD_sendRead081:
 	sbrs	r18, SPI_IF_bp
 	rjmp	SD_sendRead081
 	lds	r25, SPI1_DATA
-	sts	SPI1_DATA, r16		; Next dummy byte
+	sts	SPI1_DATA, r19		; Next dummy byte
 	
 SD_sendRead082:
 	lds	r18, SPI1_INTFLAGS
