@@ -336,42 +336,63 @@ logunits:
 	lds	r18, tpflags
 	sbrc	r18, tp__no
 	rjmp	logunitsno
-	in	r18, GPR_GPR1
-	ori	r18, log__units
-	out	GPR_GPR1, r18
+	lds	r18, unittable+ucb_size*0+ucb_status
+	sbr	r18, (1<<ucb__log)	
+	sts	unittable+ucb_size*0+ucb_status, r18
+	lds	r18, unittable+ucb_size*1+ucb_status
+	sbr	r18, (1<<ucb__log)	
+	sts	unittable+ucb_size*1+ucb_status, r18
+	lds	r18, unittable+ucb_size*2+ucb_status
+	sbr	r18, (1<<ucb__log)	
+	sts	unittable+ucb_size*2+ucb_status, r18
+	lds	r18, unittable+ucb_size*3+ucb_status
+	sbr	r18, (1<<ucb__log)	
+	sts	unittable+ucb_size*3+ucb_status, r18
 	clc
 	ret
 logunitsno:
-	in	r18, GPR_GPR1
-	andi	r18, ~log__units
-	out	GPR_GPR1, r18
+	lds	r18, unittable+ucb_size*0+ucb_status
+	cbr	r18, (1<<ucb__log)	
+	sts	unittable+ucb_size*0+ucb_status, r18
+	lds	r18, unittable+ucb_size*1+ucb_status
+	cbr	r18, (1<<ucb__log)	
+	sts	unittable+ucb_size*1+ucb_status, r18
+	lds	r18, unittable+ucb_size*2+ucb_status
+	cbr	r18, (1<<ucb__log)	
+	sts	unittable+ucb_size*2+ucb_status, r18
+	lds	r18, unittable+ucb_size*3+ucb_status
+	cbr	r18, (1<<ucb__log)	
+	sts	unittable+ucb_size*3+ucb_status, r18
 	clc
 	ret
-
+;
+;	Move Logging Flag of units to UCB
+;
 logunit:
 	push	r17
-	lds	r17, attunit
-	ldi	r18, (1<<log__rl0)
-logunit010:
-	dec	r17
-	brmi	logunit020
-	lsl	r18
-	rjmp	logunit010
-logunit020:
+	push	yl
+	push	yh
+	lds	yl, attunit
+	clr	yh
+	subi	yl, low(-unittable)	; 
+	sbci	yh, high(-unittable)	; 
 	lds	r17, tpflags
 	sbrc	r17, tp__no
 	rjmp	logunitno
-	in	r17, GPR_GPR1
-	or	r17, r18
-	out	GPR_GPR1, r17
+	ldd	r17, Y+ucb_log
+	sbr	r17, (1<<ucb__log)
+	std	Y+ucb_log, r17
+	pop	yh
+	pop	yl
 	pop	r17
 	clc
 	ret
 logunitno:
-	com	r18
-	in	r17, GPR_GPR1
-	and	r17, r18
-	out	GPR_GPR1, r17
+	ldd	r17, Y+ucb_log
+	cbr	r17, (1<<ucb__log)
+	std	Y+ucb_log, r17
+	pop	yh
+	pop	yl
 	pop	r17
 	clc
 	ret
@@ -429,22 +450,26 @@ logstatus:
 ;
 	call	print
 	.db	"Logging unit 0 .................:", NULL
-	bst	r18, log__rl0
+	lds	r18, unittable+ucb_size*0+ucb_status
+	bst	r18, ucb__log
 	rcall	logstatusonoff
 ;
 	call	print
 	.db	"Logging unit 1 .................:", NULL
-	bst	r18, log__rl1
+	lds	r18, unittable+ucb_size*1+ucb_status
+	bst	r18, ucb__log
 	rcall	logstatusonoff
 ;
 	call	print
 	.db	"Logging unit 2 .................:", NULL
-	bst	r18, log__rl2
+	lds	r18, unittable+ucb_size*2+ucb_status
+	bst	r18, ucb__log
 	rcall	logstatusonoff
 ;
 	call	print
 	.db	"Logging unit 3 .................:", NULL
-	bst	r18, log__rl3
+	lds	r18, unittable+ucb_size*3+ucb_status
+	bst	r18, ucb__log
 	rcall	logstatusonoff
 ;
 	clc
