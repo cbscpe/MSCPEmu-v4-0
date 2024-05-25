@@ -55,15 +55,19 @@
 #define spispeed                SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
 ;#define spispeed SPI_CLK2X_bm | SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV16_gc
 ;
+;	Conditional assembly
+;
+#define includemscp 1
+;
 ;--------------------------------------------------------------------------
 ;
 ;	SD-Card status byte bit definitions
 ;
-.equ		sd__v1		= 0	; If card is a version 2 card
-.equ		sd__v2		= 1	; If card is a version 2 card
-.equ		sd__init	= 2	; Card could be initialised
-.equ		sd__ccs		= 3	; Card Capacity Support
-.equ		sd__reset	= 7	; Card could be reset successfully
+.equ	sd__v1		= 0	; If card is a version 2 card
+.equ	sd__v2		= 1	; If card is a version 2 card
+.equ	sd__init	= 2	; Card could be initialised
+.equ	sd__ccs		= 3	; Card Capacity Support
+.equ	sd__reset	= 7	; Card could be reset successfully
 ;--------------------------------------------------------------------------
 ;
 ;	Special characters
@@ -206,19 +210,15 @@
 ;
 ;	GPR_GPR1 definitions for logging
 ;
-.equ	log__rl0	= 0		; Log IO to unit 0
-.equ	log__rl1	= 1
-.equ	log__rl2	= 2
-.equ	log__rl3	= 3
-.equ	log__units	= 0x0f		; All Units
+.equ	log__turbo	= 3		; Turbo Routine for SD_CARD_READ
 .equ	log__trace	= 4		; Log Debug Traces
 .equ	log__iack	= 5		; Log Interrupt Ack and bus INIT
 .equ	log__pbn	= 6		; Log physical block number
 .equ	log__reg	= 7		; Log Device Register IO
 ;
-;#define logging (1<<log__pbn) | (0<<log__trace) | (1<<log__reg) | (1<<log__iack) | log__units
-#define logging (0<<log__pbn) | (0<<log__trace) | (0<<log__reg) | (1<<log__iack) | log__units
-;#define logging (1<<log__pbn) | (1<<log__trace) | (1<<log__reg) | (1<<log__iack) | log__units
+;#define logging (1<<log__pbn) | (0<<log__trace) | (1<<log__reg) | (1<<log__iack) | (1<<log__turbo)
+#define logging (0<<log__pbn) | (0<<log__trace) | (0<<log__reg) | (1<<log__iack) | (1<<log__turbo)
+;#define logging (1<<log__pbn) | (1<<log__trace) | (1<<log__reg) | (1<<log__iack) | (1<<log__turbo)
 
 .if (log_begin & 0xFF >0)
 	.error " Invalid non-circular buffer size"
@@ -230,22 +230,25 @@
 	.error " Invalid logging buffer definitions"
 .endif
 ;
-;	Get the current log pointer to the Z register and update
-;	the log pointer with the next entry in the circular or
-;	lollipop shaped logging buffer
+;	Get the current log pointer and update the log pointer with the next entry
+;	in the circular or lollipop shaped logging buffer this macro expects the  
+;	registers that receive the current pointer and two scratchpad registers  
+;	as parameters                                                             
 ;
-	.macro	logptr			; Destroys r25:r24, zh:zl
+	.macro	logptr			; logptr ptrl, ptrh, scratchl, scratchh
 	cli				;;;
-	lds	zl, log_pointer+0	;;;  3 Logging
-	lds	zh, log_pointer+1	;;;  3 Logging
-	movw	r25:r24, zh:zl		;;;  1
-	adiw	r25:r24, 4		;;;  2
-	sbrc	r25, log_overflow	;;;  2/1
-	subi	r25, high(log_size)     ;;;  0/1
-	sts	log_pointer+0, r24	;;;  2
-	sts	log_pointer+1, r25	;;;  2
+	lds	@0, log_pointer+0	;;;  3 Logging
+	lds	@1, log_pointer+1	;;;  3 Logging
+	movw	@3:@2, @1:@0		;;;  1
+	subi	@2, low(-4)		;;;  1
+	sbci	@3, high(-4)		;;;  1
+	sbrc	@3, log_overflow	;;;  2/1
+	subi	@3, high(log_size)	;;;  0/1
+	sts	log_pointer+0, @2	;;;  2
+	sts	log_pointer+1, @3	;;;  2
 	sei				;;;  1	-> 16 cycles ~0.6usec
 	.endmacro
+
 ;
 ;	Trace function which creates a log entry with an ID and a 16-bit      
 ;	value, typically used to display the current value of register or a   
@@ -258,7 +261,7 @@
 	push	r17
 	push	zl
 	push	zh
-	LDI	R16, log_trace
+	ldi	r16, log_trace
 	ldi	r17, @0
 	cli				;;;
 	lds	zl, log_pointer+0	;;;  3 Logging
