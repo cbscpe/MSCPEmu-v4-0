@@ -18,6 +18,8 @@
 Cluster2Sector:;(struct* IOParameterBlock, struct* VolumeControlBlock)
 	push	r0
 	push	r1			; mul
+	push	r16			; ABI!!
+	push	r17
 	push	yl
 	push	yh
 	movw	yh:yl, r25:r24		; Parameter Block
@@ -62,6 +64,8 @@ Cluster2Sector:;(struct* IOParameterBlock, struct* VolumeControlBlock)
 	std	Y+P_Sector+3, r23
 	pop	yh
 	pop	yl
+	pop	r17
+	pop	r16			; ABI!!
 	pop	r1
 	pop	r0
 	ret
@@ -97,6 +101,8 @@ Cluster2Sector:;(struct* IOParameterBlock, struct* VolumeControlBlock)
 ;
 ;
 LinkedCluster:;(struct* IOParameterBlock, struct* VolumeControlBlock)
+	push	r16			; ABI!!
+	push	r17
 	push	yl
 	push	yh			; save
 	movw	yh:yl, r25:r24
@@ -210,6 +216,8 @@ LinkedSameSect:
 Linked16:
 	pop	yh
 	pop	yl
+	pop	r17
+	pop	r16			; ABI!!
 	ret
 ;
 ;
@@ -242,6 +250,8 @@ LinkedCluster32:
 LinkedMore:
 	pop	yh
 	pop	yl
+	pop	r17
+	pop	r16			; ABI!!
 	ret
 
 ;--------------------------------------------------------------------------
@@ -288,6 +298,8 @@ BuildFragList:
 	push	r13
 	push	r14
 	push	r15
+	push	r16			; ABI!!
+	push	r17
 	push	yl
 	push	yh
 	movw	r15:r14, r25:r24	; Keep FCB in a save place
@@ -414,6 +426,8 @@ BuildFragListExit:
 	pop	r13
 	pop	r12
 	pop	r11
+	pop	r17
+	pop	r16			; ABI!!
 	ret
 ;--------------------------------------------------------------------------
 ;
@@ -476,6 +490,8 @@ FreeListNext:
 ;	(r25:r24	size)
 ;
 Logical2Physical:
+	push	r16			; ABI!!
+	push	r17
 	push	yl
 	push	yh
 	movw	yh:yl, r25:r24
@@ -532,6 +548,8 @@ Logical2Found:
 Logical2Exit:
 	pop	yh
 	pop	yl
+	pop	r17
+	pop	r16			; ABI!!
 	ret
 
 ;==========================================================================
@@ -620,21 +638,21 @@ CopyNameLoop:
 CopyNameDone:
 	st	-Z, zero
 ;++++
-;	in	r16, CPU_SREG		; preserve T-Bit
+;	in	r18, CPU_SREG		; preserve T-Bit
 ;	sts	pprint+0, xl
 ;	sts	pprint+1, xh
 ;	sts	pprint+2, zl
 ;	sts	pprint+3, zh
 ;	sts	pprint+4, r24
-;	ldi	r17, '0'
-;	bld	r17, 0
-;	sts	pprint+5, r17
+;	ldi	r19, '0'
+;	bld	r19, 0
+;	sts	pprint+5, r19
 ;	call	print
 ;	;	"----+----1----+----2----+"
 ;	.db	"Copy Name Delimiter 0x", 0x84, SPACE, CR, LF
 ;	.db	"T-Bit              '", 0x95, "'", CR, LF
 ;	.db	"Copy Name Exit      X->0x", 0x81, 0x80, " Z->0x", 0x83, 0x82, CR, LF, 0
-;	out	CPU_SREG, r16
+;	out	CPU_SREG, r18
 ;----
 	pop	zh
 	pop	zl
@@ -815,6 +833,8 @@ CreatePathExit:
 ;
 ;
 MatchFileName:;uint8_t (struct* VolumeControlBlock);
+	push	r16			; ABI!!
+	push	r17
 	push	yl
 	push	yh
 	movw	yh:yl, r25:r24
@@ -892,6 +912,8 @@ MatchFileFNF:				; Match File-not-found
 MatchFileFin:
 	pop	yh
 	pop	yl
+	pop	r17
+	pop	r16			; ABI!!
 	ret
 ;
 ;	Match short filename 
@@ -980,6 +1002,8 @@ MatchSFNFound020:
 MatchSFNFin:
 	pop	yh
 	pop	yl
+	pop	r17
+	pop	r16			; ABI!!
 	ret
 ;--------------------------------------------------------------------------
 ;
@@ -1018,6 +1042,8 @@ MatchSFNFin:
 Name2DirEntry:; uint8_t Name2DirEntry(struct* VolumeControlBlock, char* name)
 	push	r6
 	push	r7			; Intermediate storage for CopyName pointer
+	push	r16			; ABI!!
+	push	r17
 	push	yl
 	push	yh
 	
@@ -1126,6 +1152,8 @@ Name2DirEntryDone:
 Name2DirEntryExit:
 	pop	yh
 	pop	yl
+	pop	r17
+	pop	r16			; ABI!!
 	pop	r7
 	pop	r6
 	ret
@@ -1211,6 +1239,8 @@ Name2ChkRoot010:
 ; uint8_t OpenDir
 ;
 OpenDir:;(struct* VolumeControlBlock);
+	push	r16			; ABI!!
+	push	r17
 	push	yl
 	push	yh
 	movw	yh:yl, r25:r24
@@ -1282,6 +1312,8 @@ OpenDirAll:
 OpenDirExit:
 	pop	yh
 	pop	yl
+	pop	r17
+	pop	r16			; ABI!!
 	ret
 ;--------------------------------------------------------------------------
 ;
@@ -1305,6 +1337,8 @@ OpenDirExit:
 ; uint8_t ReadDir
 ;
 ReadDir:;(struct* VolumeControlBlock);
+	push	r16			; ABI!!
+	push	r17
 	push	yl
 	push	yh
 	movw	yh:yl, r25:r24
@@ -1409,6 +1443,8 @@ ReadDirThis:
 ReadNxtDirExit:
 	pop	yh
 	pop	yl
+	pop	r17
+	pop	r16			; ABI!!
 	ret
 
 ReadDirNext:
@@ -1600,8 +1636,4 @@ debugReadDirCopy:
 ;	AddDirEntry
 ;
 ;		Add a directory entry
-;
-;
-;
-;
 ;
