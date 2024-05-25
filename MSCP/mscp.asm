@@ -65,7 +65,7 @@ do_default:
 	push	yh
 	movw	yh:yl, r25:r24
 
-	logptr
+	logptr	zl, zh, r25, r24
 	ldi	r16, log_mscp
 	lds	r17, timestamp		; 
 	ldd	r18, Y+cmd_opcd

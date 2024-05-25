@@ -515,7 +515,7 @@ mscp_setupw:
 	ldd	r17, Z+cmd_buff+0
 	ldd	r18, Z+cmd_buff+1
 	ldd	r19, Z+cmd_buff+2
-	logptr
+	logptr	zl, zh, r25, r24
 	std	Z+0, r16
 	std	Z+1, r17
 	std	Z+2, r18
@@ -525,7 +525,7 @@ mscp_setupw:
 	ldd	r17, Z+cmd_bcnt+0
 	ldd	r18, Z+cmd_bcnt+1
 	ldd	r19, Z+cmd_bcnt+2
-	logptr
+	logptr	zl, zh, r25, r24
 	std	Z+0, r16
 	std	Z+1, r17
 	std	Z+2, r18
@@ -535,7 +535,7 @@ mscp_setupw:
 	ldd	r17, Z+cmd_lbn+0
 	ldd	r18, Z+cmd_lbn+1
 	ldd	r19, Z+cmd_lbn+2
-	logptr
+	logptr	zl, zh, r25, r24
 	std	Z+0, r16
 	std	Z+1, r17
 	std	Z+2, r18
@@ -600,7 +600,7 @@ mscp_rwsetup020:
 mscp_rwsetup030:
 	sbis	GPR_GPR1, log__pbn
 	rjmp	mscp_rwsetup035
-	logptr				; Destroys r25:r24, zh:zl
+	logptr	zl, zh, r25, r24	; Destroys r25:r24, zh:zl
 	ldd	r16, Y+P_Sector+0	; Set start sector for read or write
 	ldd	r17, Y+P_Sector+1
 	ldd	r18, Y+P_Sector+2
@@ -645,7 +645,7 @@ mscp_rwnextsector:
 	std	Y+P_Sector+3, r19
 	sbis	GPR_GPR1, log__pbn
 	ret
-	logptr				; Destroys r25:r24, zh:zl
+	logptr	zl, zh, r25, r24	; Destroys r25:r24, zh:zl
 	std	Z+3, r16
 	std	Z+2, r17
 	std	Z+1, r18
@@ -676,7 +676,7 @@ mscp_rwnextsector010:
 	ldd	r19, Y+P_Sector+3
 	sbis	GPR_GPR1, log__pbn
 	ret
-	logptr				; Destroys r25:r24, zh:zl
+	logptr	zl, zh, r25, r24		
 	std	Z+3, r16
 	std	Z+2, r17
 	std	Z+1, r18
