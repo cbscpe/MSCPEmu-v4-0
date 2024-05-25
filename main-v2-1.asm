@@ -857,6 +857,7 @@ prtcreate:
 ;	MSCP modules are just included just to verify the assembler syntax 
 ;	but not actually used for the moment
 ;
+#if includemscp
 		.dseg
 .include	"MSCP/_ccb.inc"
 .include	"MSCP/_mscp.inc"
@@ -877,3 +878,4 @@ prtcreate:
 .include	"MSCP/douna.asm"
 .include	"MSCP/mscp.asm"
 .include	"MSCP/dup.asm"
+#endif
