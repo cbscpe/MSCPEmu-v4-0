@@ -75,17 +75,17 @@ SD_CARD_TURBO030:			; Wait for 1ms, setting delay to zero means
 SD_CARD_TURBO040:
 	ldd	xl, Y+P_Wordcount+0
 	ldd	xh, Y+P_Wordcount+1
-	lds	r17, SPI1_CTRLA
+	lds	r21, SPI1_CTRLA
 	sts	SPI1_CTRLA, zero
 	lds	r18, SPI1_CTRLB
 	sbr	r18, SPI_BUFEN_bm	; Set SPI buffered mode so we can do the
 	sts	SPI1_CTRLB, r18		; transfer in 16-bit chunks
-	sts	SPI1_CTRLA, r17
+	sts	SPI1_CTRLA, r21
 	clr	r4			; Prepare for CRC Calculcation
 	clr	r5
 	clr	r19
-	ldd	r16, Y+P_Flag		; Possibly skip the first RL01/02
-	sbrs	r16, P__Skip		; sector in first block
+	ldd	r20, Y+P_Flag		; Possibly skip the first RL01/02
+	sbrs	r20, P__Skip		; sector in first block
 	rjmp	SD_CARD_TURBO080	; no read starts at a even RL01/02 sector
 SD_CARD_TURBO050:
 	ldi	r18, 0xFF			
@@ -97,14 +97,14 @@ SD_CARD_TURBO060:
 	lds	r18, SPI1_INTFLAGS	; Wait until we have a byte to read
 	sbrs	r18, SPI_RXCIF_bp
 	rjmp	SD_CARD_TURBO060	; Wait for first byte received
-	lds	r16, SPI1_DATA
+	lds	r20, SPI1_DATA
 SD_CARD_TURBO070:
 	lds	r18, SPI1_INTFLAGS	; and another one
 	sbrs	r18, SPI_RXCIF_bp
 	rjmp	SD_CARD_TURBO070	; Wait for second byte received
-	lds	r17, SPI1_DATA
-	crc	r16, r4, r5		;
-	crc	r17, r4, r5		;
+	lds	r21, SPI1_DATA
+	crc	r20, r4, r5		;
+	crc	r21, r4, r5		;
 	inc	r19			; And skip 128 words
 	brpl	SD_CARD_TURBO050	;
 SD_CARD_TURBO080:			; Start transferring a full block
@@ -117,12 +117,12 @@ SD_CARD_TURBO100:
 	lds	r18, SPI1_INTFLAGS	; Wait until both bytes have been sent
 	sbrs	r18, SPI_RXCIF_bp
 	rjmp	SD_CARD_TURBO100	; Wait for first byte received
-	lds	r16, SPI1_DATA
+	lds	r20, SPI1_DATA
 SD_CARD_TURBO110:
 	lds	r18, SPI1_INTFLAGS	; Wait until both bytes have been sent
 	sbrs	r18, SPI_RXCIF_bp
 	rjmp	SD_CARD_TURBO110	; Wait for first byte received
-	lds	r17, SPI1_DATA
+	lds	r21, SPI1_DATA
 	ldi	r18, 0xFF
 	sts	SPI1_DATA, r18		; Write two dummy bytes in order
 	sts	SPI1_DATA, r18		; to request two bytes from the SD-Card
@@ -131,11 +131,11 @@ SD_CARD_TURBO110:
 	cbi	b_RS0			;
 	sbi	b_RS1			;
 	cbi	b_RS2			;
-	out	dataportout, r16	;
+	out	dataportout, r20	;
 	sbi	b_WR			;
 	cbi	b_WR			;
 	sbi	b_RS0			;
-	out	dataportout, r17	;
+	out	dataportout, r21	;
 	sbi	b_WR			;
 	cbi	b_WR			;
 	sei				;
@@ -146,18 +146,18 @@ SD_CARD_TURBO110:
 	out	dataportout, r18	;
 	sbi	b_ALEW			;
 	cbi	b_ALEW			;
-	out	dataportout, r16	;
+	out	dataportout, r20	;
 	sbi	b_WR			;
 	cbi	b_WR			;
-	out	dataportout, r17	;
+	out	dataportout, r21	;
 	sbi	b_WR			;
 	cbi	b_WR			;
 	sei				;
 	#endif
 	sbi	b_DMR			; In the meantime we start the DMA
 	ldi	r18, dmatmo		;
-	crc	r16, r4, r5		; During DMA we first calculate the CRC
-	crc	r17, r4, r5		;
+	crc	r20, r4, r5		; During DMA we first calculate the CRC
+	crc	r21, r4, r5		;
 SD_CARD_TURBO120:			;
 	dec	r18			; Then we wait for the DMA to finish or
 	sbis	i_DMG			; time-out
@@ -186,12 +186,12 @@ SD_CARD_TURBO150:
 	lds	r18, SPI1_INTFLAGS	; Wait until both bytes have been sent
 	sbrs	r18, SPI_RXCIF_bp
 	rjmp	SD_CARD_TURBO150	; Wait for first byte received
-	lds	r17, SPI1_DATA		; High Byte CRC first
+	lds	r21, SPI1_DATA		; High Byte CRC first
 SD_CARD_TURBO151:
 	lds	r18, SPI1_INTFLAGS	; Wait until both bytes have been sent
 	sbrs	r18, SPI_RXCIF_bp
 	rjmp	SD_CARD_TURBO151	; Wait for first byte received
-	lds	r16, SPI1_DATA		;
+	lds	r20, SPI1_DATA		;
 	ldi	r18, 0xFF
 	sts	SPI1_DATA, r18		; Write two dummy bytes in order
 	sts	SPI1_DATA, r18		; to request two bytes from the SD-Card
@@ -203,24 +203,24 @@ SD_CARD_TURBO160:
 	lds	r18, SPI1_INTFLAGS	; Wait until both bytes have been sent
 	sbrs	r18, SPI_RXCIF_bp
 	rjmp	SD_CARD_TURBO160	; Wait for first byte received
-	lds	r17, SPI1_DATA		; High Byte CRC first
+	lds	r21, SPI1_DATA		; High Byte CRC first
 SD_CARD_TURBO161:
 	lds	r18, SPI1_INTFLAGS	; Wait until both bytes have been sent
 	sbrs	r18, SPI_RXCIF_bp
 	rjmp	SD_CARD_TURBO161	; Wait for first byte received
-	lds	r16, SPI1_DATA		;
-	cp	r4, r16			; Match?
-	cpc	r5, r17			; 
+	lds	r20, SPI1_DATA		;
+	cp	r4, r20			; Match?
+	cpc	r5, r21			; 
 	ldi	r24, SD_SUCCESS		; Assume yes
 	breq	SD_CARD_TURBO170	; yeah!
 	ldi	r24, SD_ERR_CRC		; oh no! CRC error
 SD_CARD_TURBO170:
-	lds	r17, SPI1_CTRLA		; Reset Buffered Mode
+	lds	r21, SPI1_CTRLA		; Reset Buffered Mode
 	sts	SPI1_CTRLA, zero
 	lds	r18, SPI1_CTRLB
 	cbr	r18, SPI_BUFEN_bm
 	sts	SPI1_CTRLB, r18
-	sts	SPI1_CTRLA, r17
+	sts	SPI1_CTRLA, r21
 SD_CARD_TURBO999:
 	mov	r4, r24			; Save Return Status
 	rcall	SPI_transfer_dummy
