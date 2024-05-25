@@ -25,8 +25,7 @@
 ;	after we have read the previous requested two bytes. The SPI interface
 ;	will start sending the two dummy bytes and thus retrieve the next two 
 ;	bytes, in the meantime the program starts a DMA write with the        
-;	previous word.
-;
+;	previous word. 
 ;
 ;----------------------------------------------------------------------------
 ;
@@ -57,8 +56,6 @@ l1:
 ;
 ;
 SD_CARD_MULTIPLE:
-	push	r3
-	clr	r3			; credits
 	push	r4			; Save Registers
 	push	r5
 	push	yl
@@ -263,7 +260,7 @@ SD_CARD_MULTIPLE180:
 	push	r18;3
 	push	r18;2
 	in	zl, CPU_SPL
-	in	zh, CPU_SPH		; this points to where r0 will go
+	in	zh, CPU_SPH		; this points to where next r18 will go
 	push	r18;1
 	ldi	r18, CMD12		; Stop Commands
 	std	Z+0, r18
@@ -304,5 +301,4 @@ SD_CARD_MULTIPLE999:
 	pop	yl
 	pop	r5
 	pop	r4
-	pop	r3
 	ret
