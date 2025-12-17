@@ -827,7 +827,7 @@ prtcreate:
 ;		RLV12 and other modules
 ;
 .include	"DMA-Macro.inc"		; CPLD DMA Macroes 
-.include	"print-v2-0.asm"	; Print Inline
+.include	"print-v2-1.asm"	; Print Inline
 .include	"tparse-v2-0.asm"	; Table Drive Parser
 .include	"Mountvolume.asm"	; Automount
 .include	"Dismountvolume.asm"	; Autodismount
