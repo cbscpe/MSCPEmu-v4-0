@@ -204,7 +204,12 @@ cmd_load:
 
 cmd_load1:
 	.dw	kw_eol,		loadboot,	cmd_done
+	.dw	kw_iotest,	0,		cmd_loadiotest
 	.dw	kw_loadtest,	0,		cmd_loadtest
+	.dw	0
+
+cmd_loadiotest:
+	.dw	kw_eol,		loadiotest,	cmd_done
 	.dw	0
 
 cmd_loadtest:
@@ -478,3 +483,4 @@ kw_sdinit:	P_KEYWORD	"SDInit"
 kw_dismount:	P_KEYWORD	"DISMOunt"
 kw_sdread:	P_KEYWORD	"SDRead"
 kw_trace:	P_KEYWORD       "TRace"
+kw_iotest:	P_KEYWORD	"IOTest"

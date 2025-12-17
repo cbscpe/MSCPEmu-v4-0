@@ -36,7 +36,6 @@ loadboot:
 	lds	r22, nbr+0
 	lds	r23, nbr+1
 	lds	r24, nbr+2
-	clr	r25			; Now using ABI
 	andi	r22, 0xFE		;
 	andi	r24, 0x3F		; We need an even 22-bit address for DMA Read
 	sts	pprint+0, r22
@@ -77,7 +76,6 @@ loadtest:
 	lds	r22, nbr+0
 	lds	r23, nbr+1
 	lds	r24, nbr+2
-	clr	r25			; Now using ABI
 	andi	r22, 0xFE		;
 	andi	r24, 0x3F		; We need an even 22-bit address for DMA Read
 	sts	pprint+0, r22
@@ -121,6 +119,51 @@ loaderror:
 	.dw	msgloaderr
 	sec
 	ret
+
+;--------------------------------------------------------------------------
+;
+;	load	- load listing via terminal
+;
+loadiotest:
+	ldi	r24, low(dmalock)
+	ldi	r25, high(dmalock)
+	call	acquire
+	lds	r22, nbr+0
+	lds	r23, nbr+1
+	lds	r24, nbr+2
+	andi	r22, 0xFE		; We need an even 22-bit address for DMA
+	andi	r24, 0x3F		; PDP-11 Address has only 22 bits
+	sts	pprint+0, r22
+	sts	pprint+1, r23
+	sts	pprint+2, r24
+;	call	print
+;	.db	CR, LF
+;	.db	"LOAD Address Test: ", 0xb0, CR, LF, 0, 0
+	ldi	r17, iotestsize
+	sts	pprint+3, r17
+	sts	pprint+4, zero
+	call	print
+	.db	CR, LF
+	.db	"Writing ", 0xc3, " Words of IO test to ", 0xb0, CR, LF, 0
+	dmaaddr r22, r23, r24
+	ldi	xl, low(iotest)
+	ldi	xh, high(iotest)
+loadiotest010:
+	ld	r24, X+
+	ld	r25, X+
+;	sts	pprint+0, r24
+;	sts	pprint+1, r25
+;	call	print
+;	.db	CR, LF, "Write: ", 0xa0, CR, LF, 0
+	dmawrt r24, r25
+	dec	r17
+	brne	loadiotest010
+	ldi	r24, low(dmalock)
+	ldi	r25, high(dmalock)
+	call	release
+	clc
+	ret
+	
 
 ;--------------------------------------------------------------------------
 ;
