@@ -16,10 +16,10 @@ main :
 
 
 install :
-	avrdude -c avrispmkII -p m1284p -P usb -U flash:w:main-v2-1.hex
+	avrdude -p AVR128DB48 -c atmelice_updi -U flash:w:main-v2-1.hex
 	
 verify :
-	avrdude -c avrispmkII -p m1284p -P usb -U flash:v:main-v2-1.hex
+	avrdude -p AVR128DB48 -c atmelice_updi -U flash:v:main-v2-1.hex
 	
 readflash :
-	avrdude -c avrispmkII -p m1284p -P usb -U flash:r:main-v2-1-flash.hex:i
+	avrdude -p AVR128DB48 -c atmelice_updi -U flash:r:main-v2-1.hex:i
