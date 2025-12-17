@@ -33,7 +33,7 @@
 	.db	"BAR", 0
 	.db	"DAR", 0
 	.db	"MPR", 0
-	.db	"BEA", 0
+	.db	"BAE", 0
 	.db	"BO2", 0
 	.db	"BO4", 0
 	.db     "BO6", 0
