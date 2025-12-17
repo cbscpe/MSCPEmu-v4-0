@@ -12,7 +12,7 @@
 ;	Note: Using the AVR128DB48 with Adapter-B on the Q-Bus Version
 ;	shows some issues when running with 32MHz, it's not clear why
 ;	perhaps also a programming error but with 28MHz it is much more
-;	reliable. For the moment we will leave it at 28MHz which is
+;	reliable. For the moment we will leave it at 24MHz which is
 ;	still fast enough.
 ;
 .equ	F_CLK	=	CLKCTRL_FREQSEL_32M_gc
@@ -107,7 +107,7 @@
 ;	must be 10usec or higher. Therefore dmatmo must be at least 70 for 28MHz
 ;	and 80 for 32MHz.
 ;
-.equ	dmatmo		= 100		; DMA Timeout
+.equ	dmatmo		= 150		; DMA Timeout
 ;
 ;	Timestamp uses TCB2
 ;
