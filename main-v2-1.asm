@@ -74,8 +74,8 @@ start:
 ;
 	clr	r0
 	sts	sd_status, r0		; Require a full initialisation
-	cbi	GPR_GPR0, auto__boot
-	cbi	GPR_GPR0, sddetect__en
+	cbi	FLAGS_COMMON, auto__boot
+	cbi	FLAGS_COMMON, sddetect__en
 	rjmp	start100
 ;
 ;	Software Reset, this is equivalent to a write to the IP 
@@ -86,8 +86,8 @@ start:
 ;	before doing a software reset
 ;
 start010:
-	cbi	GPR_GPR0, auto__boot
-	cbi	GPR_GPR0, sddetect__en
+	cbi	FLAGS_COMMON, auto__boot
+	cbi	FLAGS_COMMON, sddetect__en
 ;
 ;	Init
 ;	
@@ -190,7 +190,7 @@ loginit010:
 	sbiw	r25:r24, 1
 	brne	loginit010
 	ldi	r18, logging
-	out	GPR_GPR1, r18
+	out	FLAGS_LOGGING, r18
 ;--------------------------------------------------------------------------
 ;
 ;	Initialize RAM values
@@ -388,10 +388,10 @@ loginit010:
 	ldi	r18, 0x00
 	sts	USART1_CTRLA, r18
 ;
-;	Driver usage is controlled by GPR_GPR0
+;	Driver usage is controlled by FLAGS_COMMON
 ;
-	cbi	GPR_GPR0, serin__drv	; Polled 
-	cbi	GPR_GPR0, serout__drv
+	cbi	FLAGS_COMMON, serin__drv	; Polled 
+	cbi	FLAGS_COMMON, serout__drv
 
 ;=============================================================================
 ;
@@ -579,8 +579,8 @@ loginit010:
 
 	ldi	r18, USART_RXCIE_bm	; Enable RX interrupt for RTOS
 	sts	USART1_CTRLA, r18
-	sbi	GPR_GPR0, serin__drv	; Activate Serial Driver
-	sbi	GPR_GPR0, serout__drv
+	sbi	FLAGS_COMMON, serin__drv	; Activate Serial Driver
+	sbi	FLAGS_COMMON, serout__drv
 	movw	r25:r24, zh:zl
 	sei
 	call	create			; This call will never return
@@ -594,7 +594,7 @@ seroutcrlf:
 	ldi	r24, LF
 
 serout:
-	sbic	GPR_GPR0, serout__drv	; Is driver active
+	sbic	FLAGS_COMMON, serout__drv	; Is driver active
 	rjmp	serout_1		; Then call driver
 	push	r24			; Else proceed with polled IO
 serout100:
@@ -606,7 +606,7 @@ serout100:
 	ret
 
 serin:
-	sbic	GPR_GPR0, serin__drv	; Is driver active
+	sbic	FLAGS_COMMON, serin__drv	; Is driver active
 	rjmp	serin_1			; Then call driver
 serin100:				; Else proceed with polled IO
 	lds	r24, USART1_STATUS
@@ -646,13 +646,15 @@ main:
 	ldi	xh, high(carddetect)
 	ldi	r24, low(usersp1)	
 	ldi	r25, high(usersp1)	
-	std	Z+jcb_stack+0, r24
+
+	std	Z+jcb_stack+0, r24	; Top of Stack
 	std	Z+jcb_stack+1, r25
-	std	Z+jcb_joblist+0, xl
+
+	std	Z+jcb_joblist+0, xl	; Job Entry Point
 	std	Z+jcb_joblist+1, xh
-	std	Z+jcb_priority, r18	; carddetect job
+	std	Z+jcb_priority, r18	; Job Priority
 	clr	r18
-	std	Z+jcb_flags, r18
+	std	Z+jcb_flags, r18	; Job Flags
 	ldi	r24, low(jobsdcard)
 	ldi	r25, high(jobsdcard)
 	std	Z+jcb_jobname+0, r24
@@ -720,7 +722,7 @@ main:
 ;
 readcmd:
 	sts	InputBuffer, zero
-	sbi	GPR_GPR0, sddetect__en		; Enable SD detect
+	sbi	FLAGS_COMMON, sddetect__en		; Enable SD detect
 readcmd010:
 	ldi	r22, ']'		; Prompt
 	ldi	r24, low(InputBuffer)

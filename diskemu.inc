@@ -115,7 +115,13 @@
 ;
 ;--------------------------------------------------------------------------
 ;
-;	GPR_GPR0 definitions for signalling states of the emulator
+;	Flag Registers - GPR_GPR0..3
+;
+#define FLAGS_COMMON GPR_GPR2
+#define FLAGS_LOGGING GPR_GPR3
+;--------------------------------------------------------------------------
+;
+;	FLAGS_COMMON definitions for signalling states of the emulator
 ;
 .equ	serin__drv	= 0		; Interrupt Driven Serial Input 
 .equ	serout__drv	= 1		; Interrupt Driven Serial Output
@@ -208,7 +214,7 @@
 .equ	log_size	= log_buffersize - log_begin
 .equ	log_overflow	= 7		; the 7th bit of the high byte address
 ;
-;	GPR_GPR1 definitions for logging
+;	FLAGS_LOGGING definitions for logging
 ;
 .equ	log__turbo	= 3		; Turbo Routine for SD_CARD_READ
 .equ	log__trace	= 4		; Log Debug Traces
@@ -255,7 +261,7 @@
 ; 	register pair mostly used during debugging                            
 ;
 	.macro	logtr; trace-id, reg tracevaluelow, regtracevaluehigh
-	sbis	GPR_GPR1, log__trace
+	sbis	FLAGS_LOGGING, log__trace
 	rjmp	notrace
 	push	r16			; Save registers
 	push	r17

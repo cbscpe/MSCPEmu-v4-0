@@ -439,7 +439,7 @@ cmd_showdriveinfo090:
 	ret
 ;--------------------------------------------------------------------------
 ;
-;	Logging uses GPR_GPR1
+;	Logging uses FLAGS_LOGGING
 ;
 ;	
 cmd_showlog:

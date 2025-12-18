@@ -196,7 +196,7 @@ qbus_iack:
 	sbi	b_WR			; 1 Latch Q-Bus Data High
 	cbi	b_WR			; 1
 	#endif
-	sbis	GPR_GPR1, log__iack	; 1
+	sbis	FLAGS_LOGGING, log__iack	; 1
 	rjmp	qbus_iack_nolog		; 2
 
 	pulse
@@ -240,7 +240,7 @@ qbus_init:
 	sbi	b_ABO			; BINIT does no longer clear DMA 
 	cbi	b_ABO			; so we need to do it in software
 	sbi	f_INIT			; 1 Acknowledge BINIT Interrupt 
-	sbis	GPR_GPR1, log__iack
+	sbis	FLAGS_LOGGING, log__iack
 	rjmp	qbus_init_nolog
 
 	pulse

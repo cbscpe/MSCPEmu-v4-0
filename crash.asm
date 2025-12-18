@@ -28,8 +28,8 @@ crash:
 	sts	USART1_CTRLA, r18
 
 
-	cbi	GPR_GPR0, serin__drv
-	cbi	GPR_GPR0, serout__drv
+	cbi	FLAGS_COMMON, serin__drv
+	cbi	FLAGS_COMMON, serout__drv
 
 
 	lds	r16, tx1inptr

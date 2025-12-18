@@ -20,10 +20,10 @@ carddetect:
 ;	closes when a SD-Card is inserted.
 ;
 	ldi	yl, 0xFF
-	cbi	GPR_GPR0, sdcard__insert		; assert pending insertion
+	cbi	FLAGS_COMMON, sdcard__insert		; assert pending insertion
 	clr	r12
 	ldi	yh, 0xFF
-	cbi	GPR_GPR0, sdcard__remove		; assert pending removal
+	cbi	FLAGS_COMMON, sdcard__remove		; assert pending removal
 	clr	r13	
 ;	
 ;	Start the debounce timer (5msec) and initialise SD-Card status vars.
@@ -118,7 +118,7 @@ carddetect120:
 ;	We have detected a leading key press so the SD-Card has just been
 ;	inserted
 ;
-	sbi	GPR_GPR0, sdcard__insert; set card insertion flag
+	sbi	FLAGS_COMMON, sdcard__insert; set card insertion flag
 	inc	r12
 carddetect150:
 ;
@@ -135,7 +135,7 @@ carddetect150:
 	ori	yh, 0xe0		; and look for a falling edge (inverted)
 	cpi	yh, 0xf0
 	brne	carddetect160
-	sbi	GPR_GPR0, sdcard__remove; set card removal flag
+	sbi	FLAGS_COMMON, sdcard__remove; set card removal flag
 	inc	r13
 carddetect160:
 ;
@@ -143,12 +143,12 @@ carddetect160:
 ;	I decided to first detect the edges and then process it. I
 ;	might change this later.
 ;
-	sbic	GPR_GPR0, sdcard__remove
+	sbic	FLAGS_COMMON, sdcard__remove
 	rcall	sdcardremove		; SD-Card was removed
-	cbi	GPR_GPR0, sdcard__remove
-	sbic	GPR_GPR0, sdcard__insert
+	cbi	FLAGS_COMMON, sdcard__remove
+	sbic	FLAGS_COMMON, sdcard__insert
 	rcall	sdcardinsert		; SD-Card was inserted
-	cbi	GPR_GPR0, sdcard__insert
+	cbi	FLAGS_COMMON, sdcard__insert
 	rjmp	carddetect100		; 
 ;--------------------------------------------------------------------------
 ;
@@ -170,7 +170,7 @@ sdcardinsert:
 	sbrs	r16, sd__init		; do not re-init SD-Card
 	call	SD_main			; initialise SD-Card
 	call	MountVolume		; 
-	sbic	GPR_GPR0, sddetect__en	; Is CLI active
+	sbic	FLAGS_COMMON, sddetect__en	; Is CLI active
 	call	redraw_1
 	ret
 
@@ -182,7 +182,7 @@ sdcardremove:
 	rcall	sdcardprbyte
 	call	DismountVolume
 	sts	sd_status, zero		; Mark sd-init required
-	sbic	GPR_GPR0, sddetect__en	; Is CLI active
+	sbic	FLAGS_COMMON, sddetect__en	; Is CLI active
 	call	redraw_1
 	ret
 ;

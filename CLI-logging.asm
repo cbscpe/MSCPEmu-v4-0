@@ -1,6 +1,6 @@
 ;--------------------------------------------------------------------------
 ;
-;	Logging uses GPR_GPR1
+;	Logging uses FLAGS_LOGGING
 
 
 ;
@@ -312,11 +312,11 @@ logreg:
 	lds	r18, tpflags
 	sbrc	r18, tp__no
 	rjmp	logregno
-	sbi	GPR_GPR1, log__reg
+	sbi	FLAGS_LOGGING, log__reg
 	clc
 	ret
 logregno:
-	cbi	GPR_GPR1, log__reg
+	cbi	FLAGS_LOGGING, log__reg
 	clc
 	ret
 
@@ -324,11 +324,11 @@ logiack:
 	lds	r18, tpflags
 	sbrc	r18, tp__no
 	rjmp	logiackno
-	sbi	GPR_GPR1, log__iack
+	sbi	FLAGS_LOGGING, log__iack
 	clc
 	ret
 logiackno:
-	cbi	GPR_GPR1, log__iack
+	cbi	FLAGS_LOGGING, log__iack
 	clc
 	ret
 
@@ -401,11 +401,11 @@ logtrace:
 	lds	r18, tpflags
 	sbrc	r18, tp__no
 	rjmp	logtraceno
-	sbi	GPR_GPR1, log__trace
+	sbi	FLAGS_LOGGING, log__trace
 	clc
 	ret
 logtraceno:
-	cbi	GPR_GPR1, log__trace
+	cbi	FLAGS_LOGGING, log__trace
 	clc
 	ret
 
@@ -413,11 +413,11 @@ logpbn:
 	lds	r18, tpflags
 	sbrc	r18, tp__no
 	rjmp	logpbnno
-	sbi	GPR_GPR1, log__pbn
+	sbi	FLAGS_LOGGING, log__pbn
 	clc
 	ret
 logpbnno:
-	cbi	GPR_GPR1, log__pbn
+	cbi	FLAGS_LOGGING, log__pbn
 	clc
 	ret
 
@@ -425,7 +425,7 @@ logstatus:
 	lds	r18, tpflags
 	sbrc	r18, tp__no
 	rjmp	logallno
-	in	r18, GPR_GPR1
+	in	r18, FLAGS_LOGGING
 ;
 	call	print
 	.db	CR, LF
@@ -484,7 +484,7 @@ logstatusonoff010:
 	.db	" off", CR, LF, NULL, NULL
 	ret
 logallno:
-	out	GPR_GPR1, zero
+	out	FLAGS_LOGGING, zero
 	clc
 	ret
 ;--------------------------------------------------------------------------

@@ -38,7 +38,7 @@
 ;
 ;
 	.macro	INTEXIT			; 23/44 cycles
-	sbis	GPR_GPR1, log__reg	; 1/2 
+	sbis	FLAGS_LOGGING, log__reg	; 1/2 
 	rjmp	nolog			; 2/0
 	lds	zl, log_pointer+0	; 3 Logging is done only if log__reg is set
 	lds	zh, log_pointer+1	; 3
@@ -631,7 +631,7 @@ qbus_dati_boot4:			; 45
 	cbi	b_DMR			; 1 remove DMA request
 	ldi	yl, low(05001)		; 1 DMA finished return a CLR R1
 	ldi	yh, high(05001)		; 1
-        sbi	GPR_GPR0, auto__boot    ; 1 Auto Boot Requested
+        sbi	FLAGS_COMMON, auto__boot    ; 1 Auto Boot Requested
 qbus_dati_boot4_cont:
 	DATI				; 13|15
 	INTEXIT	log_dati|log_boot4	; 23|44
@@ -723,7 +723,7 @@ qbus_dato_boot4:
 ;	BOOT6	17774416 (AUTOBOOT)
 ;
 ;	When reading the BOOT6 register, we check whether this is due
-;	to the autoboot feature (bit auto__boot set in GPR_GPR0) and
+;	to the autoboot feature (bit auto__boot set in FLAGS_COMMON) and
 ;	if so will start the RLV12 job be clearing the b_GO bit.
 ;	In any case we will return the opcode for a CLR PC instruction.
 ;	If the PDP-11 fetches an instruction from BOOT6 this will
@@ -751,7 +751,7 @@ qbus_dati_boot6:			; 45
         ldi     yl, low(05007)		; 1
         ldi     yh, high(05007)         ; 1 "CLR  PC" instruction
 	DATI				; 13|15
-        sbic	GPR_GPR0, auto__boot    ; 2/1 Auto Boot Requested
+        sbic	FLAGS_COMMON, auto__boot    ; 2/1 Auto Boot Requested
         cbi     b_GO                    ; 0/1 Trigger Main RLV12 Programm
         INTEXIT log_dati|log_boot6	; 23|44
 
@@ -787,7 +787,7 @@ qbus_rom:
 	ld	yl, Z+			; get word
 	ld	yh, Z+
 	DATI
-	sbis	GPR_GPR1, log__reg	; 1/2 
+	sbis	FLAGS_LOGGING, log__reg	; 1/2 
 	rjmp	qbus_romx
 	lds	zl, log_pointer+0	; 3 Logging is done only if log__reg is set
 	lds	zh, log_pointer+1	; 3
@@ -826,7 +826,7 @@ qbus_romo:
 	cbi	b_RD
 	ldi	yl, 0xFF
 	out	dataportdir, yl		; Set Data Port Direction to Output
-	sbis	GPR_GPR1, log__reg	; 1/2 
+	sbis	FLAGS_LOGGING, log__reg	; 1/2 
 	rjmp	qbus_romx		; do not advance logging buffer
 	adiw	zh:zl, 4		; 2
 	sbrc	zh, log_overflow
@@ -878,7 +878,7 @@ qbus_iack:
 	sbi	b_WR			; 1 Latch Q-Bus Data High
 	cbi	b_WR			; 1
 	#endif
-	sbis	GPR_GPR1, log__iack	; 1
+	sbis	FLAGS_LOGGING, log__iack	; 1
 	rjmp	qbus_iack_nolog		; 2
 	pulse
 	pulse
@@ -915,7 +915,7 @@ qbus_init:
 	sbi	b_ABO			; BINIT does no longer clear DMA 
 	cbi	b_ABO			; so we need to do it in software
 	sbi	f_INIT			; 1 Acknowledge BINIT Interrupt 
-	sbis	GPR_GPR1, log__iack
+	sbis	FLAGS_LOGGING, log__iack
 	rjmp	qbus_init_nolog
 	pulse
 	pulse

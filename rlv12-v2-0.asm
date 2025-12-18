@@ -104,7 +104,7 @@ rlv12loop:
 	ldi	r24, low(rlvlock)
 	ldi	r25, high(rlvlock)
 	call	block			; Wait for GO
-	sbic	GPR_GPR0, auto__boot	; Was Autoboot requested?
+	sbic	FLAGS_COMMON, auto__boot	; Was Autoboot requested?
 	rjmp	rlv12_autoboot		; Yes so do autoboot
 ;+++logging
 	logptr	zl, zh, r25, r24	; Destroys r25:r24, zh:zl
@@ -188,7 +188,7 @@ rlv12fnctbl:
 ;	zero). For more information see the description in the qbus module.   
 ;	
 rlv12_autoboot:
-	cbi	GPR_GPR0, auto__boot	; ack the autoboot flag
+	cbi	FLAGS_COMMON, auto__boot	; ack the autoboot flag
 	ldi	yl, low(unittable)	; get address of first unit
 	ldi	yh, high(unittable)	
 	ldd	r18, Y+ucb_status
@@ -754,7 +754,7 @@ rlv12_readdata:				; Read for SD-Cards
 	cbr	r16, (1<<P__Nocheck)
 	std	Y+P_Flag, r16		; Check CRC
 rlv12_readdata010:
-	sbis	GPR_GPR1, log__turbo	; use RL3 logging as Turbo Switch
+	sbis	FLAGS_LOGGING, log__turbo	; use RL3 logging as Turbo Switch
 	rjmp	rlv12_readdata060
 ;
 ;	Check if the sectors we need to read are contiguous. In this case
@@ -943,7 +943,7 @@ rlv12_rwnextsector:
 	std	Y+P_Sector+1, r17
 	std	Y+P_Sector+2, r18
 	std	Y+P_Sector+3, r19
-	sbis	GPR_GPR1, log__pbn	; PBN Logging requested
+	sbis	FLAGS_LOGGING, log__pbn	; PBN Logging requested
 	ret				; Nope just return
 ;+++logging
 	logptr	zl, zh, r25, r24	; Destroys r25:r24, zh:zl
@@ -976,7 +976,7 @@ rlv12_rwnextsector010:
 	ldd	r17, Y+P_Sector+1
 	ldd	r18, Y+P_Sector+2
 	ldd	r19, Y+P_Sector+3
-	sbis	GPR_GPR1, log__pbn
+	sbis	FLAGS_LOGGING, log__pbn
 	ret
 ;+++logging
 	logptr	zl, zh, r25, r24	; Destroys r25:r24, zh:zl
@@ -1157,7 +1157,7 @@ rlv12_rwsetup020:
 ;
 rlv12_rwsetup030:
 ;+++logging
-	sbis	GPR_GPR1, log__pbn
+	sbis	FLAGS_LOGGING, log__pbn
 	rjmp	rlv12_rwsetup035
 	logptr	zl, zh, r25, r24	; Destroys r25:r24, zh:zl
 	ldd	r16, Y+P_Sector+0	; Set start sector for read or write
