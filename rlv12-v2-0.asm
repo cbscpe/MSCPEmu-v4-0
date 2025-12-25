@@ -24,8 +24,8 @@
 ;	2019-11-28	Centralized DMA routines
 ;	2020-12-25	New RLV12 Emulator for PDP-11/Hack
 ;	2022-01-05	Disk Emulator
+;	2025-12-21	Remove logging, we need to redesign logging
 ;--------------------------------------------------------------------------
-
 .def	crcl	= r2
 .def	crch	= r3
 .def	datal	= r4			; DMA data
@@ -35,14 +35,11 @@
 .def	wdcl	= r8			; Word Counter
 .def	wdch	= r9	
 .def	count	= r10
-.def	bar_l	= r11
+.def	flags	= r11
 .def	addrl	= r12
 .def	addrh	= r13
 .def	ucbl	= r14
 .def	ucbh	= r15
-;
-;
-;
 ;--------------------------------------------------------------------------
 ;
 ;	Software Triggered Pin Change Interrupt 
@@ -50,8 +47,12 @@
 ;	2022-01-08	One single job to handle all requests
 ;
 go_:
-	sbis	f_GO			; is it a GO from the controller?
-	reti
+	sbic	b_GO			; is it a GO from the controller?
+	jmp	crash
+	nop
+	nop
+	nop
+	nop
 	sbi	b_GO
 	push	r8			; save minimal context
 	in	r8, CPU_SREG
@@ -59,6 +60,9 @@ go_:
 	push	zl			; have at least one additional cpu cycle!
 	push	yh
 	push	yl
+	lds	yl, CSRL
+	lds	yh, CSRH
+	logtr	0x1F, yl, yh
 	sbi	f_GO			; Acknowledge interrupt
 	ldi	zl, low(rlvlock)
 	ldi	zh, high(rlvlock)
@@ -104,38 +108,25 @@ rlv12loop:
 	ldi	r24, low(rlvlock)
 	ldi	r25, high(rlvlock)
 	call	block			; Wait for GO
-	sbic	FLAGS_COMMON, auto__boot	; Was Autoboot requested?
+	sbic	FLAGS_COMMON, auto__boot; Was Autoboot requested?
 	rjmp	rlv12_autoboot		; Yes so do autoboot
-;+++logging
-	logptr	zl, zh, r25, r24	; Destroys r25:r24, zh:zl
-	movw	logptrh:logptrl, zh:zl	; keep it in case we want to overwrite
-	lds	r16, CSRL		; the default logging
-	std	Z+2, r16
-	andi	r16, 0x0F		; Log Function Code
-	ori	r16, log_fnc0
-	std	Z+0, r16
-	lds	r16, timestamp
-	std	Z+1, r16
-	sts	rlv12_error, zero	; Assume no errors
 	lds	yl, CSRH		;
-	std	Z+3, yl			; Log error bits and driveselect
-;---logging
-	andi	yl, driveselect		; Isolate Drive Select
+	andi	yl, CSR_DS_gm		; Isolate Drive Select
 	swap	yl			; Convert drive select to RL01/02
 	clr	yh			; volume entry pointer. This code
 	subi	yl, low(-unittable)	; assumes that the entries are 
 	sbci	yh, high(-unittable)	; exactly 16 bytes and successive!
-	lds	zl, CSRL		; Get function
+	lds	zl, CSRL		; Get function 
 	ldd	r16, Y+ucb_status	; Make sure drive ready bit is copied to CSR
 	bst	r16, ucb__drdy
 	bld	zl, CSR_DRVRDY
 	sts	CSRL, zl
+	andi	zl, CSR_FC_gm
 	lsr	zl
-	andi	zl, 0x07		; Isolate function code 
 	clr	zh			; it to jump table index
 	subi	zl, low(-rlv12fnctbl)	; 
 	sbci	zh, high(-rlv12fnctbl)	;
-
+	sts	rlv12_error, zero	; Assume no errors
 	icall				; Call Function subroutine
 ;
 ;	Set Interrupt request in case the IE bit of the CSR is set.
@@ -401,11 +392,28 @@ rlv12_getstatus:
 	lds	r18, DARL		; Check for valid request code
 	cpi	r18, 0x0B		; Get Status with reset errors
 	breq	rlv12_get010
-	cpi	r18, 0x03		; Get Status
+	cpi	r18, CSR_DS_gm		; Get Status
 	breq	rlv12_get010
 	;
 	; Here we should return an error, but which?
 	;
+	cli
+	lds	zl, log_pointer+0
+	lds	zh, log_pointer+1
+	lds	r18, CSRH
+	andi	r18, CSR_DS_gm		; Unit
+	ori	r18, log_command | (command_getstat<<2)
+	st	Z+, r18
+	lds	r18, timestamp
+	st	Z+, r18
+	ldi	r18, -1
+	st	Z+, r18
+	st	Z+, r18
+	sbrc	zh, log_overflow
+	subi	zh, high(log_size)
+	sts	log_pointer+0, zl
+	sts	log_pointer+1, zh
+	sei
 	ret
 rlv12_get010:
 	ldi	r18, 0x1d		; Assume RL01 and drive ready
@@ -415,7 +423,6 @@ rlv12_get010:
 	ldd	r16, Y+ucb_type		; Get Volume Type
 	bst	r16, DL_RL02		; Copy RL02 bit
 	bld	r18, MPR_GETS_DT	; Set drive type in status
-
 rlv12_get020:
 ;
 ;	Note that when the PDP-11 reads the MPR the reads always go to the
@@ -430,6 +437,23 @@ rlv12_get020:
 	sts	MPR_Fifo+5, zero
 	sts	MPR_Fifo+6, zero
 	sts	MPR_Fifo+7, zero
+	cli
+	lds	zl, log_pointer+0
+	lds	zh, log_pointer+1
+	lds	r18, CSRH
+	andi	r18, CSR_DS_gm		; Unit
+	ori	r18, log_command | (command_getstat<<2)
+	st	Z+, r18
+	lds	r18, timestamp
+	st	Z+, r18
+	lds	r18, MPR_Fifo+0
+	st	Z+, r18
+	st	Z+, zero
+	sbrc	zh, log_overflow
+	subi	zh, high(log_size)
+	sts	log_pointer+0, zl
+	sts	log_pointer+1, zh
+	sei
 	ret	
 ;--------------------------------------------------------------------------
 ;
@@ -467,20 +491,11 @@ rlv12_seek:
 ;	|CA8|CA7|CA6|CA5|CA4|CA3|CA2|CA1||CA0|HS |SA5|SA4|SA3|SA2|SA1|SA0|
 ;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
 ;
-;+++logging
-	movw	zh:zl, logptrh:logptrl	; Get Log Pointer
-	lds	r17, CSRH		; Overwrite Logging with log_seek
-	andi	r17, driveselect
-	ori	r17, log_seek
-	lds	r18, DARL		; Get seek command
-	lds	r19, DARH
-	std	Z+0, r17		
-	std	Z+2, r18
-	std	Z+3, r19		; Save DAR used with Seek command
-;---logging
 	ldd	r16, Y+ucb_diskaddr+0	; Get current disk address
-	ldd	r17, Y+ucb_diskaddr+1
-	bst	r18, DAR_SEEK_HS	; Get HS from seek command
+	ldd	r17, Y+ucb_diskaddr+1	;
+	lds	r18, DARL
+	lds	r19, DARH
+	bst	r18, DAR_SEEK_HS	; Get HS from DAR of seek command
 	bld	r16, DAR_RW_HS		; Set head in current disk address
 	sbrs	r18, DAR_SEEK_DIR	; direction of seek
 	rjmp	rlv12_seekout		; towards the boarder
@@ -502,26 +517,6 @@ rlv12_seekdone:
 	std	Y+ucb_diskaddr+0, r16
 	std	Y+ucb_diskaddr+1, r17
 ;
-;	Logging
-;
-;+++logging
-	logptr	zl, zh, r25, r24	; Destroys r25:r24, zh:zl
-	std	Z+2, r16
-	std	Z+3, r17		; new disk address
-	ldi	r16, log_diskaddr
-	std	Z+0, r16
-	ldd	r16, Y+ucb_status
-	std	Z+1, r16
-;---logging
-;
-;	Real Seek Time (optional)
-;
-;-	ldd	r18, Y+ucb_status	; Reset Seek Request
-;-	sbr	r18, (1<<DL_DRSEEK)	; seek pending	
-;-	std	Y+ucb_status, r18
-;-	ldi	r18, 2
-;-	std	Y+ucb_seektimer, r18	; 
-;
 ;	Copy over unit read to CSR
 ;
 	ldi	r16, 0			; Assume Drive Ready
@@ -530,10 +525,28 @@ rlv12_seekdone:
 	ldi	r16, 0x84		; no -> composite error | operation incomplete
 	sts	rlv12_error, r16	; Save Error
 
-	lds	r16, CSRL		; Got CSR low byte
+	lds	r16, CSRL		; Get CSR low byte
 	bst	r18, ucb__drdy		; Get Drive Ready
 	bld	r16, CSR_DRVRDY		; Copy Drive Ready
 	sts	CSRL, r16		; Update CSR low byte
+	cli
+	lds	zl, log_pointer+0
+	lds	zh, log_pointer+1
+	lds	r18, CSRH
+	andi	r18, CSR_DS_gm		; Unit
+	ori	r18, log_command | (command_seek<<2)
+	st	Z+, r18
+	lds	r18, timestamp
+	st	Z+, r18
+	lds	r18, DARL
+	st	Z+, r18
+	lds	r18, DARH
+	st	Z+, r18
+	sbrc	zh, log_overflow
+	subi	zh, high(log_size)
+	sts	log_pointer+0, zl
+	sts	log_pointer+1, zh
+	sei
 	ret
 ;--------------------------------------------------------------------------
 ;
@@ -575,6 +588,24 @@ rlv12_readheader010:
 	andi	r16, 0xC0		; Keep LSB of Cylinder and HS
 	or	r18, r16
 	std	Y+ucb_diskaddr+0, r18
+	cli
+	lds	zl, log_pointer+0
+	lds	zh, log_pointer+1
+	lds	r18, CSRH
+	andi	r18, CSR_DS_gm		; Unit
+	ori	r18, log_command | (command_readhdr<<2)
+	st	Z+, r18
+	lds	r18, timestamp
+	st	Z+, r18
+	ldd	r18, Y+ucb_diskaddr+0
+	st	Z+, r18
+	ldd	r18, Y+ucb_diskaddr+1
+	st	Z+, r18
+	sbrc	zh, log_overflow
+	subi	zh, high(log_size)
+	sts	log_pointer+0, zl
+	sts	log_pointer+1, zh
+	sei
 	ret
 ;--------------------------------------------------------------------------
 ;
@@ -738,7 +769,6 @@ rlv12_writetmo:
 ;		the new TURBO read function which interleaves SD-Card
 ;		reads and DMA writes
 ;
-;
 rlv12_readnocheck:			; Read no check 
 	ldi	r24, 0			; DMA Write
 	rcall	rlv12_rwsetup
@@ -754,7 +784,7 @@ rlv12_readdata:				; Read for SD-Cards
 	cbr	r16, (1<<P__Nocheck)
 	std	Y+P_Flag, r16		; Check CRC
 rlv12_readdata010:
-	sbis	FLAGS_LOGGING, log__turbo	; use RL3 logging as Turbo Switch
+	sbis	FLAGS_LOG, log__turbo; 
 	rjmp	rlv12_readdata060
 ;
 ;	Check if the sectors we need to read are contiguous. In this case
@@ -847,13 +877,31 @@ rlv12_readdmaloop:
 	clr	count			; Sector Word Count
 	rjmp	rlv12_readdmaloop	; and go
 rlv12_readdone:
+
+	cli
+	lds	zl, log_pointer+0
+	lds	zh, log_pointer+1
+	lds	r18, CSRH
+	andi	r18, CSR_DS_gm		; Unit
+	ori	r18, log_command | (command_read<<2)
+	st	Z+, r18
+	lds	r18, timestamp
+	st	Z+, r18
+	lds	r18, MPRL
+	st	Z+, r18
+	lds	r18, MPRH
+	st	Z+, r18
+	sbrc	zh, log_overflow
+	subi	zh, high(log_size)
+	sts	log_pointer+0, zl
+	sts	log_pointer+1, zh
+	sei
 	rjmp	rlv12_rwsuccess
 ;
 rlv12_readerror:
 	ldi	r18, 0x88		; Read Data CRC or Write Check Error
 	sts	rlv12_error, r18
 	rjmp	rlv12_rwfail
-
 ;
 ;	DMA Write Time-Out Handler
 ;
@@ -916,7 +964,7 @@ rlv12_rwsuccess:
 	ret
 rlv12_rwfail:
 ;
-;	Perhaps we should add some fail logging
+;	
 ;
 	ret
 ;--------------------------------------------------------------------------
@@ -943,17 +991,8 @@ rlv12_rwnextsector:
 	std	Y+P_Sector+1, r17
 	std	Y+P_Sector+2, r18
 	std	Y+P_Sector+3, r19
-	sbis	FLAGS_LOGGING, log__pbn	; PBN Logging requested
+	sbis	FLAGS_LOG, log__pbn	; PBN Logging requested
 	ret				; Nope just return
-;+++logging
-	logptr	zl, zh, r25, r24	; Destroys r25:r24, zh:zl
-	std	Z+3, r16
-	std	Z+2, r17
-	std	Z+1, r18
-	andi	r19, 0x0F
-	ori	r19, log_pbn
-	std	Z+0, r19	
-;---logging
 	ret
 
 rlv12_rwnextsector010:
@@ -976,19 +1015,7 @@ rlv12_rwnextsector010:
 	ldd	r17, Y+P_Sector+1
 	ldd	r18, Y+P_Sector+2
 	ldd	r19, Y+P_Sector+3
-	sbis	FLAGS_LOGGING, log__pbn
-	ret
-;+++logging
-	logptr	zl, zh, r25, r24	; Destroys r25:r24, zh:zl
-	std	Z+3, r16
-	std	Z+2, r17
-	std	Z+1, r18
-	andi	r19, 0x0F
-	ori	r19, log_pbn
-	std	Z+0, r19	
-;---logging
 	ret				; attached to the FCB
-
 ;----------------------------------------------------------------------------
 ;
 ;	Setup a read or write operation
@@ -1042,21 +1069,12 @@ rlv12_rwsetup:
 ;
 ;	Setup DMA Address
 ;
-	lds	bar_l, BARL
+	lds	r16, BARL
 	bst	r24, 0			; Copy over DMA direction
-	bld	bar_l, 0		; 
-	lds	r16, BARH
-	lds	r17, BAEL
-;
-;+++logging
-	logptr	zl, zh, r25, r24	; Destroys r25:r24, zh:zl
-	ldi	r19, log_address
-	std	Z+0, r19
-	std	Z+1, bar_l
-	std	Z+2, r16
-	std	Z+3, r17
-;---logging
-	dmaaddr	bar_l, r16, r17
+	bld	r16, 0		; 
+	lds	r17, BARH
+	lds	r18, BAEL
+	dmaaddr	r16, r17, r18
 ;
 	ldd	r18, Y+ucb_status
 	cbr	r18, (1<<DL_DRSEEK)
@@ -1156,22 +1174,6 @@ rlv12_rwsetup020:
 ;	retrieved, reading MPR always returns values from the FIFO
 ;
 rlv12_rwsetup030:
-;+++logging
-	sbis	FLAGS_LOGGING, log__pbn
-	rjmp	rlv12_rwsetup035
-	logptr	zl, zh, r25, r24	; Destroys r25:r24, zh:zl
-	ldd	r16, Y+P_Sector+0	; Set start sector for read or write
-	ldd	r17, Y+P_Sector+1
-	ldd	r18, Y+P_Sector+2
-	ldd	r19, Y+P_Sector+3
-	std	Z+3, r16
-	std	Z+2, r17
-	std	Z+1, r18
-	andi	r19, 0x0F
-	ori	r19, log_pbn
-	std	Z+0, r19
-rlv12_rwsetup035:	
-;---logging
 ;
 ;	We cannot read more than there is left on a track, therefore
 ;	we caluclate the 2's complement of words left. First we take
@@ -1244,32 +1246,32 @@ rlv12_rwsetup040:
 ;;;	makes no assumption regarding preset registers
 ;;;
 rlv12_reset:
-	ldi		zl, (1<<CSR_CRDY)	;;; Mark Controller is ready
-	clr		zh
-	sts		CSRL, zl
-	sts		CSRH, zh
-	sbi		b_CRDY
-	sts		BARL, zh
-	sts		BARH, zh
-	sts		DARL, zh
-	sts		DARH, zh
-	sts		MPR_Fifo+0, zh
-	sts		MPR_Fifo+1, zh
-	sts		MPR_Fifo+2, zh
-	sts		MPR_Fifo+3, zh
-	sts		BAEL, zh
-	sts		BAEH, zh
+	ldi	zl, (1<<CSR_CRDY)	;;; Mark Controller is ready
+	clr	zh
+	sts	CSRL, zl
+	sts	CSRH, zh
+	sbi	b_CRDY
+	sts	BARL, zh
+	sts	BARH, zh
+	sts	DARL, zh
+	sts	DARH, zh
+	sts	MPR_Fifo+0, zh
+	sts	MPR_Fifo+1, zh
+	sts	MPR_Fifo+2, zh
+	sts	MPR_Fifo+3, zh
+	sts	BAEL, zh
+	sts	BAEH, zh
 ;
 ; Reset drives disk address
 ;
-	sts		unittable+ucb_size*0+ucb_diskaddr+0, zh	;
-	sts		unittable+ucb_size*0+ucb_diskaddr+1, zh	; 
-	sts		unittable+ucb_size*1+ucb_diskaddr+0, zh	; 
-	sts		unittable+ucb_size*1+ucb_diskaddr+1, zh	; 
-	sts		unittable+ucb_size*2+ucb_diskaddr+0, zh	; 
-	sts		unittable+ucb_size*2+ucb_diskaddr+1, zh	; 
-	sts		unittable+ucb_size*3+ucb_diskaddr+0, zh	; 
-	sts		unittable+ucb_size*3+ucb_diskaddr+1, zh	; 
+	sts	unittable+ucb_size*0+ucb_diskaddr+0, zh	;
+	sts	unittable+ucb_size*0+ucb_diskaddr+1, zh	; 
+	sts	unittable+ucb_size*1+ucb_diskaddr+0, zh	; 
+	sts	unittable+ucb_size*1+ucb_diskaddr+1, zh	; 
+	sts	unittable+ucb_size*2+ucb_diskaddr+0, zh	; 
+	sts	unittable+ucb_size*2+ucb_diskaddr+1, zh	; 
+	sts	unittable+ucb_size*3+ucb_diskaddr+0, zh	; 
+	sts	unittable+ucb_size*3+ucb_diskaddr+1, zh	; 
 	ret
 
 .undef	crcl
@@ -1281,7 +1283,7 @@ rlv12_reset:
 .undef	wdcl	
 .undef	wdch
 .undef	count
-.undef	bar_l
+.undef	flags
 .undef	addrl
 .undef	addrh
 .undef	ucbl

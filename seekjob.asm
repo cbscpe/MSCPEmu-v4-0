@@ -1,74 +1,207 @@
 ;--------------------------------------------------------------------------
 ;
-;	DUMMY JOB
+;	SEEK JOB
 ;
-;	This job executed at a very low priority just makes sure the
-;	registers R0... are set to values 0... so we can verify the
-;	show job command output, this will be removed when we release
-;	the software of course.
 ;
-dummyjob:
-	clr	r0
-	mov	r1, r0
-	inc	r1
-	mov	r2, r1
-	inc	r2
-	mov	r3, r2
-	inc	r3
-	mov	r4, r3
-	inc	r4
-	mov	r5, r4
-	inc	r5
-	mov	r6, r5
-	inc	r6
-	mov	r7, r6
-	inc	r7
-	mov	r8, r7
-	inc	r8
-	mov	r9, r8
-	inc	r9
-	mov	r10, r9
-	inc	r10
-	mov	r11, r10
-	inc	r11
-	mov	r12, r11
-	inc	r12
-	mov	r13, r12
-	inc	r13
-	mov	r14, r13
-	inc	r14
-	mov	r15, r14
-	inc	r15
-	mov	r16, r15
-	inc	r16
-	mov	r17, r16
-	inc	r17
-	mov	r18, r17
-	inc	r18
-	mov	r19, r18
-	inc	r19
-	mov	r20, r19
-	inc	r20
-	mov	r21, r20
-	inc	r21
-	mov	r22, r21
-	inc	r22
-	mov	r23, r22
-	inc	r23
-	mov	r24, r23
-	inc	r24
-	mov	r25, r24
-	inc	r25
-	mov	r26, r25
-	inc	r26
-	mov	r27, r26
-	inc	r27
-	mov	r28, r27
-	inc	r28
-	mov	r29, r28
-	inc	r29
-	mov	r30, r29
-	inc	r30
-	mov	r31, r30
-	inc	r31
-	rjmp	dummyjob
+seekjob:
+
+seekjobloop:
+#if wdgactive>0
+	wdr
+#endif
+	ldi	r24, low(2)
+	ldi	r25, high(2)
+	call	delay
+;
+;	Seek processing, not we perform seek processing in the low piority
+;	job seekjob. Therefore it is very likely that a read or write command
+;	already has been issued before seek processing takes place. Such a
+;	command will have priority over the seek itself as it is assumed that
+;	write or read commands will wait for the disk to finish a seek and then
+;	perform the data transfer. 
+;	
+	clr	r21			; seek execution mask
+;
+;	The RLV12 does not have to "wait" for a seek to finish and just starts    
+;	with the transfer and terminates a pending seek (it clears ucb__seek).    
+;	Therefore we only collect overlapped seeks if they are still pending.     
+;	Therefore we need to make seek atomic with interrupts disabled            
+;
+	cli
+	lds	r20, unittable+ucb_size*0+ucb_status
+	sbrs	r20, ucb__seek
+	rjmp	seek100
+;
+;	When a seek command is executed DATO processing will store DAR to
+;	ucb_media in the UCB.
+;
+	sbr	r21, 0x01
+	cbr	r20, (1<<ucb__seek)
+	sts	unittable+ucb_size*0+ucb_status, r20
+	lds	r16, unittable+ucb_size*0+ucb_diskaddr+0
+	lds	r17, unittable+ucb_size*0+ucb_diskaddr+1
+	lds	r18, unittable+ucb_size*0+ucb_media+0
+	lds	r19, unittable+ucb_size*0+ucb_media+1
+
+	bst	r18, DAR_SEEK_HS	; Get HS from DAR of seek command
+	bld	r16, DAR_RW_HS		; Set head in current disk address
+	sbrs	r18, DAR_SEEK_DIR	; direction of seek
+	rjmp	seekout000		; towards the boarder
+;
+;	DIR=1 head moves to a higher cylinder address
+;
+	andi	r18, 0x80		; Only keep cylinder bits
+	add	r16, r18
+	adc	r17, r19
+	rjmp	seekdone000
+;
+;	DIR=0 head moves to a lower cylinder address
+;
+seekout000:
+	andi	r18, 0x80		; Only keep cylinder bits
+	sub	r16, r18
+	sbc	r17, r19
+seekdone000:
+	sts	unittable+ucb_size*0+ucb_diskaddr+0, r16
+	sts	unittable+ucb_size*0+ucb_diskaddr+1, r17
+seek100:
+	sei
+	nop
+	nop
+	nop
+	nop
+
+	cli
+	lds	r20, unittable+ucb_size*1+ucb_status
+	sbrs	r20, ucb__seek
+	rjmp	seek200
+;
+;	When a seek command is executed DATO processing will store DAR to
+;	ucb_media in the UCB.
+;
+	sbr	r21, 0x02
+	cbr	r20, (1<<ucb__seek)
+	sts	unittable+ucb_size*1+ucb_status, r20
+	lds	r16, unittable+ucb_size*1+ucb_diskaddr+0
+	lds	r17, unittable+ucb_size*1+ucb_diskaddr+1
+	lds	r18, unittable+ucb_size*1+ucb_media+0
+	lds	r19, unittable+ucb_size*1+ucb_media+1
+
+	bst	r18, DAR_SEEK_HS	; Get HS from DAR of seek command
+	bld	r16, DAR_RW_HS		; Set head in current disk address
+	sbrs	r18, DAR_SEEK_DIR	; direction of seek
+	rjmp	seekout100		; towards the boarder
+;
+;	DIR=1 head moves to a higher cylinder address
+;
+	andi	r18, 0x80		; Only keep cylinder bits
+	add	r16, r18
+	adc	r17, r19
+	rjmp	seekdone100
+;
+;	DIR=0 head moves to a lower cylinder address
+;
+seekout100:
+	andi	r18, 0x80		; Only keep cylinder bits
+	sub	r16, r18
+	sbc	r17, r19
+seekdone100:
+	sts	unittable+ucb_size*1+ucb_diskaddr+0, r16
+	sts	unittable+ucb_size*1+ucb_diskaddr+1, r17
+seek200:
+	sei
+	nop
+	nop
+	nop
+	nop
+
+	cli
+	lds	r20, unittable+ucb_size*2+ucb_status
+	sbrs	r20, ucb__seek
+	rjmp	seek300
+;
+;	When a seek command is executed DATO processing will store DAR to
+;	ucb_media in the UCB.
+;
+	sbr	r21, 0x04
+	cbr	r20, (1<<ucb__seek)
+	sts	unittable+ucb_size*2+ucb_status, r20
+	lds	r16, unittable+ucb_size*2+ucb_diskaddr+0
+	lds	r17, unittable+ucb_size*2+ucb_diskaddr+1
+	lds	r18, unittable+ucb_size*2+ucb_media+0
+	lds	r19, unittable+ucb_size*2+ucb_media+1
+
+	bst	r18, DAR_SEEK_HS	; Get HS from DAR of seek command
+	bld	r16, DAR_RW_HS		; Set head in current disk address
+	sbrs	r18, DAR_SEEK_DIR	; direction of seek
+	rjmp	seekout200		; towards the boarder
+;
+;	DIR=1 head moves to a higher cylinder address
+;
+	andi	r18, 0x80		; Only keep cylinder bits
+	add	r16, r18
+	adc	r17, r19
+	rjmp	seekdone200
+;
+;	DIR=0 head moves to a lower cylinder address
+;
+seekout200:
+	andi	r18, 0x80		; Only keep cylinder bits
+	sub	r16, r18
+	sbc	r17, r19
+seekdone200:
+	sts	unittable+ucb_size*2+ucb_diskaddr+0, r16
+	sts	unittable+ucb_size*2+ucb_diskaddr+1, r17
+seek300:
+	sei
+	nop
+	nop
+	nop
+	nop
+
+	cli
+	lds	r20, unittable+ucb_size*3+ucb_status
+	sbrs	r20, ucb__seek
+	rjmp	seek400
+;
+;	When a seek command is executed DATO processing will store DAR to
+;	ucb_media in the UCB.
+;
+	sbr	r21, 0x08
+	cbr	r20, (1<<ucb__seek)
+	sts	unittable+ucb_size*3+ucb_status, r20
+	lds	r16, unittable+ucb_size*3+ucb_diskaddr+0
+	lds	r17, unittable+ucb_size*3+ucb_diskaddr+1
+	lds	r18, unittable+ucb_size*3+ucb_media+0
+	lds	r19, unittable+ucb_size*3+ucb_media+1
+
+	bst	r18, DAR_SEEK_HS	; Get HS from DAR of seek command
+	bld	r16, DAR_RW_HS		; Set head in current disk address
+	sbrs	r18, DAR_SEEK_DIR	; direction of seek
+	rjmp	seekout300		; towards the boarder
+;
+;	DIR=1 head moves to a higher cylinder address
+;
+	andi	r18, 0x80		; Only keep cylinder bits
+	add	r16, r18
+	adc	r17, r19
+	rjmp	seekdone300
+;
+;	DIR=0 head moves to a lower cylinder address
+;
+seekout300:
+	andi	r18, 0x80		; Only keep cylinder bits
+	sub	r16, r18
+	sbc	r17, r19
+seekdone300:
+	sts	unittable+ucb_size*3+ucb_diskaddr+0, r16
+	sts	unittable+ucb_size*3+ucb_diskaddr+1, r17
+seek400:
+	sei
+
+	tst	r21
+	breq	seeknoseek
+	logtr	0x06, r21, zero
+seeknoseek:
+	rjmp	seekjobloop
+

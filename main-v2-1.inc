@@ -25,7 +25,7 @@ usersp0:
 usersp1:
 		.byte	256		; Main Disk Emulator JOB 
 usersp2:
-		.byte	256		; Dummy JOB (only during testing)
+		.byte	256		; Seek JOB 
 usersp3:
 ;
 ;	CLI Command Buffers
@@ -36,12 +36,15 @@ HistoryBuffer:	.byte	256
 ;	General SD-Card IO Buffers
 ;
 sdbuffer:	.byte	512		; Buffer to initialise SD-Card
-
+initialsp:
+;
+;
+;
 .include "FAT-library-v2-0.inc"
 
 .include "serial1.inc"
 .include "CLI-data.inc"
-.include "rtos-v2-2.inc"
+.include "rtos-v3-0.inc"
 ;
 ;	Unit Control Blocks
 ;

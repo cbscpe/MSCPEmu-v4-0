@@ -4,13 +4,44 @@
 ;
 crash:
 	cli
+	sts	pprint+0, r8		; SREG
+	pop	r0			; 2 restore
+	pop	r1			; 2 restore
+	pop	r2			; 2 restore
+	pop	r3			; 2 restore
+	pop	r4			; 2 restore
+	pop	r5
+	pop	r6
+	sts	pprint+1, r0		; yl
+	sts	pprint+2, r1		; yh
+	sts	pprint+3, r2		; zl
+	sts	pprint+4, r3		; zh
+	sts	pprint+5, r4		; r8
+	sts	pprint+6, r5		; pch
+	sts	pprint+7, r6		; pcl
+	in	r0, CPU_SPL
+	in	r1, CPU_SPH
+	sts	pprint+8, r0		; spl
+	sts	pprint+9, r1		; sph
+	in	r0, VPORTA_OUT
+	sts	pprint+01, r0
+	ldi	r18, low(initialsp)
+	out	CPU_SPL, r18
+	ldi	r18, high(initialsp)
+	out	CPU_SPH, r18
+;
+;	Set CPU Clock Frequency
+;
+	ldi	r18, CPU_CCP_IOREG_gc
+	sts	CPU_CCP, r18
+	ldi	r18, F_CLK
+	sts	CLKCTRL_OSCHFCTRLA, r18
+;
+;	Constants
+;
+	clr	zero
+	out	FLAGS_COMMON, zero
 	
-	
-	ldi	r18, 0
-	sts	USART1_CTRLA, r18
-	sts	USART1_CTRLB, r18
-	sts	USART1_CTRLC, r18
-
 	ldi	r18, low(BAUD1)
 	sts	USART1_BAUDL, r18
 	ldi	r18, high(BAUD1)
@@ -26,6 +57,46 @@ crash:
 
 	ldi	r18, 0x00
 	sts	USART1_CTRLA, r18
+
+	call	print
+	.db	CR, LF
+	.db	"PC 0x", 0x86, 0x87, CR, LF, "SP 0x", 0x89, 0x88, CR, LF, "PA 0x", 0x8a, 0, 0
+
+	ldi	xl, low(RAMINITSTART)
+	ldi	xh, high(RAMINITSTART)
+crash010:
+	sts	pprint+0, xl
+	sts	pprint+1, xh
+	call	print
+	.db	CR, LF
+	.db	0x81, 0x80, "   - ", 0
+	ldi	yl, low(pprint)
+	ldi	yh, high(pprint)
+	ldi	r18, 16
+crash020:
+	ld	r0, X+
+	st	Y+, r0
+	dec	r18
+	brne	crash020
+	call	print
+	.db	0x80, " ", 0x81, " ", 0x82, " ", 0x83, " ", 0x84, " ", 0x85, " ", 0x86, " ", 0x87, " "  
+	.db	" ", 0x88, " ", 0x89, " ", 0x8A, " ", 0x8B, " ", 0x8C, " ", 0x8D, " ", 0x8E, " ", 0x8F
+	.db	0, 0
+	cpi	xh, high(RAMINITSTART+0x1000)
+	brlo	crash010
+	call	seroutcrlf
+	call	seroutcrlf
+crashloop:
+;	rjmp	crashloop
+
+	ldi	r18, CPU_CCP_IOREG_gc
+	sts	CPU_CCP, r18
+	ldi	r18, RSTCTRL_SWRST_bm
+	sts	RSTCTRL_SWRR, r18
+	clc
+
+	ret	
+
 
 
 	cbi	FLAGS_COMMON, serin__drv

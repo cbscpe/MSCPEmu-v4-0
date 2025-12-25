@@ -113,20 +113,6 @@ record		Fr, List, 2		; Linked List Head
 record		Fr, Length, 4		; Length of Fragment
 record		Fr, Start, 4		; Start sector of fragment on device
 recordend	Fr, Size		; Size of fragment list entry
-;--------------------------------------------------------------------------
-;
-;	Job Control Block
-;
-
-recordstart	jcb
-record		jcb, link, 2		; Queue Head
-record		jcb, stack, 2		; Stack Pointer
-record		jcb, joblist, 2		; Job Queue
-record		jcb, priority, 1	; Priority
-record		jcb, flags, 1		; Flags, not used
-record		jcb, jobname, 2		; 
-recordend	jcb, size
-
 
 ;--------------------------------------------------------------------------
 ;

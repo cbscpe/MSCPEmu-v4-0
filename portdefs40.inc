@@ -141,28 +141,25 @@
 ;
 ;	PORT F (Bits0..5, Bit6 is Reset and may be used as input but not here)
 ;
-.equ	MEM	= 0			; Malloc Interrupt
+.equ	LED3	= 0
 .equ	SIG	= 1			; Signal/Debugging
 .equ	CRDY	= 2			; Controller Ready
 .equ	IRQ	= 3			; Interrupt Request
 .equ	RD	= 4			; Register Read
 .equ	WR	= 5			; Register Write
 
-#define	d_MEM	VPORTF_DIR, MEM
+#define d_LED3 VPORTF_DIR, LED3
 #define	d_SIG	VPORTF_DIR, SIG
 #define	d_CRDY	VPORTF_DIR, CRDY
 #define	d_IRQ	VPORTF_DIR, IRQ
 #define	d_RD	VPORTF_DIR, RD
 #define	d_WR	VPORTF_DIR, WR
 
-#define	b_MEM	VPORTF_OUT, MEM
+#define b_LED3 VPORTF_OUT, LED3
 #define	b_SIG	VPORTF_OUT, SIG
 #define	b_CRDY	VPORTF_OUT, CRDY
 #define	b_IRQ	VPORTF_OUT, IRQ
 #define	b_RD	VPORTF_OUT, RD
 #define	b_WR	VPORTF_OUT, WR
 
-#define b_MEM	VPORTF_OUT, MEM
-#define	f_MEM	VPORTF_INTFLAGS, MEM
-#define	c_MEM	PORTF_PIN0CTRL
-#define v_MEM	PORTF_PORT_vect
+#define i_LED3 VPORTF_IN, LED3

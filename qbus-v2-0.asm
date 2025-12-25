@@ -376,7 +376,7 @@ qbus_busy:
 ;
 qbus_dati_csr:				; 45
 	lds	yl, CSRH		; 3
-	andi	yl, driveselect		; 1
+	andi	yl, CSR_DS_gm		; 1
 	swap	yl			; 1
 	clr	yh			; 1
 	subi	yl, low(-unittable)	; 1
@@ -397,9 +397,9 @@ qbus_dati_csr:				; 45
 ;
 qbus_dato_csr:				; 45
 	DATO				; 15|17 depending on CPLD interface
-	andi	yh, driveselect		; 1 remove error bits (they are RO)
-	sts	CSRH, yh		; 2
-	sts	CSRL, yl		; 2 update drive ready status in CSR
+	andi	yh, CSR_DS_gm		; 1 remove error bits (they are RO)
+	sts	CSRH, yh		; 2 only keep drive selects
+	sts	CSRL, yl		; 2 update CSR
 ;
 ;	BA16 and BA17 can be written via CSR or BAE, we always make sure
 ;	we update the other register when writing either
@@ -410,34 +410,45 @@ qbus_dato_csr:				; 45
 	bst	yl, CSR_BA17		; 1 and BA17
 	bld	zl, BAE_BA17		; 1
 	sts	BAEL, zl		; 2
-
-	mov	zl, yl
-	and	zl, CSR_CRDY | function
-	cpi	zl, CSR_CRDY | 6	; SEEK
-	rjmp	qbus_dato_csr010
-
-	brne	qbus_dato_csr010
-	mov	zl, yh
-	swab	zl
-	clr	zh
-	subi	zl, low(-unittable)
-	sbci	zh, high(-unittable)
-
 ;
-;	New Logic
+;	Has a command been requested
 ;
-;	- Just check if a command has been initiated
-;	- If a command has been initiated then trigger the Level0 interrupt
-;	- Block Access to the controller Register
-;
-qbus_dato_csr010:
 	sbrc	yl, CSR_CRDY		; 1 command requested, i.e. CRDY=0
 	rjmp	qbus_dato_csr_done	; 1 no, then we are done
 ;
+;	Check for SEEK
+;
+	mov	zl, yl			; Get FNC bits
+	andi	zl, CSR_FC_gm
+	cpi	zl, CSR_FC_SEEK_gm
+	brne	qbus_dato_csr010
+;
+;	Create pointer to UCB and set seek bit
+;
+	mov	zl, yh
+	swap	zl
+	clr	zh
+	subi	zl, low(-unittable)
+	sbci	zh, high(-unittable)
+	ldd	yh, Z+ucb_status
+	sbr	yh, (1<<ucb__seek)
+	std	Z+ucb_status, yh
+	lds	yh, DARL
+	std	Z+ucb_media+0, yh
+	lds	yh, DARH
+	std	Z+ucb_media+1, yh
+	mov	zl, yl			; copy CSRL
+	sbr	zl, (1<<CSR_CRDY)	; Controller stays ready
+	sts	CSRL, zl		; 
+	lds	yh, CSRH		; Make sure yh:yl have the value written by DATO
+	rjmp	qbus_dato_csr_done	; 
+	
+qbus_dato_csr010:
+;
 ;	Queue Event to RT-OS
 ;
-	cbi	b_CRDY			; 1	Disable QBUS Interface
 	cbi	b_GO			; 1	GO
+	cbi	b_CRDY			; 1	Disable QBUS Interface
 ;
 ;	The controller is now locked and the main job can now analyze the
 ;	command and then perform the appropriate acction, now the DATI 

@@ -18,15 +18,15 @@
 .equ ReadInitSection = (PC - 0x8000) * 2 + 0x8000
 	.db	"[RLV12.INI]", NULL
 
-.equ FNCName = (PC - 0x8000) * 2 + 0x8000
-	.db	"Maint", 0, 0, 0
-	.db	"WRCHK", 0, 0, 0
-	.db	"GETST", 0, 0, 0
-	.db	"SEEK ", 0, 0, 0
-	.db	"RDHDR", 0, 0, 0
-	.db	"Write", 0, 0, 0
-	.db	"Read ", 0, 0, 0
-	.db	"RDNCH", 0, 0, 0
+.equ CommandName = (PC - 0x8000) * 2 + 0x8000
+	.db	"Maint  ", 0
+	.db	"WrtChk ", 0
+	.db	"GetStat", 0
+	.db	"Seek   ", 0
+	.db	"ReadHdr", 0
+	.db	"Write  ", 0
+	.db	"Read   ", 0
+	.db	"ReadNC ", 0
 
 .equ REGName = (PC - 0x8000) * 2 + 0x8000
 	.db	"CSR", 0
@@ -37,6 +37,13 @@
 	.db	"BO2", 0
 	.db	"BO4", 0
 	.db     "BO6", 0
+
+.equ JobNames = (PC - 0x8000) * 2 + 0x8000
+	.db	"RLV12", 0, 0, 0
+	.db	"CLI", 0, 0, 0, 0, 0
+	.db	"SD-Card", 0
+	.db	"Seek",0 , 0, 0, 0
+
 	
 .include "DriveTab.inc"
 .include "help.inc"

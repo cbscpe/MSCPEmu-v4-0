@@ -32,6 +32,12 @@
 	.org	0
 	jmp	start
 
+	.org	RTC_CNT_vect		; Overflow interrupt for IO ticks
+	jmp	iotick
+	
+	.org	RTC_PIT_vect		; PIT interrupt from RTC for tick
+	jmp	tick
+
 	.org	v_RTOS			; Software Interrupt RTOS
 	jmp	rtos_
 
@@ -40,12 +46,6 @@
 	
 	.org	v_GO			; Software Interrupt Controller GO
 	jmp	go_			; Module rlv12-v2-0.asm
-
-	.org	v_MEM			; Softinterrupt for malloc() and free()
-	jmp	mem_
-
-	.org	TCB0_INT_vect		; Ticker Interrupt
-	jmp	tick
 
 	.org	USART1_RXC_vect
 	jmp	rxc1_isr
@@ -67,6 +67,8 @@ start:
 	lds	r0, RSTCTRL_RSTFR
 	sts	reset_status, r0	; Save it for later
 	sts	RSTCTRL_RSTFR, r0	; Reset the flags
+	sbrc	r0, RSTCTRL_WDRF_bp
+	rjmp	crash
 	sbrc	r0, RSTCTRL_SWRF_bp
 	rjmp	start010
 ;
@@ -92,9 +94,9 @@ start010:
 ;	Init
 ;	
 start100:
-	ldi	r18, low(RAMEND)
+	ldi	r18, low(initialsp)
 	out	CPU_SPL, r18
-	ldi	r18, high(RAMEND)	; AVR128DA does this during RESET
+	ldi	r18, high(initialsp)
 	out	CPU_SPH, r18
 ;
 ;	Set CPU Clock Frequency
@@ -146,6 +148,17 @@ raminit110:
 	cp	xl, yl
 	cpc	xh, yh
 	brlo	raminit110
+
+#ifdef tesout
+;--------------------------------------------------------------------------
+;
+;	Initialise Test Output
+;
+	ldi	xl, low(tesoutbuf)
+	ldi	xh, high(tesoutbuf)
+	sts	tesoutptr+0, xl
+	sts	tesoutptr+1, xh
+#endif
 ;--------------------------------------------------------------------------
 ;
 ;	Initialise heap
@@ -190,7 +203,12 @@ loginit010:
 	sbiw	r25:r24, 1
 	brne	loginit010
 	ldi	r18, logging
-	out	FLAGS_LOGGING, r18
+	out	FLAGS_LOG, r18
+	ldi	r18, (1<<ucb__log)
+	sts	unittable+ucb_size*0+ucb_log+0, r18	;
+	ldi	r18, (1<<ucb__log)
+	sts	unittable+ucb_size*1+ucb_log+0, r18	;
+
 ;--------------------------------------------------------------------------
 ;
 ;	Initialize RAM values
@@ -282,6 +300,40 @@ loginit010:
 ;
 	ldi	r18, 0xFF
 	out	dataportdir, r18	; default data port direction is output !!!
+;=============================================================================
+;
+;	RTC / PIT
+;
+;	For tick we are using the PIT of the RTC and for iotick we use
+;	the overflow interrupt of the RTC counter.
+;
+;	Using the RTC for the Tick and Iotick saves a timer. 
+;
+rtcwait:
+	lds	r18, RTC_STATUS
+	sbrc	r18, RTC_PERBUSY_bp	; Wait for PIT controller to be free
+	rjmp	rtcwait
+	ldi	r18, low(EXP2(15)-1)	; Overflow every second
+	ldi	r19, high(EXP2(15)-1)
+	sts	RTC_PERL, r18
+	sts	RTC_PERH, r19
+	ldi	r18, RTC_OVF_bm		; Enable RTC overflow interrupt
+	sts	RTC_INTCTRL, r18
+;
+;	Periodic Interrupt every 32 RTC clocks, this gives 1024 ticks per
+;	second
+;
+pitwait:
+	lds	r18, RTC_PITSTATUS
+	sbrc	r18, RTC_CTRLBUSY_bp	; Wait for PIT controller to be free
+	rjmp	pitwait
+	ldi	r18, RTC_PERIOD_CYC32_gc+RTC_PITEN_bm
+	sts	RTC_PITCTRLA, r18
+	ldi	r18, RTC_RTCEN_bm
+	sts	RTC_CTRLA, R18
+	ldi	r18, RTC_PI_bm		; Enable PIT interrupt
+	sts	RTC_PITINTCTRL, r18
+;=============================================================================
 ;
 ;	RT-OS Softinterrupt
 ;
@@ -307,7 +359,7 @@ loginit010:
 	sbi	b_GO			; Set Level = High 
 	sbi	f_GO			; Acknowledge any pending interrupt
 	ldi	r18, PORT_ISC_LEVEL_gc	; Level Sense Interrupt
-	ldi	r18, PORT_ISC_FALLING_gc
+;	ldi	r18, PORT_ISC_FALLING_gc
 	sts	c_GO, r18		; Pin Control
 ;
 ;	Q-Bus Interrupts - Level 1 Interrupt
@@ -334,17 +386,7 @@ loginit010:
 
 	ldi	r18, v_QBUS/2		; Vector Number is Vector Address/2
 	sts	CPUINT_LVL1VEC, r18
-;
-;	Soft Interrupt for malloc() and free()
-;
-;	Malloc and Free are executed at Level 0 interrupt level to guarantee
-;	atomic behaviour
-;
-	sbi	d_MEM			; malloc/free Soft Interrupt
-	sbi	b_MEM			; Set Level = High 
-	sbi	f_MEM			; Acknowledge any pending interrupt
-	ldi	r18, PORT_ISC_LEVEL_gc	; Level Sense Interrupt
-	sts	c_MEM, r18		; Pin Control
+
 ;=============================================================================
 ;
 ;	Map Flash section 2 to Data address space
@@ -393,31 +435,6 @@ loginit010:
 	cbi	FLAGS_COMMON, serin__drv	; Polled 
 	cbi	FLAGS_COMMON, serout__drv
 
-;=============================================================================
-;
-;	Tick Interrupt (every 1ms) Timer TCB0
-;
-;	Remark, a ticker every 1ms seems to be a lot, however the RTOS is
-;	very small and we only have a limited number of active timers at
-;	each moment, so the overhead is still less than 5%.  
-;	Compared to the Atmega1248P used in the RLV12 emulator we have 
-;	more CPU power (about 15% as we overclock to 28MHz) this more
-;	than compensates the tick overhead, on the other hand 1ms tick
-;	allows very small delays required by IO without hogging the CPU.
-;
-	ldi	r18, low(F_CPU/1000-1)	; 1ms
-	sts	TCB0_CCMPL, r18
-	ldi	r18, high(F_CPU/1000-1)
-	sts	TCB0_CCMPH, r18
-
-	ldi	r18, 0
-	sts	TCB0_CTRLB, r18
-
-	ldi	r18, TCB_CAPT_bm
-	sts	TCB0_INTCTRL, r18
-
-	ldi	r18, TCB_ENABLE_bm+TCB_RUNSTDBY_bm+TCB_CLKSEL_DIV1_gc
-	sts	TCB0_CTRLA, r18
 ;=============================================================================
 ;
 ;	Timer 
@@ -561,17 +578,17 @@ loginit010:
 	ldi	r24, low(usersp0)	
 	ldi	r25, high(usersp0)	
 	
-	ldi	r18, 3			; Priority
 	std	Z+jcb_stack+0, r24	; Pointer past stack area
 	std	Z+jcb_stack+1, r25
 	std	Z+jcb_joblist+0, xl
 	std	Z+jcb_joblist+1, xh
+
+	ldi	r18, main_id
+	std	Z+jcb_jobid, r18
+	ldi	r18, main_prio		; Priority
 	std	Z+jcb_priority, r18
-	std	Z+jcb_flags, zero
-	ldi	r24, low(jobmain)
-	ldi	r25, high(jobmain)
-	std	Z+jcb_jobname+0, r24
-	std	Z+jcb_jobname+1, r25
+	clr	r18
+	std	Z+jcb_flags, r18
 
 	call	print
 	.db	"Create Main Job", CR, LF, 0
@@ -584,6 +601,12 @@ loginit010:
 	movw	r25:r24, zh:zl
 	sei
 	call	create			; This call will never return
+;=============================================================================
+;
+;	Crash
+;
+;crash:	rjmp	start
+.include	"crash.asm"
 ;=============================================================================
 ;
 ;	Serial In/Out Support routines
@@ -623,7 +646,7 @@ serin100:				; Else proceed with polled IO
 ;
 ;	mini RT-OS
 ;
-.include	"rtos-v2-2.asm"
+.include	"rtos-v3-0.asm"
 ;=============================================================================
 ;
 ;	The Jobs
@@ -639,26 +662,24 @@ main:
 ;
 ;	Card Detect Job
 ;
-	ldi	r18, 9
 	ldi	zl, low(jcb1)
 	ldi	zh, high(jcb1)
 	ldi	xl, low(carddetect)	; start address requires word address
 	ldi	xh, high(carddetect)
 	ldi	r24, low(usersp1)	
 	ldi	r25, high(usersp1)	
-
 	std	Z+jcb_stack+0, r24	; Top of Stack
 	std	Z+jcb_stack+1, r25
-
 	std	Z+jcb_joblist+0, xl	; Job Entry Point
 	std	Z+jcb_joblist+1, xh
+
+	ldi	r18, carddetect_id
+	std	Z+jcb_jobid, r18
+	ldi	r18, carddetect_prio
 	std	Z+jcb_priority, r18	; Job Priority
 	clr	r18
 	std	Z+jcb_flags, r18	; Job Flags
-	ldi	r24, low(jobsdcard)
-	ldi	r25, high(jobsdcard)
-	std	Z+jcb_jobname+0, r24
-	std	Z+jcb_jobname+1, r25
+
 	call	print
 	.db	"Create SD-Card Detect Job", CR, LF, 0
 	rcall	prtcreate
@@ -667,7 +688,6 @@ main:
 ;
 ;	RLV12 Emulator Job
 ;
-	ldi	r18, 2			; should be less than the priority of CLI
 	ldi	zl, low(jcb2)
 	ldi	zh, high(jcb2)
 	ldi	xl, low(rlv12job)	; start address requires word address
@@ -678,13 +698,14 @@ main:
 	std	Z+jcb_stack+1, r25
 	std	Z+jcb_joblist+0, xl
 	std	Z+jcb_joblist+1, xh
+
+	ldi	r18, rlv12job_id
+	std	Z+jcb_jobid, r18
+	ldi	r18, rlv12job_prio	; should be less than the priority of CLI
 	std	Z+jcb_priority, r18	; rlv12 emulator job
 	clr	r18
 	std	Z+jcb_flags, r18
-	ldi	r24, low(jobrlv12)
-	ldi	r25, high(jobrlv12)
-	std	Z+jcb_jobname+0, r24
-	std	Z+jcb_jobname+1, r25
+
 	call	print
 	.db	"Create RLV12 Job", CR, LF, 0, 0
 	rcall	prtcreate
@@ -693,29 +714,63 @@ main:
 ;
 ;	Dummy Job
 ;
-	ldi	r18, 1			; Must be the lowest priority
 	ldi	zl, low(jcb3)
 	ldi	zh, high(jcb3)
-	ldi	xl, low(dummyjob)	; start address requires word address
-	ldi	xh, high(dummyjob)
+	ldi	xl, low(seekjob)	; start address requires word address
+	ldi	xh, high(seekjob)
 	ldi	r24, low(usersp3)	
 	ldi	r25, high(usersp3)	
 	std	Z+jcb_stack+0, r24
 	std	Z+jcb_stack+1, r25
 	std	Z+jcb_joblist+0, xl
 	std	Z+jcb_joblist+1, xh
+
+	ldi	r18, seek_id
+	std	Z+jcb_jobid, r18
+	ldi	r18, seek_prio		; Must be the lowest priority
 	std	Z+jcb_priority, r18	; carddetect job
-	ldi	r24, low(jobdummy)
-	ldi	r25, high(jobdummy)
-	std	Z+jcb_jobname+0, r24
-	std	Z+jcb_jobname+1, r25
 	clr	r18
 	std	Z+jcb_flags, r18
+
 	call	print
 	.db	"Create Dummy Job", CR, LF, 0, 0
 	rcall	prtcreate
 	movw	r25:r24, zh:zl
 	call	create
+
+#define wdgactive 0
+#if wdgactive>0
+	ldi	r18, CPU_CCP_IOREG_gc
+	sts	CPU_CCP, r18
+	
+#if wdgactive==1
+;
+;	WINDOW	if not zero sets the duration of the closed period
+;	PERIOD	sets the duration of the open period, else
+;
+	ldi	r18, WDT_PERIOD_1KCLK_gc | WDT_WINDOW_512CLK_gc
+#endif
+#if wdgactive==2
+;
+;	PERIOD	sets the duration of the time-out between WDR instruction
+;
+	ldi	r18, WDT_PERIOD_1KCLK_gc
+#endif
+#if wdgactive==3
+;
+;	TICK	ultrashort 
+;
+	ldi	r18, WDT_PERIOD_8CLK_gc
+#endif
+	sts	WDT_CTRLA, r18
+	lds	r18, WDT_CTRLA
+	sts	pprint+15, r18
+	call	print
+	.db	CR, LF, "wdt - Starting watchdog ", 0x8f, CR, LF, 0
+#endif
+
+
+
 ;--------------------------------------------------------------------------
 ;
 ;	Main Job - User Interface
@@ -814,7 +869,7 @@ prtcreate:
 ;
 ;	
 ;
-.include	"dummyjob.asm"		; Our dummy job that does nothing
+.include	"seekjob.asm"		; Our seek job
 .include	"sdcardjob.asm"		; SD-Card Insert/Remove and LED routine
 .include	"SD-Card-Print-v1-0.asm"; Print SD-Card messages
 .include	"SD-Card-v1-0.asm"	; Main SD-Card routines
@@ -833,7 +888,7 @@ prtcreate:
 .include	"tparse-v2-0.asm"	; Table Drive Parser
 .include	"Mountvolume.asm"	; Automount
 .include	"Dismountvolume.asm"	; Autodismount
-.include	"malloc-v2-2.asm"	; Malloc/Free
+.include	"malloc-v3-0.asm"	; Malloc/Free
 .include	"CLI-table.inc"		; Parser Table
 .include	"CLI-action.asm"	; Parser Action Routines
 .include	"CLI-attach.asm"	; Attach/Detach Command
@@ -846,6 +901,7 @@ prtcreate:
 .include	"CLI-logging.asm"	; Logging
 .include	"CLI-commands.asm"	; Various Other commands
 .include	"CLI-sdcard.asm"	; Read Multiple Block Test
+.include	"CLI-status.asm"	; Show status of variables
 .include	"FAT-library-v2-0.asm"	; FAT Volume Library
 .include	"FAT-fileio-v2-0.asm"	; File IO Routines
 .include	"readcmdline.asm"	; Read Command Line

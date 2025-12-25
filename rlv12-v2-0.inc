@@ -14,6 +14,7 @@
 .equ	CSR_DE		= 6
 .equ	CSR_DS1		= 1
 .equ	CSR_DS0		= 0
+.equ	CSR_DS_gm	= 0x03
 
 .equ	CSR_CRDY	= 7
 .equ	CSR_IE		= 6
@@ -22,6 +23,15 @@
 .equ	CSR_FC2		= 3
 .equ	CSR_FC1		= 2
 .equ	CSR_FC0		= 1
+.equ	CSR_FC_gm		= 0x0E
+.equ	CSR_FC_MAINT_gm		= 0x00
+.equ	CSR_FC_WRTCHK_gm	= 0x02
+.equ	CSR_FC_GETSTAT_gm	= 0x04
+.equ	CSR_FC_SEEK_gm		= 0x06
+.equ	CSR_FC_RDHDR_gm		= 0x08
+.equ	CSR_FC_WRITE_gm		= 0x0A
+.equ	CSR_FC_READ_gm		= 0x0C
+.equ	CSR_FC_RDNOHDR_gm	= 0x0E
 .equ	CSR_DRVRDY	= 0
 
 .equ	BAE_BA17	= 1
@@ -35,9 +45,6 @@
 ;
 ;
 ;
-#define driveselect	(1<<CSR_DS1) | (1<<CSR_DS0)
-#define function	(1<<CSR_FC2) | (1<<CSR_FC0) | (1<<CSR_FC0)
-
 		align	4
 CSRL:		.byte	1
 CSRH:		.byte	1

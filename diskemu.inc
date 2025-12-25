@@ -15,8 +15,8 @@
 ;	reliable. For the moment we will leave it at 24MHz which is
 ;	still fast enough.
 ;
-.equ	F_CLK	=	CLKCTRL_FREQSEL_32M_gc
-.equ	F_CPU	=	32000000
+.equ	F_CLK	=	CLKCTRL_FREQSEL_28M_gc
+.equ	F_CPU	=	28000000
 ;
 ;	Baud Rate Generator with fractional baud-rate generator
 ;
@@ -52,8 +52,8 @@
 ;	Various Clock rates: CPUCLK/2, CPUCLK/4, CPUCLK/8
 ;
 ;#define spispeed SPI_CLK2X_bm | SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
-#define spispeed                SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
-;#define spispeed SPI_CLK2X_bm | SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV16_gc
+;#define spispeed                SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
+#define spispeed SPI_CLK2X_bm | SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV16_gc
 ;
 ;	Conditional assembly
 ;
@@ -118,7 +118,7 @@
 ;	Flag Registers - GPR_GPR0..3
 ;
 #define FLAGS_COMMON GPR_GPR2
-#define FLAGS_LOGGING GPR_GPR3
+#define FLAGS_LOG GPR_GPR3
 ;--------------------------------------------------------------------------
 ;
 ;	FLAGS_COMMON definitions for signalling states of the emulator
@@ -146,6 +146,21 @@
 .equ	heapsize	= 0x1000
 ;--------------------------------------------------------------------------
 ;
+;	Job Definitions
+;
+#define rlv12job_id 0
+#define rlv12job_prio 2
+
+#define main_id 1
+#define main_prio 4
+
+#define carddetect_id 2
+#define carddetect_prio 9
+
+#define seek_id 3
+#define seek_prio 1
+;--------------------------------------------------------------------------
+;
 ;	Logging - Buffers, Definitions, Macro's
 ;
 ;	For debugging purposes a logging buffer is implemented. Each
@@ -167,10 +182,10 @@
 #define log_boot4	0x0c
 #define log_boot6	0x0e
 #define log_rom		0x01
-;
-#define	log_fnc0	0x80
-#define	log_address	0x90
-#define	log_fnc2	0xa0
+#define	log_command	0x80
+;				Bits0..1 = Unit
+;				Bits2..4 = Function Code
+#define	log_address	0xa0
 #define	log_seek	0xb0
 #define	log_pbn		0xc0
 #define	log_diskaddr	0xd0
@@ -190,6 +205,16 @@
 #define log_pkt		0x54
 #define	log_ring	0x55
 #define	log_dup		0x60
+
+#define	command_maint	0x00
+#define	command_wrtchk	0x01
+#define	command_getstat	0x02
+#define	command_seek	0x03
+#define	command_readhdr	0x04
+#define	command_write	0x05
+#define	command_read	0x06
+#define	command_readnc	0x07
+
 ;
 ;	Logging Buffer Definitions
 ;
@@ -214,7 +239,7 @@
 .equ	log_size	= log_buffersize - log_begin
 .equ	log_overflow	= 7		; the 7th bit of the high byte address
 ;
-;	FLAGS_LOGGING definitions for logging
+;	FLAGS_LOG definitions for logging
 ;
 .equ	log__turbo	= 3		; Turbo Routine for SD_CARD_READ
 .equ	log__trace	= 4		; Log Debug Traces
@@ -223,9 +248,9 @@
 .equ	log__reg	= 7		; Log Device Register IO
 ;
 ;#define logging (1<<log__pbn) | (0<<log__trace) | (1<<log__reg) | (1<<log__iack) | (1<<log__turbo)
-#define logging (0<<log__pbn) | (0<<log__trace) | (0<<log__reg) | (1<<log__iack) | (1<<log__turbo)
+;#define logging (0<<log__pbn) | (0<<log__trace) | (0<<log__reg) | (1<<log__iack) | (1<<log__turbo)
 ;#define logging (1<<log__pbn) | (1<<log__trace) | (1<<log__reg) | (1<<log__iack) | (1<<log__turbo)
-
+#define logging (0<<log__pbn) | (1<<log__trace) | (1<<log__reg) | (1<<log__iack) | (0<<log__turbo)
 .if (log_begin & 0xFF >0)
 	.error " Invalid non-circular buffer size"
 .endif
@@ -235,24 +260,26 @@
 .if ((log_buffer & (log_buffersize - 1)) != 0)
 	.error " Invalid logging buffer definitions"
 .endif
+;--------------------------------------------------------------------------
 ;
 ;	Get the current log pointer and update the log pointer with the next entry
 ;	in the circular or lollipop shaped logging buffer this macro expects the  
-;	registers that receive the current pointer and two scratchpad registers  
-;	as parameters                                                             
+;	registers that receives the current pointer and two scratchpad registers  
+;	as parameters, the scratchpad registers will be set to the pointer as
+;	well and log_pointer will point to the next entry                                                           
 ;
 	.macro	logptr			; logptr ptrl, ptrh, scratchl, scratchh
-	cli				;;;
-	lds	@0, log_pointer+0	;;;  3 Logging
-	lds	@1, log_pointer+1	;;;  3 Logging
-	movw	@3:@2, @1:@0		;;;  1
-	subi	@2, low(-4)		;;;  1
-	sbci	@3, high(-4)		;;;  1
-	sbrc	@3, log_overflow	;;;  2/1
-	subi	@3, high(log_size)	;;;  0/1
-	sts	log_pointer+0, @2	;;;  2
-	sts	log_pointer+1, @3	;;;  2
-	sei				;;;  1	-> 16 cycles ~0.6usec
+	cli
+	lds	@2, log_pointer+0
+	lds	@3, log_pointer+1
+	movw	@1:@0, @3:@2
+	adiw	@1:@0, 4
+	sbrc	@1, log_overflow
+	subi	@1, high(log_size)
+	sts	log_pointer+0, @0
+	sts	log_pointer+1, @1
+	sei
+	movw	@1:@0, @3:@2
 	.endmacro
 
 ;
@@ -260,13 +287,13 @@
 ;	value, typically used to display the current value of register or a   
 ; 	register pair mostly used during debugging                            
 ;
-	.macro	logtr; trace-id, reg tracevaluelow, regtracevaluehigh
-	sbis	FLAGS_LOGGING, log__trace
+	.macro	logtr; trace-id, regtracevaluelow, regtracevaluehigh
+	sbis	FLAGS_LOG, log__trace
 	rjmp	notrace
-	push	r16			; Save registers
-	push	r17
+	push	zh			; Save Z first
 	push	zl
-	push	zh
+	push	r17			; Save temporary registers
+	push	r16
 	ldi	r16, log_trace
 	ldi	r17, @0
 	cli				;;;
@@ -274,18 +301,24 @@
 	lds	zh, log_pointer+1	;;;  3 Logging
 	st	Z+, r16			;;;  2
 	st	Z+, r17			;;;  2
+	pop	r16			;;;  1 Restore r16/r17 here in case that
+	pop	r17			;;;  1 they are used as the trace values
 	st	Z+, @1			;;;  2
 	st	Z+, @2			;;;  2
 	sbrc	zh, log_overflow	;;;  2/1
 	subi	zh, high(log_size)	;;;  0/1
 	sts	log_pointer+0, zl	;;;  2
 	sts	log_pointer+1, zh	;;;  2
-	sei				;;;  1	-> 21 cycles ~0.75usec
-	pop	zh			; Restore registers
-	pop	zl
-	pop	r17
-	pop	r16
+	sei				;;;  1	-> 23 cycles ~1usec
+	pop	zl			; Restore Z registers
+	pop	zh
 notrace:
 	.endmacro
 
-
+;=============================================================================
+;
+;	RT-OS Flag Definitions
+;
+.equ	tesout_bp	= 0
+.equ	tesoutblock_bp	= 1
+.equ	tesoutout_bp	= 2
