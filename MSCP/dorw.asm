@@ -598,7 +598,7 @@ mscp_rwsetup020:
 ;	retrieved, reading MPR always returns values from the FIFO
 ;
 mscp_rwsetup030:
-	sbis	FLAGS_LOGGING, log__pbn
+	sbis	FLAGS_LOG, log__pbn
 	rjmp	mscp_rwsetup035
 	logptr	zl, zh, r25, r24	; Destroys r25:r24, zh:zl
 	ldd	r16, Y+P_Sector+0	; Set start sector for read or write
@@ -643,7 +643,7 @@ mscp_rwnextsector:
 	std	Y+P_Sector+1, r17
 	std	Y+P_Sector+2, r18
 	std	Y+P_Sector+3, r19
-	sbis	FLAGS_LOGGING, log__pbn
+	sbis	FLAGS_LOG, log__pbn
 	ret
 	logptr	zl, zh, r25, r24	; Destroys r25:r24, zh:zl
 	std	Z+3, r16
@@ -674,7 +674,7 @@ mscp_rwnextsector010:
 	ldd	r17, Y+P_Sector+1
 	ldd	r18, Y+P_Sector+2
 	ldd	r19, Y+P_Sector+3
-	sbis	FLAGS_LOGGING, log__pbn
+	sbis	FLAGS_LOG, log__pbn
 	ret
 	logptr	zl, zh, r25, r24		
 	std	Z+3, r16

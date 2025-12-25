@@ -136,6 +136,41 @@ cmd_showintports:
 	sts	pprint+0, r16
 	call	print
 	.db	TAB, "CRDY ..........:", 0x90, CR, LF, 0, 0
+
+	ldi	r16, '0'
+	sbic	i_INTQ
+	ldi	r16, '1'
+	sts	pprint+0, r16
+	call	print
+	.db	TAB, "INTQ ..........:", 0x90, CR, LF, 0, 0
+
+	ldi	r16, '0'
+	sbic	i_INTI
+	ldi	r16, '1'
+	sts	pprint+0, r16
+	call	print
+	.db	TAB, "INTI ..........:", 0x90, CR, LF, 0, 0
+	
+	ldi	r16, '0'
+	sbic	i_INIT
+	ldi	r16, '1'
+	sts	pprint+0, r16
+	call	print
+	.db	TAB, "INIT ..........:", 0x90, CR, LF, 0, 0
+	
+	ldi	r16, '0'
+	sbic	b_ACK
+	ldi	r16, '1'
+	sts	pprint+0, r16
+	call	print
+	.db	TAB, "ACK ...........:", 0x90, CR, LF, 0, 0
+
+	ldi	r16, '0'
+	sbic	b_IRQ
+	ldi	r16, '1'
+	sts	pprint+0, r16
+	call	print
+	.db	TAB, "IRQ ...........:", 0x90, CR, LF, 0, 0
 	ret
 ;--------------------------------------------------------------------------
 ;
@@ -439,7 +474,7 @@ cmd_showdriveinfo090:
 	ret
 ;--------------------------------------------------------------------------
 ;
-;	Logging uses FLAGS_LOGGING
+;	Logging uses FLAGS_LOG
 ;
 ;	
 cmd_showlog:
@@ -671,18 +706,25 @@ cmd_showjobs:
 jcbprintalt:
 	sts	pprint+8, yl
 	sts	pprint+9, yh
-	ldd	zl, Y+jcb_jobname+0
-	ldd	zh, Y+jcb_jobname+1
+
 	call	print
 	.db	CR, LF
-	.db	"Job Name:", 0
-jcbprintname010:	
+	.db	"Job Name: ",0, 0
+	ldd	zl, Y+jcb_jobid
+	lsl	zl
+	lsl	zl
+	lsl	zl
+	clr	zh
+	subi	zl, low(-JobNames)
+	sbci	zh, high(-JobNames)
+jcbprint110:
 	ld	r24, Z+
 	tst	r24
-	breq	jcbprintname020
+	breq	jcbprint120
 	call	serout
-	rjmp	jcbprintname010
-jcbprintname020:
+	rjmp	jcbprint110
+
+jcbprint120:
 	ldd	zl, Y+jcb_stack+0
 	ldd	zh, Y+jcb_stack+1
 	sts	pprint+0, zl
@@ -705,16 +747,18 @@ jcbprintname020:
 	sbrc	r18, 0
 	rjmp	jcbprint010	
 	call	print
+	.db	", "
 	.db	"Job Control Block 0x", 0x89, 0x88, CR, LF
 	.db	"Job Program Counter 0x", 0x87, 0x86, " Status 0x", 0x85, " "
-	.db	"Priority 0x", 0x84, " Stack pointer 0x", 0x81, 0x80, " "
+	.db	"Priority ", 0xF4, " Stack pointer 0x", 0x81, 0x80, " "
 	.db	"Queue 0x", 0x83, 0x82, CR, LF, 0, 0
 	rjmp	jcbprint020
 jcbprint010:
 	call	print
+	.db	", "
 	.db	"Job Control Block 0x", 0x89, 0x88, CR, LF
 	.db	"Job Program Counter 0x", 0x87, 0x86, " Status 0x", 0x85, " "
-	.db	"Priority 0x", 0x84, " Stack pointer 0x", 0x81, 0x80, " "
+	.db	"Priority ", 0xF4, " Stack pointer 0x", 0x81, 0x80, " "
 	.db	"Waiting 0x", 0x83, 0x82, " Ticks", CR, LF, 0, 0
 jcbprint020:	
 	ldi	xl, low(pprint)
@@ -807,5 +851,4 @@ showfree090:
 	pop	r24
 	ret
 	
-
 

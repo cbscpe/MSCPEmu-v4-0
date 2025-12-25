@@ -39,9 +39,14 @@ commandlist:
 	.dw	kw_mount,	0, 		cmd_mount
 	.dw	kw_dismount,	0,		cmd_dismount
 	.dw	kw_sdread,	0,		cmd_sdread
+	.dw	kw_status,	0,		cmd_status
+	.dw	kw_set,		0,		cmd_set
 	.dw	kw_eol,		0,		cmd_done
 	.dw	0
 
+cmd_status:
+	.dw	kw_eol,		printstatus,	cmd_done
+	.dw	0
 
 cmd_sdread:
 	.dw	kw_number, 	a_nbr,		cmd_sdread1
@@ -222,6 +227,10 @@ cmd_fdisk:
 
 cmd_no:
 	.dw	kw_showlog, 	set_no,		cmd_logging
+	.dw	0
+
+cmd_set:
+	.dw	kw_eol,		0,		cmd_done
 	.dw	0
 
 cmd_logging:
@@ -453,6 +462,7 @@ kw_dmawrite:	P_KEYWORD	"DMAWrite"
 kw_dmaaddr:	P_KEYWORD	"DMAAddress"
 kw_dmatest:	P_KEYWORD	"DMATest"
 kw_free:	P_KEYWORD	"FREE"
+kw_set:		P_KEYWORD	"SET"
 kw_reset:	P_KEYWORD	"RESET"
 kw_pointer:	P_KEYWORD	"POINTer"
 kw_memtest:	P_KEYWORD	"MEMorytest"
@@ -484,3 +494,4 @@ kw_dismount:	P_KEYWORD	"DISMOunt"
 kw_sdread:	P_KEYWORD	"SDRead"
 kw_trace:	P_KEYWORD       "TRace"
 kw_iotest:	P_KEYWORD	"IOTest"
+kw_status:	P_KEYWORD	"STATus"

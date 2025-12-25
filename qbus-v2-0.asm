@@ -38,7 +38,7 @@
 ;
 ;
 	.macro	INTEXIT			; 23/44 cycles
-	sbis	FLAGS_LOGGING, log__reg	; 1/2 
+	sbis	FLAGS_LOG, log__reg	; 1/2 
 	rjmp	nolog			; 2/0
 	lds	zl, log_pointer+0	; 3 Logging is done only if log__reg is set
 	lds	zh, log_pointer+1	; 3
@@ -129,12 +129,12 @@ nolog:
 ;--------------------------------------------------------------------------
 ;
 	.macro	pulse
-	cbi	b_SIG			; blinken lights in fast mode :-)
-	nop
-	nop
-	sbi	b_SIG
-	nop
-	nop
+;	cbi	b_SIG			; blinken lights in fast mode :-)
+;	nop
+;	nop
+;	sbi	b_SIG
+;	nop
+;	nop
 	.endm
 ;--------------------------------------------------------------------------
 ;
@@ -410,6 +410,19 @@ qbus_dato_csr:				; 45
 	bst	yl, CSR_BA17		; 1 and BA17
 	bld	zl, BAE_BA17		; 1
 	sts	BAEL, zl		; 2
+
+	mov	zl, yl
+	and	zl, CSR_CRDY | function
+	cpi	zl, CSR_CRDY | 6	; SEEK
+	rjmp	qbus_dato_csr010
+
+	brne	qbus_dato_csr010
+	mov	zl, yh
+	swab	zl
+	clr	zh
+	subi	zl, low(-unittable)
+	sbci	zh, high(-unittable)
+
 ;
 ;	New Logic
 ;
@@ -417,6 +430,7 @@ qbus_dato_csr:				; 45
 ;	- If a command has been initiated then trigger the Level0 interrupt
 ;	- Block Access to the controller Register
 ;
+qbus_dato_csr010:
 	sbrc	yl, CSR_CRDY		; 1 command requested, i.e. CRDY=0
 	rjmp	qbus_dato_csr_done	; 1 no, then we are done
 ;
@@ -595,6 +609,8 @@ qbus_dato_boot2:
 	DATO
 	sts	CSR12+0, yl		; 2
 	sts	CSR12+1, yh		; 2
+	cpse	yl, yh
+	jmp	crash
 	INTEXIT	log_dato|log_boot2
 ;------------------------------------------------------------------------------
 ;
@@ -787,7 +803,7 @@ qbus_rom:
 	ld	yl, Z+			; get word
 	ld	yh, Z+
 	DATI
-	sbis	FLAGS_LOGGING, log__reg	; 1/2 
+	sbis	FLAGS_LOG, log__reg	; 1/2 
 	rjmp	qbus_romx
 	lds	zl, log_pointer+0	; 3 Logging is done only if log__reg is set
 	lds	zh, log_pointer+1	; 3
@@ -826,7 +842,7 @@ qbus_romo:
 	cbi	b_RD
 	ldi	yl, 0xFF
 	out	dataportdir, yl		; Set Data Port Direction to Output
-	sbis	FLAGS_LOGGING, log__reg	; 1/2 
+	sbis	FLAGS_LOG, log__reg	; 1/2 
 	rjmp	qbus_romx		; do not advance logging buffer
 	adiw	zh:zl, 4		; 2
 	sbrc	zh, log_overflow
@@ -878,7 +894,7 @@ qbus_iack:
 	sbi	b_WR			; 1 Latch Q-Bus Data High
 	cbi	b_WR			; 1
 	#endif
-	sbis	FLAGS_LOGGING, log__iack	; 1
+	sbis	FLAGS_LOG, log__iack	; 1
 	rjmp	qbus_iack_nolog		; 2
 	pulse
 	pulse
@@ -915,7 +931,7 @@ qbus_init:
 	sbi	b_ABO			; BINIT does no longer clear DMA 
 	cbi	b_ABO			; so we need to do it in software
 	sbi	f_INIT			; 1 Acknowledge BINIT Interrupt 
-	sbis	FLAGS_LOGGING, log__iack
+	sbis	FLAGS_LOG, log__iack
 	rjmp	qbus_init_nolog
 	pulse
 	pulse
