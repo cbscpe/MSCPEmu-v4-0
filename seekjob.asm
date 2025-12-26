@@ -2,6 +2,26 @@
 ;
 ;	SEEK JOB
 ;
+;	Seek can be overlapped, i.e. when a seek command is issued the
+;	controller will not be busy. In qbus we just copy DAR to ucb_media
+;	and set the ucb__seek flag. In case the host does not issue a read
+;	or write command the seek job will detect the flag and perform the
+;	calculation of the new disk address and update ucb_diskaddr. However
+;	when a read or write command will be issued the controller will be
+;	busy and ucb_diskaddr will be updated by the command. To make sure
+;	there is no conflict updating ucb_diskaddr, the seek job must have
+;	a lower priority than the rlv12 job and seek job must disable interrupts
+;	to detect a pending seek and perform the necessary calculations to
+;	update ucb_diskaddr
+;
+;
+;
+;	Seek processing, now we perform seek processing in the low piority
+;	job seekjob. Therefore it is very likely that a read or write command
+;	already has been issued before seek processing takes place. Such a
+;	command will have priority over the seek itself as it is assumed that
+;	write or read commands will wait for the disk to finish a seek and then
+;	perform the data transfer. 
 ;
 seekjob:
 
@@ -12,17 +32,9 @@ seekjobloop:
 	ldi	r24, low(2)
 	ldi	r25, high(2)
 	call	delay
-;
-;	Seek processing, not we perform seek processing in the low piority
-;	job seekjob. Therefore it is very likely that a read or write command
-;	already has been issued before seek processing takes place. Such a
-;	command will have priority over the seek itself as it is assumed that
-;	write or read commands will wait for the disk to finish a seek and then
-;	perform the data transfer. 
-;	
 	clr	r21			; seek execution mask
 ;
-;	The RLV12 does not have to "wait" for a seek to finish and just starts    
+;	The RLV12 emulator does not have to "wait" for a seek to finish and just starts    
 ;	with the transfer and terminates a pending seek (it clears ucb__seek).    
 ;	Therefore we only collect overlapped seeks if they are still pending.     
 ;	Therefore we need to make seek atomic with interrupts disabled            
