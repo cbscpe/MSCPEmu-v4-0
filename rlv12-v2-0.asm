@@ -421,7 +421,7 @@ rlv12_get010:
 	bst	r16, DAR_RW_HS		; Get current head selected
 	bld	r18, MPR_GETS_HS	; Set selected head in status
 	ldd	r16, Y+ucb_type		; Get Volume Type
-	bst	r16, DL_RL02		; Copy RL02 bit
+	bst	r16, DL__RL02		; Copy RL02 bit
 	bld	r18, MPR_GETS_DT	; Set drive type in status
 rlv12_get020:
 ;
@@ -1077,7 +1077,7 @@ rlv12_rwsetup:
 	dmaaddr	r16, r17, r18
 ;
 	ldd	r18, Y+ucb_status
-	cbr	r18, (1<<DL_DRSEEK)
+	cbr	r18, (1<<ucb__seek)
 	std	Y+ucb_status, r18	; clear pending seek
 ;
 ;	Translate disk address to a logical block number

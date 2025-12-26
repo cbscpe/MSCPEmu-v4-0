@@ -1,13 +1,4 @@
 ;
-;	Controller specific bit definitions
-;
-.equ	DL_DRSEEK	= 3		; Drive performs a seek
-;
-;	Controller specific defintions of ucb_type
-;
-.equ	DL_RL02		= 0		; Drive is RL02
-
-;
 ;	RLV12 Register bit definitions
 ;
 .equ	CSR_ERR		= 7
