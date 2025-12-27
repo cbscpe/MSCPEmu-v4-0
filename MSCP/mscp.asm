@@ -200,7 +200,7 @@ swmscp:
 do_scc:
 ;do_avl:
 do_onl:
-
+	ret
 
 
 

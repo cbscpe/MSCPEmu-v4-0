@@ -119,7 +119,7 @@ poll140:
 ;	host and the response descriptors are owned by the controller
 ;
 ;	A message can be up to 64bytes. Therefore all buffers are at 
-;	lest 64 bytes in length. 
+;	laest 64 bytes in length. 
 ;
 ; this routine will get a packet from the host if one is available (one is
 ; available if a valid descriptor is returned)
