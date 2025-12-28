@@ -31,6 +31,7 @@
 .equ	DAR_SEEK_DIR	= 2		; Direction bit in DAR for seek
 .equ	DAR_SEEK_HS	= 4		; Head select bit in DAR for seek
 .equ	DAR_RW_HS	= 6		; Head select bin in DAR for read/write
+.equ	DAR_GETS_RST	= 3		: Get status with reset drive error
 .equ	MPR_GETS_HS	= 6		; Head select bin in MPR for get status
 .equ	MPR_GETS_DT	= 7		; Drive Type bit in MPR for get status
 ;

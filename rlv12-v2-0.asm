@@ -391,8 +391,8 @@ rlv12_writechk_error010:
 rlv12_getstatus:
 	lds	r18, DARL		; Check for valid request code
 	cpi	r18, 0x0B		; Get Status with reset errors
-	breq	rlv12_get010
-	cpi	r18, CSR_DS_gm		; Get Status
+	breq	rlv12_get005
+	cpi	r18, 0x03		; Get Status
 	breq	rlv12_get010
 	;
 	; Here we should return an error, but which?
@@ -415,6 +415,16 @@ rlv12_getstatus:
 	sts	log_pointer+1, zh
 	sei
 	ret
+;
+;	Get Status with Reset Error
+;
+rlv12_get005:
+	ldd	r16, Y+ucb_status	; Clear potential drive error bit
+	cbr	r16, (1<<ucb_de)	; in status
+	std	Y+ucb_status, r16
+;
+;
+;
 rlv12_get010:
 	ldi	r18, 0x1d		; Assume RL01 and drive ready
 	ldd	r16, Y+ucb_diskaddr	; Get current Disk address

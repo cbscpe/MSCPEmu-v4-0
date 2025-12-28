@@ -324,12 +324,12 @@ qbus_busy:
 ;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
 ;
 ;	Bit(s) 	Description
-;	0	Drive Ready (DRDY) - When set, this bit indicates that the 
-;		selected drive is ready to receive a command. The bit is 
-;		cleared when a seek or head-select operation is initiated
-;		and set when the operation is completed.
-;	1-3 	Function Code - These bits are set by software to indicate
-;		the command to be executed.
+;	0	Drive Ready (DRDY) - When set, this bit indicates that the selected   
+;		drive is ready to receive a command. The bit is cleared when a seek or
+;		head-select operation is initiated and set when the operation is      
+;		completed.                                                            
+;	1-3 	Function Code - These bits are set by software to indicate the command
+;		to be executed.                                                       
 ;		F2-F0	Command
 ;		000	NOP (RL11) Maintenance Mode (RLV11/RLV12)
 ;		001	Write Check
@@ -339,12 +339,11 @@ qbus_busy:
 ;		101	Write Data
 ;		110	Read Data
 ;		111	Read Data Without Header Check
-;
-;	4-5	Bus Address Extension Bits (BA16, BA17) - The two most 
-;		significant bus address bits when operating in 18-bit 
-;		addressing modes. Read and written as data bits 4 and 5 of
-;		the CSR register but considered as address bits 16 and 17 
-;		of the extended bus address register (see Paragraph 3.4.2). 
+;	4-5	Bus Address Extension Bits (BA16, BA17) - The two most significant bus
+;		address bits when operating in 18-bit addressing modes. Read and      
+;		written as data bits 4 and 5 of the CSR register but considered as    
+;		address bits 16 and 17 of the extended bus address register (see      
+;		Paragraph 3.4.2).                                                     
 ;	6	Interrupt Enable (IE) - When this bit is set by software, 
 ;		the controller is allowed to interrupt the processor at the
 ;		normal command or error termination ..
@@ -363,16 +362,14 @@ qbus_busy:
 ;		0101	Header Not Found (HNF)				
 ;		1000	Non-Existent Memory (NXM)			
 ;		1001	Memory Parity Error (MPE) RLV12 only
-;	14	Drive Error (DE) - This bit is tied directly to the DE 
-;		interface line. When set, it indicates that the selected 
-;		drive has flagged an error. (The source of the error can 
-;		be determined by executing a get status command and then 
-;		executing an MPR read.) DE can be cleared by executing 
-;		a get status command with bit 3 of the DA register set.
-;	15	Composite Error - When set, this bit indicates that one
-;		or more of the error bits (bits 10-14) is set. If the IE 
-;		bit (bit 6 of CS) is set and an error occurs (which sets 
-;		bit 7), an interrupt will be initiated.
+;	14	Drive Error (DE) - This bit is tied directly to the DE interface line.
+;		When set, it indicates that the selected drive has flagged an error.  
+;		(The source of the error can be determined by executing a get status  
+;		command and then executing an MPR read.) DE can be cleared by         
+;		executing a get status command with bit 3 of the DA register set.     
+;	15	Composite Error - When set, this bit indicates that one or more of the
+;		error bits (bits 10-14) is set. If the IE bit (bit 6 of CS) is set and
+;		an error occurs (which sets bit 7), an interrupt will be initiated.   
 ;
 qbus_dati_csr:				; 45
 	lds	yl, CSRH		; 3
