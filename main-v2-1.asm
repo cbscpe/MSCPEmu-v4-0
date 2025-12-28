@@ -7,7 +7,7 @@
 	.listmac
 
 .include "macro-library-v1-1.asm"	; My standard macros
-.include "../include/FAT/fat-defs.asm"	; FAT defintions
+.include "FAT/FAT-defs.asm"		; FAT defintions
 
 ;=============================================================================
 ;
@@ -902,8 +902,22 @@ prtcreate:
 .include	"CLI-commands.asm"	; Various Other commands
 .include	"CLI-sdcard.asm"	; Read Multiple Block Test
 .include	"CLI-status.asm"	; Show status of variables
-.include	"FAT-library-v2-0.asm"	; FAT Volume Library
-.include	"FAT-fileio-v2-0.asm"	; File IO Routines
+
+.include "FAT/BuildFragList.asm"
+.include "FAT/Cluster2Sector.asm"
+.include "FAT/CopyName.asm"
+.include "FAT/CreatePath.asm"
+.include "FAT/FreeList.asm"
+.include "FAT/LinkedCluster.asm"
+.include "FAT/Logical2Physical.asm"
+.include "FAT/MatchFileName.asm"
+.include "FAT/Name2DirEntry.asm"
+.include "FAT/OpenDir.asm"
+.include "FAT/ReadDir.asm"
+.include "FAT/ReadFileByte.asm"
+.include "FAT/ReadFileClose.asm"
+.include "FAT/ReadFileOpen.asm"
+
 .include	"readcmdline.asm"	; Read Command Line
 .include	"readinit.asm"		; Read Init File
 .include	"rlv12-v2-0.asm"	; RLV12 Disk Emulation

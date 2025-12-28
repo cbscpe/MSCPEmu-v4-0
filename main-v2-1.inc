@@ -40,7 +40,7 @@ initialsp:
 ;
 ;
 ;
-.include "FAT-library-v2-0.inc"
+.include "FAT/FAT-library-v2-0.inc"
 
 .include "serial1.inc"
 .include "CLI-data.inc"
