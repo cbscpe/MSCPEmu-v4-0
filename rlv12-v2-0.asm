@@ -1244,6 +1244,10 @@ rlv12_rwsetup040:
 ;;;	makes no assumption regarding preset registers
 ;;;
 rlv12_reset:
+	sbi	b_ACK
+	sbi	b_ABO
+	cbi	b_ACK
+	cbi	b_ABO			;;; Reset CPLD	
 	ldi	zl, (1<<CSR_CRDY)	;;; Mark Controller is ready
 	clr	zh
 	sts	CSRL, zl

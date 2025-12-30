@@ -897,8 +897,6 @@ qbus_iack_nolog:
 ;	Bus INIT
 ;
 qbus_init:
-	sbi	b_ABO			; BINIT does no longer clear DMA 
-	cbi	b_ABO			; so we need to do it in software
 	sbi	f_INIT			; 1 Acknowledge BINIT Interrupt 
 	sbis	FLAGS_LOG, log__iack
 	rjmp	qbus_init_nolog
@@ -937,10 +935,4 @@ qbus_init_done:
 	pop	zh			; restore
 	out	CPU_SREG, r8		; restore
 	pop	r8			; restore
-
-	sbi	b_ACK			; 1 Acknowledge any pending interrupt
-	nop
-	cbi	b_ACK			; 1
-	nop
-	nop
 	reti				; 4	
