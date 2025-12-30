@@ -1,16 +1,98 @@
+2025-12-30	PS	Update
+
 ##New Disk Emulator
 
 
 ###MCU
 
+AVR128DB48 with 40 IO pins or AVR128DB64 with 54 IO pins.
+
+Port A
+
+PA0	unused
+PA1	DMR			; DMA Request	
+PA2	DMG			; DMA Granted	
+PA3	ABO			; Abort Cycle	
+PA4	ACK			; Acknowledge Cycle
+PA5	unused			; PIN1 Red Kinar Wire
+PA6	RTOS			; RTOS Software Interrupt	
+PA7	CLK			; CPDL Clock output
+
+Port B
+
+PB0	RS0			; Register Select 0
+PB1	RS1			; Register Select 1
+PB2	RS2			; Register Select 2
+PB3	unused
+PB4	unused
+PB5	GO			; GO Level1 -> Level0 signalling RLV12
+
+Port C
+
+PC0	TXD			; USART 1 Transmit
+PC1	RXD			; USART 1 Receive
+PC2	CD			; Card Detect
+PC3	WP			; Write Protect
+PC4	MOSI			; SPI
+PC5	MISO	
+PC6	SCK	
+PC7	SS	
+
+Port D - Data Port
+
+Port E
+
+PE0	INTI			; IACK cycle interrupt
+PE1	INTQ			; DATI/DATO cycle interrupt
+PE2	LED			; Activity LED PIN32 Yellow Kinar Wire
+PE3	INIT			; Bus INIT interrupt
+
+Port F
+
+PF0	unused
+PF1	unused
+PF3	CRDY			; Controller Ready
+PF4	IRQ			; Interrupt Request
+PF5	RD			; Register Read
+PF6	WR			; Register Write
+
+
+
+
+
 ###FAT Library
+
+Now uses the fat library v2.0 in the include directory, this is principally the
+same library as was used before, but with the each function in a dedicated file.
+
+###RTOS
+
+Now uses rtos-v3-0 in the include directory, this is an extended version of the
+rtos-v2-1 and rtos-v2-2 used before, which includes INTSAVE, QUEUE primitives,
+TESOUT etc.
+
+During RVL12 testing I have seen the same issue as with MQTT that suddenly the
+rtos no longer serves one of it's jobs. This was clearly related to the way the
+RTOS interrupt was acknowledged. v3-0 has a slightly different acknowledge of the
+RTOS interrupt and more important we don't have any sbic b_RTOS loops which were
+the place where a job hung before. We assume now that the interrupt is started
+during the instructions which save the registers and therefore never wait for the
+ISR to set b_RTOS again as we can assume that when the ISR "returns" (ret and not reti)
+it has set b_RTOS and acknowledged the interrupt.
+
+###MALLOC FREE
+
+malloc() and free() are not related to rtos-v3-0, they no longer require a dedicated
+interrupt pin. The way level0 is entered using b_RTOS is now completely generic and
+every subroutine can actually enter level0 by just clearing b_RTOS, of course such
+a subroutine must use reti and no longer ret in order to exit level0 interrupt state
 
 ###CLI
 
 ###VCB
 
 For each FAT-16 or FAT-32 volume we have a Volume Control Block (VCB). The volume
-control block are queued in the volqueue. The first vcb in the queue is the active
+control blocks are queued in the volqueue. The first vcb in the queue is the active
 volume
 
 
