@@ -41,6 +41,7 @@ commandlist:
 	.dw	kw_sdread,	0,		cmd_sdread
 	.dw	kw_status,	0,		cmd_status
 	.dw	kw_set,		0,		cmd_set
+	.dw	kw_turbo,	0,		cmd_turbo
 	.dw	kw_eol,		0,		cmd_done
 	.dw	0
 
@@ -227,6 +228,11 @@ cmd_fdisk:
 
 cmd_no:
 	.dw	kw_showlog, 	set_no,		cmd_logging
+	.dw	kw_turbo,	set_no,		cmd_turbo
+	.dw	0
+
+cmd_turbo:
+	.dw	kw_eol,		setturbo,	cmd_done
 	.dw	0
 
 cmd_set:
@@ -495,3 +501,4 @@ kw_sdread:	P_KEYWORD	"SDRead"
 kw_trace:	P_KEYWORD       "TRace"
 kw_iotest:	P_KEYWORD	"IOTest"
 kw_status:	P_KEYWORD	"STATus"
+kw_turbo:	P_KEYWORD	"TURBO"

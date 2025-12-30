@@ -114,17 +114,10 @@
 ;
 ;	PORT E (Bits0..3)
 ;
-.equ	MEM	= 0			; malloc(), free()
+;	PE0	unused
 .equ	CRDY	= 1			; Controller Ready
 .equ	ALEW	= 2			; Write Register Address Latch Enable
 .equ	WR	= 3			; Write
-
-#define	d_MEM	VPORTE_DIR, MEM
-#define	b_MEM	VPORTE_OUT, MEM
-#define b_MEM	VPORTE_OUT, MEM
-#define	f_MEM	VPORTE_INTFLAGS, MEM
-#define	c_MEM	PORTE_PIN0CTRL
-#define v_MEM	PORTE_PORT_vect
 
 #define	d_CRDY	VPORTE_DIR, CRDY
 #define	b_CRDY	VPORTE_OUT, CRDY
@@ -141,16 +134,13 @@
 ;
 ;	PF0	unused
 .equ	DMR	= 1			; DMA Request
-.equ	SIG	= 2			; SIGNAL
+	PF2	unused
 .equ	INTQ	= 3			; IACK
 .equ	INTI	= 4			; DATI/DATO
 .equ	INIT	= 5			; INIT
 
 #define	d_DMR	VPORTF_DIR, DMR
 #define	b_DMR	VPORTF_OUT, DMR
-
-#define	d_SIG	VPORTF_DIR, SIG
-#define	b_SIG	VPORTF_OUT, SIG
 
 #define	d_INTI	VPORTF_DIR, INTI
 #define	i_INTI	VPORTF_IN, INTI

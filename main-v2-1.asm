@@ -221,18 +221,12 @@ loginit010:
 ;
 ;	Normal GPIO Pins
 ;
-#if cpldif==40
-	sbi	d_ENA			; Enable Interrupts -> no longer used
-#endif
 	sbi	d_DMR			; DMA Request
 	cbi	d_DMG			; DMA Granted
 	sbi	d_ABO			; DMA Abort
 	sbi	d_ACK			; Interrupt Acknowledge
 	sbi	d_CLK			; CPU Clock Output
 	
-#if cpldif==40
-	sbi	b_ENA			; Enable Q-Bus Interrupts - > no longer used
-#endif
 	cbi	b_DMR			; No DMA request
 	sbi	b_ABO
 	cbi	b_ABO			; Abort any pending DMA
@@ -256,14 +250,11 @@ loginit010:
 #endif
 	sbi	d_LED			; Activity LED
 	cbi	b_LED
-
-	sbi	d_SIG			; Signal PIN
 	sbi	d_CRDY			; Controller Ready
 	sbi	d_IRQ			; Q-Bus Interrupt Request
 	sbi	d_RD			; Read Register in CPLD
 	sbi	d_WR			; Write Register in CPLD
 	
-	cbi	b_SIG
 	sbi	b_CRDY
 	cbi	b_IRQ
 	cbi	b_RD			; Important default is cleared!!!

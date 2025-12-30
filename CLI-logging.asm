@@ -510,6 +510,16 @@ logtraceno:
 	clc
 	ret
 
+setturbo:
+	lds	r18, tpflags
+	sbrs	r18, tp__no			; 
+	sbi	FLAGS_LOG, log__turbo		; set log__turbo when NO is cleared
+	sbrc	r18, tp__no			;
+	cbi	FLAGS_LOG, log__turbo		; clear log__turbo when NO is set
+	clc
+	ret
+
+
 logpbn:
 	lds	r18, tpflags
 	sbrc	r18, tp__no

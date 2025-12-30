@@ -62,7 +62,6 @@ nolog:
 	pop	zh			; 2 restore
 	out	CPU_SREG, r8		; 2 restore
 	pop	r8			; 2 restore
-	cbi	b_SIG			; 1
 	sbi	f_INTQ			; 1
 	reti				; 4
 	.endm
@@ -128,16 +127,6 @@ nolog:
 	.endmacro
 ;--------------------------------------------------------------------------
 ;
-	.macro	pulse
-;	cbi	b_SIG			; blinken lights in fast mode :-)
-;	nop
-;	nop
-;	sbi	b_SIG
-;	nop
-;	nop
-	.endm
-;--------------------------------------------------------------------------
-;
 ;	Register Convention
 ;	Y	Register Value
 ;	Z	Pointer, Temporary Register
@@ -149,35 +138,18 @@ qbus_:					; 4-5
 	push	zl			; 1
 	push	yh			; 1
 	push	yl			; 1
-	sbi	b_SIG			; 1
 	sbic	f_INTI			; 2/1
 	rjmp	qbus_iack		; 0/2
 	sbic	f_INTQ			; 2/1
 	rjmp	qbus_intq		; 0/2
 	sbic	f_INIT			; 2/1
 	rjmp	qbus_init		; 0/2
-;
-;	Pulse Legend
-;	1	INTQ
-;	2	INTI
-;	3	INIT
-;	4	Busy
-;	5	Spurious Interrupt
-;	6	Card Detect Job
-;	7	RLV12 Processing finished
-;
-	pulse				; Signal spuriuous interrupt
-	pulse
-	pulse
-	pulse
-	pulse
 	pop	yl			; 2 restore
 	pop	yh			; 2 restore
 	pop	zl			; 2 restore
 	pop	zh			; 2 restore
 	out	CPU_SREG, r8		; 1 restore
 	pop	r8			; 2 restore
-	cbi	b_SIG			; 1 fin
 	reti
 ;--------------------------------------------------------------------------
 ;
@@ -233,7 +205,6 @@ qbus_intq:
 ;
 	sbis	b_CRDY			; 1
 	rjmp	qbus_busy		; 1 Catch access before CPLD is updated
-	pulse				; 6 always signal a Q-Bus interrupt
 	andi	zl, 0x0F		; 1 Get BDAL3..1 and BWTBT 
 	clr	zh			; 1
 	subi	zl, low(-qbus_jmptbl)	; 1
@@ -262,8 +233,7 @@ qbus_jmptbl:
 ;
 ;	Normally when the controller is busy the CPLD is supposed to 
 ;	not create interrupts, so just in case we return zero to
-;	show the controller is busy. Show a special pulse pattern on
-;	b_SIG but do not perform any logging.
+;	show the controller is busy. 
 ;
 qbus_busy:
 ;
@@ -297,10 +267,6 @@ qbus_busy:
 	sbi	b_WR
 	cbi	b_WR			; Write 0 to Q-Bus High
 #endif
-	pulse
-	pulse
-	pulse
-	pulse
 ;
 ;	Clean up and acknowledge
 ;
@@ -312,7 +278,6 @@ qbus_busy:
 	pop	zh			; 2 restore
 	out	CPU_SREG, r8		; 2 restore
 	pop	r8			; 2 restore
-	cbi	b_SIG			; 1 fin
 	sbi	f_INTQ			; 1
 	reti				; 4
 ;--------------------------------------------------------------------------
@@ -866,7 +831,6 @@ qbus_romx:
 	pop	r8			; 2 restore
 	sbi	b_ACK			; 1
 	cbi	b_ACK			; 1
-	cbi	b_SIG			; 1
 	sbi	f_INTQ			; 1 Assert MCU Interrupt
 	reti				; 4	
 #endif
@@ -904,8 +868,6 @@ qbus_iack:
 	#endif
 	sbis	FLAGS_LOG, log__iack	; 1
 	rjmp	qbus_iack_nolog		; 2
-	pulse
-	pulse
 	lds	zl, log_pointer+0	; 3
 	lds	zh, log_pointer+1	; 3
 	std	Z+2, yl			; 2
@@ -928,7 +890,6 @@ qbus_iack_nolog:
 	pop	r8			; 2 restore
 	sbi	b_ACK			; 1
 	cbi	b_ACK			; 1
-	cbi	b_SIG			; 1
 	sbi	f_INTI			; 1 Assert MCU Interrupt
 	reti				; 4	
 ;--------------------------------------------------------------------------
@@ -941,9 +902,6 @@ qbus_init:
 	sbi	f_INIT			; 1 Acknowledge BINIT Interrupt 
 	sbis	FLAGS_LOG, log__iack
 	rjmp	qbus_init_nolog
-	pulse
-	pulse
-	pulse
 	lds	zl, log_pointer+0	; Update logging buffer pointer
 	lds	zh, log_pointer+1	; 
 	in	yl, int_port
@@ -985,5 +943,4 @@ qbus_init_done:
 	cbi	b_ACK			; 1
 	nop
 	nop
-	cbi	b_SIG			; 1
 	reti				; 4	

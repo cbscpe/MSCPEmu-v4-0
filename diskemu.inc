@@ -15,8 +15,8 @@
 ;	reliable. For the moment we will leave it at 24MHz which is
 ;	still fast enough.
 ;
-.equ	F_CLK	=	CLKCTRL_FREQSEL_24M_gc
-.equ	F_CPU	=	24000000
+.equ	F_CLK	=	CLKCTRL_FREQSEL_20M_gc
+.equ	F_CPU	=	20000000
 ;
 ;	Baud Rate Generator with fractional baud-rate generator
 ;

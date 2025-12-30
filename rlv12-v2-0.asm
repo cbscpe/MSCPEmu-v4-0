@@ -138,18 +138,6 @@ rlv12loop:
 	lds	r18, CSRL
 	sbr	r18, (1<<CSR_CRDY)
 	sts	CSRL, r18
-;
-;	Show 7 pulses on signal PIN normally there should be nothing
-;	else using the signal PIN at this moment as the Q-Bus interface
-;	is disabled
-;
-	ldi	r16, 7			;
-rlv12toggle:				;
-	sbi	b_SIG			; 1
-	nop				; 1
-	dec	r16			; 1	shifting dec r16 here
-	cbi	b_SIG			; 1	makes the pulses symmetric
-	brne	rlv12toggle		; 2
 	cli				;	Disable Interrupts
 	sbrc	r18, CSR_IE		;;; 1/2 Interrupt Enabled?
 	sbi	b_IRQ			;;; 0/1 yes then set interrupt
@@ -420,7 +408,7 @@ rlv12_getstatus:
 ;
 rlv12_get005:
 	ldd	r16, Y+ucb_status	; Clear potential drive error bit
-	cbr	r16, (1<<ucb_de)	; in status
+	cbr	r16, (1<<ucb__de)	; in status
 	std	Y+ucb_status, r16
 ;
 ;
@@ -794,7 +782,7 @@ rlv12_readdata:				; Read for SD-Cards
 	cbr	r16, (1<<P__Nocheck)
 	std	Y+P_Flag, r16		; Check CRC
 rlv12_readdata010:
-	sbis	FLAGS_LOG, log__turbo; 
+	sbis	FLAGS_LOG, log__turbo	; 
 	rjmp	rlv12_readdata060
 ;
 ;	Check if the sectors we need to read are contiguous. In this case

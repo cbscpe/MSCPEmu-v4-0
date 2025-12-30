@@ -40,6 +40,12 @@ printstatus:
 #endif
 	wordstatus	"heap          ", heap
 	wordstatus	"              ", heap+2
+	
+	call	print
+	.db	"SD-Card Turbo ..................:", 0
+	in	r24, FLAGS_LOG
+	bst	r24, log__turbo
+	call	logstatusonoff
 	clc
 	ret
 

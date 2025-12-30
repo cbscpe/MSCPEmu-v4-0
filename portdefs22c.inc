@@ -86,6 +86,7 @@
 .equ	TXD	= 0			; USART 1 Transmit
 .equ	RXD	= 1			; USART 1 Receive
 .equ	RTOS	= 2			; RT-OS
+;	PC3	unused
 .equ	ENA	= 3
 .equ	MOSI	= 4			; SPI
 .equ	MISO	= 5
@@ -100,9 +101,6 @@
 #define	f_RTOS	VPORTC_INTFLAGS, RTOS
 #define	c_RTOS	PORTC_PIN2CTRL
 #define v_RTOS	PORTC_PORT_vect
-
-#define d_ENA	VPORTC_DIR, ENA
-#define b_ENA	VPORTC_OUT, ENA
 
 #define d_MOSI	VPORTC_DIR, MOSI
 #define b_MOSI	VPORTC_OUT, MOSI
@@ -125,17 +123,10 @@
 ;
 ;	PORT E (Bits0..3)
 ;
-.equ	MEM	= 0			; malloc(), free()
+;	PE0	unused
 .equ	WP	= 1			; Write Protect
 .equ	CRDY	= 2			; Controller Ready
 .equ	WR	= 3			; Write
-
-#define	d_MEM	VPORTE_DIR, MEM
-#define	b_MEM	VPORTE_OUT, MEM
-#define b_MEM	VPORTE_OUT, MEM
-#define	f_MEM	VPORTE_INTFLAGS, MEM
-#define	c_MEM	PORTE_PIN0CTRL
-#define v_MEM	PORTE_PORT_vect
 
 #define d_WP	VPORTE_DIR, WP
 #define	i_WP	VPORTE_IN, WP
@@ -153,7 +144,7 @@
 ;
 .equ	GO	= 0			; Level1->Level0 signal
 ;	PF1	unused
-.equ	SIG	= 2			; SIGNAL
+;	PF2	unused
 .equ	DMR	= 3			; DMA Request
 .equ	ACK	= 4			; Acknowledge
 .equ	RD	= 5			; Read
@@ -163,9 +154,6 @@
 #define	f_GO	VPORTF_INTFLAGS, GO
 #define	c_GO	PORTF_PIN0CTRL
 #define	v_GO	PORTF_PORT_vect
-
-#define	d_SIG	VPORTF_DIR, SIG
-#define	b_SIG	VPORTF_OUT, SIG
 
 #define	d_DMR	VPORTF_DIR, DMR
 #define	b_DMR	VPORTF_OUT, DMR

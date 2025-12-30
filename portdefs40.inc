@@ -9,7 +9,7 @@
 ;
 ;	PORT A	(Bits0..7)
 ;
-.equ	ENA	= 0			; Signal/Debugging
+;	PA0	unused
 .equ	DMR	= 1			; DMA Request	
 .equ	DMG	= 2			; DMA Granted	
 .equ	ABO	= 3			; Abort Cycle	
@@ -18,7 +18,6 @@
 .equ	RTOS	= 6			; RTOS Software Interrupt	
 .equ	CLK	= 7			; CPDL Clock output
 
-#define d_ENA	VPORTA_DIR, ENA
 #define d_DMR	VPORTA_DIR, DMR
 #define d_DMG	VPORTA_DIR, DMG
 #define d_ABO	VPORTA_DIR, ABO
@@ -26,7 +25,6 @@
 #define d_RTOS	VPORTA_DIR, RTOS
 #define d_CLK	VPORTA_DIR, CLK
 
-#define b_ENA	VPORTA_OUT, ENA
 #define b_DMR	VPORTA_OUT, DMR
 #define i_DMG	VPORTA_IN, DMG
 #define b_ABO	VPORTA_OUT, ABO
@@ -141,25 +139,20 @@
 ;
 ;	PORT F (Bits0..5, Bit6 is Reset and may be used as input but not here)
 ;
-.equ	LED3	= 0
-.equ	SIG	= 1			; Signal/Debugging
+;	PF0	unused
+;	PF1	unused
 .equ	CRDY	= 2			; Controller Ready
 .equ	IRQ	= 3			; Interrupt Request
 .equ	RD	= 4			; Register Read
 .equ	WR	= 5			; Register Write
 
-#define d_LED3 VPORTF_DIR, LED3
-#define	d_SIG	VPORTF_DIR, SIG
 #define	d_CRDY	VPORTF_DIR, CRDY
 #define	d_IRQ	VPORTF_DIR, IRQ
 #define	d_RD	VPORTF_DIR, RD
 #define	d_WR	VPORTF_DIR, WR
 
-#define b_LED3 VPORTF_OUT, LED3
-#define	b_SIG	VPORTF_OUT, SIG
 #define	b_CRDY	VPORTF_OUT, CRDY
 #define	b_IRQ	VPORTF_OUT, IRQ
 #define	b_RD	VPORTF_OUT, RD
 #define	b_WR	VPORTF_OUT, WR
 
-#define i_LED3 VPORTF_IN, LED3

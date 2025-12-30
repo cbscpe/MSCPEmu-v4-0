@@ -34,24 +34,6 @@ carddetect100:
 	ldi	r24, low(5)
 	ldi	r25, high(5)
 	call	delay
-
-	cli				; Special Pulse Pattern
-	sbi	b_SIG			; 0.125usec high
-	rjmp	PC+1			; 0.500usec low
-	cbi	b_SIG			; 0.125usec high
-	rjmp	PC+1
-	rjmp	PC+1
-	rjmp	PC+1
-	rjmp	PC+1
-	rjmp	PC+1
-	rjmp	PC+1
-	rjmp	PC+1
-	rjmp	PC+1
-	sbi	b_SIG
-	rjmp	PC+1
-	cbi	b_SIG
-	sei
-
 	pop	yh
 	pop	yl
 ;
