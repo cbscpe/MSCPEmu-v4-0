@@ -221,12 +221,27 @@ loginit010:
 ;
 ;	Normal GPIO Pins
 ;
+	sbi	d_MSCP
 	sbi	d_DMR			; DMA Request
 	cbi	d_DMG			; DMA Granted
 	sbi	d_ABO			; DMA Abort
 	sbi	d_ACK			; Interrupt Acknowledge
 	sbi	d_CLK			; CPU Clock Output
 	
+#ifdef mscpemulation
+	ldi	r18, low(0154)
+	ldi	r19, high(0154)
+	sts	vector+0, r18
+	sts	vector+1, r19
+	sbi	b_MSCP
+#endif
+#ifdef rlv12emulation
+	ldi	r18, low(0160)
+	ldi	r19, high(0160)
+	sts	vector+0, r18
+	sts	vector+1, r19
+	cbi	b_MSCP
+#endif
 	cbi	b_DMR			; No DMA request
 	sbi	b_ABO
 	cbi	b_ABO			; Abort any pending DMA
@@ -243,10 +258,6 @@ loginit010:
 	cbi	b_ALER
 	sbi	d_ALEW			; Write Register Address Latch
 	cbi	b_ALEW
-;	sbi	d_T3
-;	sbi	d_T4
-;	cbi	b_T3
-;	cbi	b_T4
 #endif
 	sbi	d_LED			; Activity LED
 	cbi	b_LED
@@ -262,8 +273,8 @@ loginit010:
 ;
 ;	MVIO Port Settings - Port C is used for the SD-Card interface and the UART
 ;
-	ldi	r18, PORT_SRL_bm	; Low Slew Rate on port c
-	sts	PORTC_PORTCTRL, r18	; 
+;	ldi	r18, PORT_SRL_bm	; Low Slew Rate on port c
+;	sts	PORTC_PORTCTRL, r18	; 
 	
 	sbi	b_SS			; Disable SD-Card
 	sbi	d_TXD			; UART Transmit
@@ -676,6 +687,7 @@ main:
 	rcall	prtcreate
 	movw	r25:r24, zh:zl
 	call	create
+#ifdef rlv12emulation
 ;
 ;	RLV12 Emulator Job
 ;
@@ -703,7 +715,7 @@ main:
 	movw	r25:r24, zh:zl
 	call	create
 ;
-;	Dummy Job
+;	Seek Job
 ;
 	ldi	zl, low(jcb3)
 	ldi	zh, high(jcb3)
@@ -724,10 +736,65 @@ main:
 	std	Z+jcb_flags, r18
 
 	call	print
-	.db	"Create Dummy Job", CR, LF, 0, 0
+	.db	"Create Seek Job", CR, LF, 0
 	rcall	prtcreate
 	movw	r25:r24, zh:zl
 	call	create
+#endif
+#ifdef mscpemulation
+;
+;	Pool
+;
+	ldi	zl, low(jcb2)
+	ldi	zh, high(jcb2)
+	ldi	xl, low(polljob)	; start address requires word address
+	ldi	xh, high(polljob)
+	ldi	r24, low(usersp2)	
+	ldi	r25, high(usersp2)	
+	std	Z+jcb_stack+0, r24
+	std	Z+jcb_stack+1, r25
+	std	Z+jcb_joblist+0, xl
+	std	Z+jcb_joblist+1, xh
+
+	ldi	r18, polljob_id
+	std	Z+jcb_jobid, r18
+	ldi	r18, polljob_prio	; should be less than the priority of CLI
+	std	Z+jcb_priority, r18	; rlv12 emulator job
+	clr	r18
+	std	Z+jcb_flags, r18
+
+	call	print
+	.db	"Create Poll Job", CR, LF, 0
+	rcall	prtcreate
+	movw	r25:r24, zh:zl
+	call	create
+;
+;	Seek Job
+;
+	ldi	zl, low(jcb3)
+	ldi	zh, high(jcb3)
+	ldi	xl, low(scanjob)	; start address requires word address
+	ldi	xh, high(scanjob)
+	ldi	r24, low(usersp3)	
+	ldi	r25, high(usersp3)	
+	std	Z+jcb_stack+0, r24
+	std	Z+jcb_stack+1, r25
+	std	Z+jcb_joblist+0, xl
+	std	Z+jcb_joblist+1, xh
+
+	ldi	r18, scan_id
+	std	Z+jcb_jobid, r18
+	ldi	r18, scan_prio		; Must be the lowest priority
+	std	Z+jcb_priority, r18	; carddetect job
+	clr	r18
+	std	Z+jcb_flags, r18
+
+	call	print
+	.db	"Create Scan Job", CR, LF, 0
+	rcall	prtcreate
+	movw	r25:r24, zh:zl
+	call	create
+#endif
 
 #define wdgactive 0
 #if wdgactive>0
