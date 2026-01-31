@@ -28,6 +28,7 @@
 	.db	"Read   ", 0
 	.db	"ReadNC ", 0
 
+#ifdef rlv12emulation
 .equ REGName = (PC - 0x8000) * 2 + 0x8000
 	.db	"CSR", 0
 	.db	"BAR", 0
@@ -39,10 +40,28 @@
 	.db     "BO6", 0
 
 .equ JobNames = (PC - 0x8000) * 2 + 0x8000
-	.db	"RLV12", 0, 0, 0
-	.db	"CLI", 0, 0, 0, 0, 0
-	.db	"SD-Card", 0
-	.db	"Seek",0 , 0, 0, 0
+	.db	"RLV12",	0, 0, 0
+	.db	"CLI",		0, 0, 0, 0, 0
+	.db	"SD-Card",	0
+	.db	"Seek",		0 , 0, 0, 0
+#endif
+
+#ifdef mscpemulation
+.equ REGName = (PC - 0x8000) * 2 + 0x8000
+	.db	"IP ", 0
+	.db	"SA ", 0
+	.db	"IP ", 0
+	.db	"SA ", 0
+	.db	"IP ", 0
+	.db	"SA ", 0
+	.db	"IP ", 0
+	.db	"SA ", 0
+.equ JobNames = (PC - 0x8000) * 2 + 0x8000
+	.db	"Poll",		0, 0, 0, 0
+	.db	"CLI",		0, 0, 0, 0, 0
+	.db	"SD-Card", 	0
+	.db	"Scan",		0 , 0, 0, 0
+#endif
 
 	
 .include "DriveTab.inc"
