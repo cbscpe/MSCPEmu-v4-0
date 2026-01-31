@@ -46,6 +46,19 @@ printstatus:
 	in	r24, FLAGS_LOG
 	bst	r24, log__turbo
 	call	logstatusonoff
+	cli
+	lds	r16, sysuptime+0
+	lds	r17, sysuptime+1
+	lds	r18, sysuptime+2
+	lds	r19, sysuptime+3
+	sei
+	sts	pprint+0, r16
+	sts	pprint+1, r17
+	sts	pprint+2, r18
+	sts	pprint+3, r19
+	call	print
+	.db	"SysUpTime ......................:", 0xd0, "s", CR, LF, 0
+
 	clc
 	ret
 
