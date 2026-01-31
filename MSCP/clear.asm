@@ -44,3 +44,32 @@ clear090:
 	ldi	r24, low(pe_nsr)
 	ldi	r25, high(pe_nsr)
 	call	fatalerror
+
+;
+;
+;
+mscp_reset:
+	ldi	zl, low(cmd)
+	ldi	zh, high(cmd)
+	ldi	yl, ring_sz
+	clr	yh
+mscp_reset010:
+	st	Z+, yh
+	dec	yl
+	brne	mscp_reset010
+;
+;
+;
+	ldi	zl, low(rsp)
+	ldi	zh, high(rsp)
+	ldi	yl, ring_sz
+	clr	yh
+mscp_reset020:
+	st	Z+, yh
+	dec	yl
+	brne	mscp_reset020
+;
+;
+;
+	sts	mscpstatus, yh
+	ret

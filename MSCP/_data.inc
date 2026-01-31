@@ -26,5 +26,6 @@ ipw:		.byte	2		; IP Write Data
 ipr:		.byte	2		; IP Read Data
 sawflag:	.byte	1		; SA Write Flag
 iprflag:	.byte	1		; IP Read Flag
+mscpstatus:	.byte	1		; MSCP Port Status
 porterror:	.byte	1		; Last Port Error 
 unitbase:	.byte	2		; Starting Unit Number

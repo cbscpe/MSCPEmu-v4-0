@@ -503,4 +503,6 @@ put_buffer120:
 ; Of course, we save the SA error code for the next initialization attempt.
 ;
 fatal_error:
+	sts	sar+0, r24
+	sts	sar+1, r25
 	rjmp	PC			;;; wait forever
