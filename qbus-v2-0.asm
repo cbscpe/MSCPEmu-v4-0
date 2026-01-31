@@ -138,12 +138,12 @@ qbus_:					; 4-5
 	push	zl			; 1
 	push	yh			; 1
 	push	yl			; 1
-	sbic	f_INTI			; 2/1
-	rjmp	qbus_iack		; 0/2
-	sbic	f_INTQ			; 2/1
-	rjmp	qbus_intq		; 0/2
-	sbic	f_INIT			; 2/1
+	sbic	f_INIT			; 2/1	Bus Reset
 	rjmp	qbus_init		; 0/2
+	sbic	f_INTI			; 2/1	Interrupt Acknowledge
+	rjmp	qbus_iack		; 0/2
+	sbic	f_INTQ			; 2/1	Device Registers
+	rjmp	qbus_intq		; 0/2
 	pop	yl			; 2 restore
 	pop	yh			; 2 restore
 	pop	zl			; 2 restore
@@ -193,13 +193,11 @@ qbus_intq:
 .equ	LB	= 6			; Don't Write Lower Byte
 .equ	ROM	= 5			; Boot ROM
 .equ	WTBT	= 0			; Write i.e. DATO
-#if cpldif==22
 ;
 ;	Check if this as access to the boot ROM
 ;
 	sbrc	zl, ROM			; 2/1
 	rjmp	qbus_rom		; 0/2
-#endif
 ;
 ;	In case the controller is busy skip processing of register access
 ;
@@ -585,6 +583,32 @@ qbus_dato_boot2:
 	cpse	yl, yh
 	jmp	crash
 	INTEXIT	log_dato|log_boot2
+
+#if cpldif==40
+;--------------------------------------------------------------------------
+;
+;	Boot ROM
+;
+qbus_rom:
+	mov	yl, zl
+	clr	yh
+	andi	zl, 0x03		; 
+	cpi	zl, 0x00
+	brne	qbus_rom010
+	rjmp	qbus_dati_boot4
+qbus_rom010:
+	cpi	zl, 0x02
+	brne	qbus_rom020
+	rjmp	qbus_dati_boot6
+qbus_rom020:
+	sbrs	zl, 0
+	breq	qbus_rom030
+	INTEXIT	log_dato|log_rom
+qbus_rom030:
+	INTEXIT	log_dati|log_rom
+	
+#endif
+
 ;------------------------------------------------------------------------------
 ;
 ;	BOOT4	17774414 (AUTOBOOT)
@@ -749,11 +773,12 @@ qbus_dato_boot6:
 	sts	CSR16+0, yl		; 2
 	sts	CSR16+1, yh		; 2
 	INTEXIT	log_dato|log_boot6	; 23|4456
+
+#if cpldif==22
 ;--------------------------------------------------------------------------
 ;
 ;	Boot ROM
 ;
-#if cpldif==22
 qbus_rom:
 	sbrc	zl, WTBT
 	rjmp	qbus_romo
@@ -840,8 +865,8 @@ qbus_romx:
 ;
 qbus_iack:
 	cbi	b_IRQ			; 1 De-assert IRQ
-	ldi	yl, low(0160)		; 1
-	ldi	yh, high(0160)		; 1
+	lds	yl, vector+0		; 1
+	lds	yh, vector+1		; 1
 	#if cpldif==40
 	cbi	b_RS0			; 1	Q-Bus Register
 	cbi	b_RS1			; 1	Q-Bus Register
