@@ -52,12 +52,14 @@
 ;	Various Clock rates: CPUCLK/2, CPUCLK/4, CPUCLK/8
 ;
 ;#define spispeed SPI_CLK2X_bm | SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
-;#define spispeed                SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
-#define spispeed SPI_CLK2X_bm | SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV16_gc
+#define spispeed                SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
+;#define spispeed SPI_CLK2X_bm | SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV16_gc
 ;
 ;	Conditional assembly
 ;
 #define includemscp 1
+;#define mscpemulation 1
+#define rlv12emulation 1
 ;
 ;--------------------------------------------------------------------------
 ;
@@ -151,6 +153,9 @@
 #define rlv12job_id 0
 #define rlv12job_prio 2
 
+#define polljob_id 0
+#define polljob_prio 2
+
 #define main_id 1
 #define main_prio 4
 
@@ -159,6 +164,9 @@
 
 #define seek_id 3
 #define seek_prio 1
+
+#define scan_id 3
+#define scan_prio 1
 ;--------------------------------------------------------------------------
 ;
 ;	Logging - Buffers, Definitions, Macro's
@@ -181,6 +189,10 @@
 #define	log_boot2	0x0a
 #define log_boot4	0x0c
 #define log_boot6	0x0e
+
+#define	log_ip		0x00
+#define	log_sa		0x02
+
 #define log_rom		0x01
 #define	log_command	0x80
 ;				Bits0..1 = Unit
