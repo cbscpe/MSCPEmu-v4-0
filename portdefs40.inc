@@ -9,7 +9,7 @@
 ;
 ;	PORT A	(Bits0..7)
 ;
-;	PA0	unused
+.equ	MSCP	= 0			; ENA in EAGLE and CPLD Design file
 .equ	DMR	= 1			; DMA Request	
 .equ	DMG	= 2			; DMA Granted	
 .equ	ABO	= 3			; Abort Cycle	
@@ -18,6 +18,7 @@
 .equ	RTOS	= 6			; RTOS Software Interrupt	
 .equ	CLK	= 7			; CPDL Clock output
 
+#define d_MSCP	VPORTA_DIR, MSCP
 #define d_DMR	VPORTA_DIR, DMR
 #define d_DMG	VPORTA_DIR, DMG
 #define d_ABO	VPORTA_DIR, ABO
@@ -25,6 +26,7 @@
 #define d_RTOS	VPORTA_DIR, RTOS
 #define d_CLK	VPORTA_DIR, CLK
 
+#define b_MSCP	VPORTA_OUT, MSCP
 #define b_DMR	VPORTA_OUT, DMR
 #define i_DMG	VPORTA_IN, DMG
 #define b_ABO	VPORTA_OUT, ABO
