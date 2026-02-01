@@ -1,4 +1,5 @@
 2025-12-30	PS	Update
+2026-01-01	PS	Start documenting the CLI
 
 ##New Disk Emulator
 
@@ -89,11 +90,301 @@ a subroutine must use reti and no longer ret in order to exit level0 interrupt s
 
 ###CLI
 
+The CLI provides a number of commands. Command Keywords may be abbreviated. Some
+commands are primarily used for debugging and are marked as such and are not useful
+for normal operation
+
+Numbers can be entered as octal, hex or decimal using the standard linux notation
+(e.g. preced octal numbers with a 0 and hexadecimal numbers with 0x)
+
+CLI allows editing of command line and saves the last executed commend, which can 
+be recalled with ARROW-UP and reissued or edited before reissuning, handy when
+you have a syntax error.
+
+####[RLV12]
+This is a dummy command to identify init files on the SD-Card, they must start
+with a line that contains only this key, when found the following lines will be
+treated as startup commands when a SD-Card is inserted or at power-up. During
+startup or insertion the firmware looks for a file named RLV12.INI and then looks
+for such a start record. If found it will sequentially treat each line as a 
+command and execute it. If no such file is found then it will just look for
+linux partitions and then attach the first four partitions found, that match
+type and size to the RL units
+
+insert
+
+####cd
+Change Directory
+
+
+hallo
+####show
+
+show partitions
+show units
+show internal (debugging)
+show logging
+show version
+show jobs
+
+####dir
+Show content of current working directory
+
+####type
+Show content of text file in CLI
+
+####pwd
+Show current working directory (Print Working Directory)
+
+####fdisk
+Show SD-Card Format Information
+
+####attach
+Attach File or Partition to a RL unit
+
+####detach
+Remove binding of a RL unit
+
+done
+
+####help
+Show Help
+
+####activate
+Activate a partition, i.e. rewrite partition type from MSDOS12 to Linux. This is
+used so we can use the normal formatting programs to prepare an SD-Card with various
+partitions and as macOS and Windows do not know about Linux partitions and as we use
+Linux partition as candidates for disk images this allows changing MSDOS12 partitions
+to Linux partitions via CLI. 
+
+####initialise
+This initialises previously changed partitions and writes standard bad sector 
+information to the disk image as expected by various OS to exist on RL disk images
+
+####logging
+Display and set logging options
+	logging
+			Display the current logging settings
+	
+	logging register
+			Log all access to device register
+			
+	logging interrupt
+			Log interrupt acknowledge cycles
+	logging trace
+			Log trace (debugging)
+			
+	logging PBN (physical block number)
+			Log which physical block number was accessed
+			
+	logging RL0|RL1|RL2|RL3
+			Log access to unit RLn, i.e. when a command is written
+			to the CSR
+			
+	logging units
+			Log access to all units
+
+Options can be cleared by preceding the command with no, e.g. "no logging register"
+
+
+####number
+Accepts any number and displays the value in octal, decimal and hexadecimal. The
+number is interpreted as octal if preceeded with 0, as hexadecimal when preceeded 
+with 0x and as decimal in all other cases
+
+####load
+Loads the Plessey Multifunction Card Boot loader via DMA to the Host Memory, useful
+when you don't have a bootrom. Eg. "load 0100000" loads the boot loader to the
+Host Memory at location 0100000. Now you can execute the bootloader via the ODT
+command 100000g. This will allow you to boot any unit using the "DLn" command.
+
+
+####readinit
+Allows the user to execute a text file as if it is the RLV12.INI file.
+
+
+####dumpblock
+Dumps a block from a RL unit. The block can be dumped either as octal and optionally
+as ASCII or RAD50
+
+]dump -c -b 1 rl0
+Dump absolute sector 0x00000040
+000000: 000000 170000 007777 000000 000000 000000 000000 000000 '................'
+000020: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000040: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000060: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000100: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000120: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000140: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000160: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000200: 000000 000000 000037 000002 000005 000000 000104 102000 '............D...'
+000220: 075131 062000 075273 000033 000000 031215 102000 071677 'Yz.d.z.....2...s'
+000240: 140761 075273 000120 000000 031215 000000 000000 000000 '...zP....2......'
+000260: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000300: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000320: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000340: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000360: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000400: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000420: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000440: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000460: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000500: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000520: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000540: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000560: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000600: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000620: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000640: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000660: 000000 000000 000000 000000 000000 000000 000000 000000 '................'
+000700: 177777 000000 000000 000000 000000 000000 000000 000000 '................'
+000720: 000000 000001 000006 107123 052122 032526 053440 051117 '......S.RTV5 WOR'
+000740: 020113 020040 046122 020062 047527 045522 020040 020040 'K   RL2 WORK    '
+000760: 042504 051103 030524 040461 020040 020040 000000 000000 'DECRT11A    ....'
+
+
+]dump -r -b 1 rl0   
+Dump absolute sector 0x00000040
+000000: 000000 170000 007777 000000 000000 000000 000000 000000 '   8P BVO               '
+000020: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000040: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000060: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000100: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000120: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000140: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000160: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000200: 000000 000000 000037 000002 000005 000000 000104 102000 '        1  B  E    A.UD2'
+000220: 075131 062000 075273 000033 000000 031215 102000 071677 'SWAP  SYS  $   HCUUD2RT1'
+000240: 140761 075273 000120 000000 031215 000000 000000 000000 '1AISYS B    HCU         '
+000260: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000300: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000320: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000340: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000360: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000400: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000420: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000440: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000460: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000500: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000520: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000540: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000560: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000600: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000620: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000640: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000660: 000000 000000 000000 000000 000000 000000 000000 000000 '                        '
+000700: 177777 000000 000000 000000 000000 000000 000000 000000 'I8O                     '
+000720: 000000 000001 000006 107123 052122 032526 053440 051117 '     A  FV05MSZHUNM7XMF1'
+000740: 020113 020040 046122 020062 047527 045522 020040 020040 'EF$EEXLHREFBL$1LBBEEXEEX'
+000760: 042504 051103 030524 040461 020040 020040 000000 000000 'KCLMFSG5.JQIEEXEEX      '
+
+
+####dmaread
+Reads a word via DMA using the host address previously set with the dmaaddress
+command
+
+####dmawrite
+Writes a word via DMA using the host address previously set with the dmaaddress
+command
+
+
+####dmaaddress
+Sets the address to be used for subsequent dma commands
+
+
+####dmatest (debugging)
+Reads a block of 256 words from the microcontroller memory to the host address
+previously set with the dmaaddress command and then reads the block back
+to the microcontroller memory following the block written. For more information
+about microcontroller memory see the "Apple II Commands" section
+
+
+####linked (debugging)
+Uses the FAT of the first FAT volume and shows the cluster linked to the cluster
+given with the command
+
+####free (debugging)
+Shows the free dynamic memory of the microcontroller
+
+####reset
+Forces a reset of the microcontroller using the reset controller of the AVR128DB
+processor to literally restart the firmware
+
+####port (debugging)
+Show information about the MCU port status
+
+pointer (debugging)
+memtest (debugging)
+controller (debugging)
+sdinit (debugging)
+mount (debugging)
+dismount (debugging)
+sdread (debugging)
+
+
+####status
+Displays some internal status information
+
+####set
+Sets parameters or configs
+
+####turbo
+Enables or disables the SPI turbo mode
+
+###Apple II Commands
+Built into the CLI is a subset of Apple II monitor commands. This is mostly used
+during debugging and usage may corrupt the data of your microcontroller. Use with
+care. Currently RAM at 0x5000..0x5FFFF is not used by the firmware and therefore
+it should be the only memory you use to modify with these commands. For the syntax
+consult the Apple II Monitor Documentation. Apple II commands entered via the CLI
+must be preceded with the $ sign.
+
+$5000			Displays the content of memory locaiton 0x5000
+$			Displays the content of the next memory locations
+$5000.50FF		Displays the content of memory from 0x5000 to 0x50FF
+$5000<5200.53FFv	Compares Memory from 0x5200 to 0x53FF with memory starting
+			at 0x5000 and shows an error if it does not match
+$5000<5200.53FFm	copies the memory from 0x5200 to 0x53FF to 0x5000
+$5000.51FFp		writes a pattern by incrementing the value starting with 0.
+$5000:01 02 03		Store the values 0x01, 0x02, 0x03 to 0x5000, 0x5001, 0x5002
+
+DMATEST also uses the microcontroller memory. E.g "dmatest 0x5000" writes 512. bytes
+from the microcontroller memory via DMA to the host memory using the DMA address
+previously set with the "dmaaddr" command and then reads the host memory using DMA
+back to the microcontroller memory location 0x5200, i.e. the subsequent 512. bytes
+in microcontroller memory, now you can use the "v" (verify) command to check if
+the values read back are identical
+
+####Autoboot
+
+The controller has an auto-boot feature built in. You only need to enter the
+following command in ODT "174414g" which will load the boot block of unit 0 to
+address 0 and execute it. I.e. it will typically boot RL0. This is useful in case
+your boot ROM has no bootstrap code for DL
+
+####Autostartup
+
+In fact you can also just enter the ODT command "173000g", which will also activate
+the autoboot feature. This is handy in case your system does not have a bootrom at
+all and in case you configure your CPU card to start execution at 173000 at power-up
+this will allow you to automatically boot form RL0 when your system is powered-up.
+
+Note: the controller does not provide a full boot ROM
+
+
+
 ###VCB
 
 For each FAT-16 or FAT-32 volume we have a Volume Control Block (VCB). The volume
 control blocks are queued in the volqueue. The first vcb in the queue is the active
-volume
+volume.
+
+Even the firmware reads all FAT partitions and creates multiple volume control blocks,
+the handling of multiple FAT volumes is not fully implemented and therefore it is
+recommended to use SD-Cards with exactly one FAT-16 or FAT-32 partition.
+
+
+
 
 
 recordstart	Vol

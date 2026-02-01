@@ -928,6 +928,7 @@ prtcreate:
 ;	
 ;
 .include	"seekjob.asm"		; Our seek job
+.include	"scanjob.asm"		; MSCP scan job
 .include	"sdcardjob.asm"		; SD-Card Insert/Remove and LED routine
 .include	"SD-Card-Print-v1-0.asm"; Print SD-Card messages
 .include	"SD-Card-v1-0.asm"	; Main SD-Card routines
