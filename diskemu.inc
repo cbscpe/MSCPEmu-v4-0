@@ -59,7 +59,7 @@
 ;
 #define includemscp 1
 ;#define mscpemulation 1
-#define rlv12emulation 1
+;#define rlv12emulation 1
 ;
 ;--------------------------------------------------------------------------
 ;
