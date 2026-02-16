@@ -7,109 +7,125 @@
 ;
 
 activpar092:
-	lds		r18, attpart
-	ori		r18, '0'
-	sts		pprint+0, r18
+	lds	r18, attpart
+	ori	r18, '0'
+	sts	pprint+0, r18
 	call	print
-	.db		"Partition ", 0x90, " is not idle", 0x0d, 0x0a, 0x00
+	.db	"Partition ", 0x90, " is not idle", 0x0d, 0x0a, 0x00
 	clc
 	rjmp	activparexit
 
 ;activpar091:
-;	lds		r18, attpart
-;	ori		r18, '0'
-;	sts		pprint+0, r18
+;	lds	r18, attpart
+;	ori	r18, '0'
+;	sts	pprint+0, r18
 ;	call	print
-;	.db		"Partition ", 0x90, " is attached", 0x0d, 0x0a, 0x00
+;	.db	"Partition ", 0x90, " is attached", 0x0d, 0x0a, 0x00
 ;	clc
 ;	rjmp	activparexit
 
 activpar090:
-	lds		r18, attpart
-	ori		r18, '0'
-	sts		pprint+0, r18
+	lds	r18, attpart
+	ori	r18, '0'
+	sts	pprint+0, r18
 	call	print
-	.db		"Partition ", 0x90, " not found", 0x0d, 0x0a, 0x00
+	.db	"Partition ", 0x90, " not found", 0x0d, 0x0a, 0x00
 	clc
 	rjmp	activparexit
 
 activpar:
 	push	yl
 	push	yh
+	lds	r24, attpart
 	rcall	findpart
-	brcs	activpar090
-	ldd		r18, Y+pcb_status
+	adiw	r25:r24, 0
+	breq	activpar090
+	movw	r15:r14, r25:r24		; Save PCB Pointer
+	movw	yh:yl, r15:r14
+	ldd	r18, Y+pcb_status
 ;	sbrc	r18, pcb__attach
 ;	rjmp	activpar091
 	sbrs	r18, pcb__idle
 	rjmp	activpar092
 	
-	movw	Z, Y
-	ldi		yl, low(sdio)
-	ldi		yh, high(sdio)
-	ldi		r18, low(sdbuffer)
-	std		Y+P_Address+0, r18
-	ldi		r18, high(sdbuffer)
-	std		Y+P_Address+1, r18
+	ldi	yl, low(sdio)
+	ldi	yh, high(sdio)
+	ldi	r18, low(sdbuffer)
+	std	Y+P_Address+0, r18
+	ldi	r18, high(sdbuffer)
+	std	Y+P_Address+1, r18
 	
-	ldd		r18, Z+pcb_mbrsector+0
-	std		Y+P_Sector+0, r18	
-	ldd		r18, Z+pcb_mbrsector+1
-	std		Y+P_Sector+1, r18	
-	ldd		r18, Z+pcb_mbrsector+2
-	std		Y+P_Sector+2, r18	
-	ldd		r18, Z+pcb_mbrsector+3
-	std		Y+P_Sector+3, r18	
+	movw	zh:zl, r15:r14		; Partition Control Block
+	ldd	r18, Z+pcb_mbrsector+0
+	std	Y+P_Sector+0, r18	
+	ldd	r18, Z+pcb_mbrsector+1
+	std	Y+P_Sector+1, r18	
+	ldd	r18, Z+pcb_mbrsector+2
+	std	Y+P_Sector+2, r18	
+	ldd	r18, Z+pcb_mbrsector+3
+	std	Y+P_Sector+3, r18	
+	movw	r25:r24, yh:yl
 	call	SD_CARD_READ
 	brcc	activpar010
 
 	call	print
-	.db		"Error reading partition master sector", 0x0d, 0x0a, 0x00
+	.db	"Error reading partition master sector", 0x0d, 0x0a, 0x00
 	clc
 	rjmp	activparexit
 activpar010:	
-	lds		r18, sdbuffer+510
-	cpi		r18, 0x55
+	lds	r18, sdbuffer+510
+	cpi	r18, 0x55
 	brne	activpar093
-	lds		r18, sdbuffer+511
-	cpi		r18, 0xAA
+	lds	r18, sdbuffer+511
+	cpi	r18, 0xAA
 	breq	activpar020
 
 activpar093:
 	call	print
-	.db		"Invalid partition master sector", 0x0d, 0x0a, 0x00
+	.db	"Invalid partition master sector", 0x0d, 0x0a, 0x00
 	clc
 	rjmp	activparexit
 
 activpar020:
-	ldd		xl, Z+pcb_status
-	ldi		xh, 0x01
+	movw	zh:zl, r15:r14
+	ldd	xl, Z+pcb_offset
+	ldi	xh, 0x01
 	subi	xl, low(-sdbuffer-M_PartType)
 	sbci	xh, high(-sdbuffer-M_PartType)
-	ld		r18, X
-	cpi		r18, 0x01
+	ld	r18, X
+	cpi	r18, 0x01		; FAT-12
+	breq	activpar030
+	cpi	r18, 0xAF		; HFS+
 	breq	activpar030
 	call	print
-	.db		"Partition is not FAT-12", 0x0d, 0x0a, 0x00
+	.db	CR, LF, "Partition is not FAT-12/HFS+", 0x0d, 0x0a, 0x00, 0x00
 	clc
 	rjmp	activparexit
+;
+;	
+;
 activpar030:
-	ldi		r18, 0x83
-	st		X, r18
+	ldi	r18, 0x83
+	st	X, r18
+	movw	r25:r24, yh:yl
 	call	SD_CARD_WRITE
 	brcc	activpar040
 	call	print
-	.db		"Error writing partition master sector", 0x0d, 0x0a, 0x00
+	.db	"Error writing partition master sector", 0x0d, 0x0a, 0x00
 	clc
 	rjmp	activparexit
 activpar040:
-	std		Z+pcb_status, zero
+	movw	zh:zl, r15:r14
+	std	Z+pcb_status, zero
 	clc
+;
+;
+;
 activparexit:
-	pop		yh
-	pop		yl
+	pop	yh
+	pop	yl
 	ret
-	
+
 	
 ;--------------------------------------------------------------------------
 ;
@@ -158,18 +174,20 @@ activparexit:
 ;	+-------------------------------------------------------------+
 ;
 initpar090:
-	lds		r18, attpart
-	ori		r18, '0'
-	sts		pprint+0, r18
+	lds	r18, attpart
+	ori	r18, '0'
+	sts	pprint+0, r18
 	call	print
-	.db		"Partition ", 0x90, " not found", 0x0d, 0x0a, 0x00
+	.db	"Partition ", 0x90, " not found", 0x0d, 0x0a, 0x00
 	clc
 	ret
 
 initpar:
+	lds	r24, attpart
 	rcall	findpart
-	brcs	initpar090
-	ldd		r18, Y+pcb_status
+	adiw	r25:r24, 0
+	breq	initpar090
+	movw	yh:yl, r25:r24
 	sbrc	r18, pcb__attach
 	rjmp	initpar091				; Must not be attached
 	sbrc	r18, pcb__idle
