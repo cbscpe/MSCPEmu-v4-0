@@ -303,6 +303,12 @@ fdiskprintentry060:
 	.db	"MSDOS FAT-12 ", CR, LF, 0
 	ret
 fdiskprintentry070:
+	cpi	r18, 0xAF
+	brne	fdiskprintentry080
+	call	print
+	.db	"HFS+ ", CR, LF, 0
+	ret
+fdiskprintentry080:
 	call	print
 	.db	"other", CR, LF, 0
 	ret

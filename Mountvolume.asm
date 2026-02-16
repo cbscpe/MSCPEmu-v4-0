@@ -161,9 +161,20 @@ MountAnalyze040:
 	rjmp	MountAnalyze100		; done
 
 ;
-;	Check for "new" partition types goes here
+;	HFS+
+;	- eligable for disk image
+;	- no eligable as file volume
+;	- inactive
 ;
 MountAnalyze050:
+	cpi	r18, 0xAF		; HFS+
+	brne	MountAnalyze060
+	rcall	MountQueuePart
+	rjmp	MountAnalyze100		; done
+;
+;	Check for "new" partition types goes here
+;
+MountAnalyze060:
 ;
 ;	Partition done
 ;
@@ -219,8 +230,11 @@ MountScanPartition:
 	sbiw	yh:yl, 0
 	breq	MountScanDone		; end of pcb list reached
 	ldd	r18, Y+pcb_type		; Get Partition
+	cpi	r18, 0xAF
+	breq	MountScanPartition005
 	cpi	r18, 0x01		; FAT-12
 	brne	MountScanPartition010
+MountScanPartition005:
 	rcall	MountScanInactive
 	rjmp	MountScanPartition
 MountScanPartition010:
@@ -938,7 +952,7 @@ FindDriveLoop:
 	brlo	FindDriveNotFound		; no to large
 ;
 ;	In many cases partitions cannot be made exact the size of a known
-;	drive, therefore a second upper value is 
+;	drive, therefore we compare against a second upper value.
 ;
 	ldd	r16, Z+Drv_MaxCapacity+0	; 
 	ldd	r17, Z+Drv_MaxCapacity+1
