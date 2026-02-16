@@ -318,8 +318,11 @@ attachpar005:
 	clc
 	rjmp	attachcmdexit
 attachpar010:
+	lds	r24, attpart
 	rcall	findpart
-	brcs	attachpar090
+	adiw	r25:r24, 0
+	breq	attachpar090
+	movw	yh:yl, r25:r24
 	ldd	r18, Y+pcb_status
 	sbrc	r18, pcb__attach
 	rjmp	attachpar091
