@@ -4,7 +4,9 @@
 ;	Currently section 2 (0x8000...0xBFFF) will be mapped. All such sections
 ;	must be included at the end
 ;
-;	Information retrieved from https://xhomer.isani.org/xhomer/ the Pro-350 Emulator
+;	Information retrieved from 
+;		https://xhomer.isani.org/xhomer/ the Pro-350 Emulator
+;		http://decvax.50megs.com/doc/rqdx/mfmdisks.html
 ;
 ;	    Filesize  Heads  Cylinders  Sectors  Disk type
 ;	    --------  -----  ---------  -------  ---------
@@ -135,7 +137,10 @@
 	.dw	820
 	.db	0, 0
 ;
-;	RD52	18	7	450	36Mbyte		aka Quantum 540
+;	RD52	18	7	450	36Mbyte		aka Quantum 540 / Atasi
+;
+;	Note: Although this is a 36Mbyte Capacity drive the RQDX controllers
+;	only defines 60480 user LBNs. Thus the small reported size.
 ;
 	.db	"RD52"
 	.dd	0x25644034		; Media ID
@@ -162,7 +167,7 @@
 	.db	"RD54"
 	.dd	0x25644036		; Media ID
 	.dd	311200
-	.dd	311200
+	.dd	312377;/311200
 	.dw	7			; RCT Size
 	.db	17, 15
 	.dw	1224
@@ -186,7 +191,7 @@
 	.dd	1216665
 	.dd	1216665+8
 	.dw	3420			; RCT Size
-	.db	57, 16
+	.db	57, 15
 	.dw	1423
 	.db	0, 0
 ;
