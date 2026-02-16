@@ -50,25 +50,11 @@ checkunit020:
 	ret
 ;--------------------------------------------------------------------------
 ;
-;	find partition
-;
-;	Input
-;
-;	attpar		number of partition to find
-;
-;	Output
-;
-;	CS		partition not found
-;	CC		partition found
-;	Y		pointer to partition control block
-;
-;	Registers
-;
-;	<none>
+;	int16 findpart(int8 partitionid) - find partition
 ;
 findpart:
-	push	zl
-	push	zh
+	push	yl
+	push	yh
 	ldi	zl, low(pcbqueue)	; get partition queue head
 	ldi	zh, high(pcbqueue)
 
@@ -76,10 +62,9 @@ findpart:
 	lds	yh, pcbqueue+1
 findpart010:
 	sbiw	yh:yl, 0
-	breq	findpart090		; yes then done
-	ldd	zl, Y+pcb_id		; get id
-	lds	zh, attpart
-	cp	zl, zh
+	breq	findpart020		; yes then done
+	ldd	r25, Y+pcb_id		; get id
+	cp	r24, r25
 	breq	findpart020
 
 	ldd	zl, Y+0			; get partition
@@ -88,16 +73,11 @@ findpart010:
 	rjmp	findpart010
 ;
 findpart020:
-	pop	zh
-	pop	zl
-	clc
+	movw	r25:r24, yh:yl
+	pop	yh
+	pop	yl
 	ret
 
-findpart090:
-	pop	zh
-	pop	zl
-	sec
-	ret
 
 ;--------------------------------------------------------------------------
 ;
@@ -117,7 +97,7 @@ printfraglist010:
 	sbiw	r25:r24, 0
 	breq	printfraglist020
 	movw	zh:zl, r25:r24
-	
+
 	ldd	r18, Z+Fr_Length+0
 	sts	pprint+0, r18
 	ldd	r18, Z+Fr_Length+1
