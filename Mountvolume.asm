@@ -230,7 +230,7 @@ MountScanPartition:
 	sbiw	yh:yl, 0
 	breq	MountScanDone		; end of pcb list reached
 	ldd	r18, Y+pcb_type		; Get Partition
-	cpi	r18, 0xAF
+	cpi	r18, 0xAF		; HFS+
 	breq	MountScanPartition005
 	cpi	r18, 0x01		; FAT-12
 	brne	MountScanPartition010
