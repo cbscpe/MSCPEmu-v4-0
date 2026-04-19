@@ -77,6 +77,7 @@ volumeid:	.byte	1
 InitCommand:	.byte	2
 led_oneshot:	.byte	1
 romstatus:	.byte	1
+vector:		.byte	2		; Interrupt Vector
 ;--------------------------------------------------------------------------
 ;
 ;	

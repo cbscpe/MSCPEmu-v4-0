@@ -39,14 +39,9 @@ commandlist:
 	.dw	kw_mount,	0, 		cmd_mount
 	.dw	kw_dismount,	0,		cmd_dismount
 	.dw	kw_sdread,	0,		cmd_sdread
-	.dw	kw_status,	0,		cmd_status
 	.dw	kw_set,		0,		cmd_set
 	.dw	kw_turbo,	0,		cmd_turbo
 	.dw	kw_eol,		0,		cmd_done
-	.dw	0
-
-cmd_status:
-	.dw	kw_eol,		printstatus,	cmd_done
 	.dw	0
 
 cmd_sdread:
@@ -393,8 +388,13 @@ cmd_show:
 	.dw	kw_showlog,	cmd_showlog,	cmd_done
 	.dw	kw_showvers,	cmd_showvers,	cmd_done
 	.dw	kw_jobs,	cmd_showjobs,	cmd_done
+	.dw	kw_status,	0,		cmd_status
 	.dw	0
-	
+
+cmd_status:
+	.dw	kw_eol,		printstatus,	cmd_done
+	.dw	0
+
 cmd_help:
 	.dw	kw_eol,		cmdhelp,	cmd_done
 	.dw	0

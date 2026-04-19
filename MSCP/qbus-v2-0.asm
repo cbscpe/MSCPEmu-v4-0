@@ -169,8 +169,9 @@ qbus_intq:
 	sbrc	zl, ROM			; 2/1
 	rjmp	qbus_rom		; 0/2
 qbus_mscp:
+	lds	zh, mscpstatus
 	andi	zl, 0x03		; 1 Get BDAL1 and BWTBT
-	lds	zh, portstatus
+	andi	yh, 0x1c		; Isolate status bits
 	or	zl, zh
 	clr	zh
 	subi	zl, low(-qbus_mscp_jmptbl)
@@ -178,36 +179,53 @@ qbus_mscp:
 	ijmp
 qbus_mscp_jmptbl:
 ;
-;	Status INIT
+;	Status INIT	0
 ;
 	rjmp	qbus_dati_ip
 	rjmp	qbus_dato_ip
 	rjmp	qbus_dati_sa
 	rjmp	qbus_dato_sa
 ;
-;	Status START
+;	Status START	1
 ;
 	rjmp	qbus_dati_ip
 	rjmp	qbus_dato_ip
 	rjmp	qbus_dati_sa
 	rjmp	qbus_dato_sa
 ;
-;	Status CONFIG
+;	Status CONFIG	2
 ;
 	rjmp	qbus_dati_ip
 	rjmp	qbus_dato_ip
 	rjmp	qbus_dati_sa
 	rjmp	qbus_dato_sa
 ;
-;	Status	READY
+;	Status	READY	3
 ;
 	rjmp	qbus_dati_ip
 	rjmp	qbus_dato_ip
 	rjmp	qbus_dati_sa
 	rjmp	qbus_dato_sa
 ;
-;	Status GO
+;	Status GO	4
 ;
+	rjmp	qbus_dati_ip
+	rjmp	qbus_dato_ip
+	rjmp	qbus_dati_sa
+	rjmp	qbus_dato_sa
+;
+;	Status INVALID	5,6,7
+;
+	rjmp	qbus_dati_ip
+	rjmp	qbus_dato_ip
+	rjmp	qbus_dati_sa
+	rjmp	qbus_dato_sa
+
+	rjmp	qbus_dati_ip
+	rjmp	qbus_dato_ip
+	rjmp	qbus_dati_sa
+	rjmp	qbus_dato_sa
+
 	rjmp	qbus_dati_ip
 	rjmp	qbus_dato_ip
 	rjmp	qbus_dati_sa
@@ -231,7 +249,7 @@ qbus_mscp_jmptbl:
 ;		and sets the AUTOBOOT flag.
 ;	173002	Returns 05007 (CLR PC), which is equivalent to a jump to the
 ;		address zero, where DMA has put a branch to itself instruction.
-;		The PDP-11 wil now execute this instruction until auto-boot has
+;		The PDP-11 will now execute this instruction until auto-boot has
 ;		first loaded the boot block words 1..255 to address 02..0776
 ;		and then writes word 0 of the boot block to address 0 which 
 ;		then starts execution of the boot block

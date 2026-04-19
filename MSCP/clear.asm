@@ -5,15 +5,17 @@
  
 clear:
 	ldi	r18, 60
-	sts	ccb_timeout, r18
-	sts	pcb_timeout, r18
-	ldi	r18, cf_rpl
-	sts	ccb_flags, r18
+	sts	_ccb_timeout, r18
+	sts	_pcb_timeout, r18
+	ldi	r17, low(cf_rpl)
+	ldi	r18, high(cf_rpl)
+	sts	_ccb_flags+0, r17
+	sts	_ccb_flags+1, r18
 	ldi	r16, mscp_model
 	ldi	r17, mscp_class
-	sts	ccb_type+0, r16
-	sts	ccb_type+0, r17
-	ldi	r18, max_commads - 1
+	sts	_ccb_type+0, r16
+	sts	_ccb_type+0, r17
+	ldi	r18, max_commands - 1
 	sts	credits, r18
 	ldi	r18, 60 + 1
 	sts	ha_time, r18
@@ -24,7 +26,7 @@ clear:
 
 	push	r15
 	ldi	r16, max_packets - 1
-	r15
+	mov	r15, r16
 clear010:	
 	ldi	r24, low(pkt_length)
 	ldi	r25, high(pkt_length)
@@ -43,7 +45,7 @@ clear010:
 clear090:
 	ldi	r24, low(pe_nsr)
 	ldi	r25, high(pe_nsr)
-	call	fatalerror
+	;call	fatalerror
 
 ;
 ;

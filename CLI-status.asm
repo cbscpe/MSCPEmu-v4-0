@@ -94,6 +94,7 @@ printstatus030:
 	rjmp	printstatus030
 
 printstatus040:
+	rcall	printcvtbyte
 	sts	pprint+2, r24		; Store HOURs
 	subi	r16, byte1(-3600)	; Compensate surplus subtract
 	sbci	r17, byte2(-3600)
@@ -111,16 +112,34 @@ printstatus050:
 	rjmp	printstatus050
 
 printstatus060:
+	rcall	printcvtbyte
 	sts	pprint+3, r24		; Store MINUTESs
 	subi	r16, byte1(-60)		; Compensate surplus subtract
 	sbci	r17, byte2(-60)
-
-	sts	pprint+4, r16		; Store SECONDs
+	mov	r24, r16
+	rcall	printcvtbyte
+	sts	pprint+4, r24		; Store SECONDs
 
 	call	print
-	.db	"SysUpTime ......................:", 0xc0, " Days ", 0xf2, ":", 0xf3, ":", 0xf4, CR, LF, 0
+	.db	"SysUpTime ......................:", 0xc0, " Days ", 0x82, ":", 0x83, ":", 0x84, CR, LF, 0
 
 	clc
 	ret
 
+;
+;
+;
+printcvtbyte:
+	push	r25
+	clr	r25
+printcvtbyte010:
+	subi	r24, 10
+	brcs	printcvtbyte020
+	subi	r25, -10
+	rjmp	printcvtbyte010
+printcvtbyte020:
+	subi	r24, -10
+	add	r24, r25
+	pop	r25
+	ret
 

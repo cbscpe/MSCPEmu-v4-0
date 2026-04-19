@@ -45,7 +45,12 @@
 	jmp	qbus_			; Module qbus-v2-0.asm
 	
 	.org	v_GO			; Software Interrupt Controller GO
+	#ifdef	rlv12emulation
 	jmp	go_			; Module rlv12-v2-0.asm
+	#endif
+	#ifdef	mscpemulation
+	jmp	poll_
+	#endif
 
 	.org	USART1_RXC_vect
 	jmp	rxc1_isr
@@ -980,7 +985,12 @@ prtcreate:
 .include	"readcmdline.asm"	; Read Command Line
 .include	"readinit.asm"		; Read Init File
 .include	"rlv12-v2-0.asm"	; RLV12 Disk Emulation
+#ifdef rlv12emulation
 .include	"qbus-v2-0.asm"		; RLV12 Q-Bus Interface
+#endif
+#ifdef mscpemulation
+.include	"MSCP/qbus-v2-0.asm"	; RLV12 Q-Bus Interface
+#endif
 .include	"readonlydata.asm"	; Read Only Memory mapped to data space
 
 ;--------------------------------------------------------------------------
@@ -988,7 +998,7 @@ prtcreate:
 ;	MSCP modules are just included just to verify the assembler syntax 
 ;	but not actually used for the moment
 ;
-#if includemscp
+#ifdef mscpemulation
 		.dseg
 .include	"MSCP/_ccb.inc"
 .include	"MSCP/_mscp.inc"
@@ -996,6 +1006,7 @@ prtcreate:
 .include	"MSCP/_pkt.inc"
 .include	"MSCP/_data.inc"
 		.cseg
+.include	"MSCP/clear.asm"
 .include	"MSCP/poll-v1-0.asm"
 .include	"MSCP/init.asm"
 .include	"MSCP/doabo.asm"

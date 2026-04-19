@@ -14,7 +14,6 @@ pkts:		.byte	2		; Free Packets link header
 ha_time:	.byte	1		; Host Adapter Timeout
 ha_flag:	.byte	1		; Host Adapter Flag
 credits:	.byte	1		; MSCP Credits
-vector:		.byte	2		; MSCP Interrupt Vector
 unit0:		.byte	1		; Unit number of first unit
 s1:		.byte	2		; Step 1 Host Value
 s2:		.byte	2		; Step 2 Host Value
