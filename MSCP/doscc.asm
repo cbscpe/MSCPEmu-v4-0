@@ -8,143 +8,108 @@
  *  value and a couple of this-kind-of-error-log-desired flags (pretty simple,
  *  huh?).
  */
+;
+;	Offset definitions for error packet (used in doplf)
+;
+recordcont	pkt, data		;	command / response
+record		scc, crf, 4		; 6.	command reference number
+record		scc, r1, 4		; 10.	reserved 
+record		scc, opcd, 1		; 14.	opcode (4)
+record		scc, flgs, 1		; 15.	reserved / flags
+record		scc, sts, 2		; 16.	modifiers / status
+record		scc, vrsn, 2		; 18.	MSCP Version
+record		scc, cntf, 2		; 20.	Controller Flags
+record		scc, htmo, 0		; 22.
+record		scc, ctmo, 2		; 22.	Host Timeout / Controller Timeout
+record		scc, csvr, 1		; 24.	reserved
+record		scc, chvr, 1		; 25.	reserved
+record		scc, cnti, 8		; 26.	time and date
+record		scc, mcnt, 4		; 34.
+recordend	scc, next		; 38.
+
+.equ	rs_scc	= scc_next - pkt_data
 
 
 do_scc:					; Set Controller Characteristics
 	push	yl
 	push	yh
 	movw	yh:yl, r25:r24
+	ldd	r24, Y+scc_vrsn+0
+	ldd	r25, Y+scc_vrsn+1
+	sbiw	r25:r24, 0
+	breq	do_scc010
+	std	Y+scc_opcd, zero
+	ldi	r24, st_cmd
+	ldi	r25, i_vrsn
+	std	Y+scc_sts+0, r24
+	std	Y+scc_sts+1, r25
+	rjmp	do_scc900
 ;
-;	Hier den entsprechenden code einfügen
-;	
+;	get the timeout value and the controller flags, and return
+;	stuff like version numbers and controller identifiers
+;
+do_scc010:
+	ldi	r24, low(st_suc)	; Return Success
+	ldi	r25, high(st_suc)
+	std	Y+suc_sts+0, r24
+	std	Y+suc_sts+1, r25
+	
+	ldd	r24, Y+scc_htmo+0	; Get Host Timeout Value
+	ldd	r25, Y+scc_htmo+1
+	sbiw	r25:r24, 0		; If not 0 
+	breq	do_scc020		
+	adiw	r25:r24, 2		; Set  Controller Timeout = Host Timeout +2
+do_scc020:
+	sts	_ccb_timeout+0, r24	; Set controller timeout
+	sts	_ccb_timeout+1, r25
+	lds	r24, _ccb_flags+0	; Get Controller Flags
+	lds	r25, _ccb_flags+1
+	andi	r24, low(cf_rpl)	;
+	andi	r25, high(cf_rpl)
+	ldd	r22, Y+scc_cntf+0
+	ldd	r23, Y+scc_cntf+1
+	andi	r22, low(cf_msk)
+	andi	r23, high(cf_msk)
+	or	r24, r22
+	or	r25, r23
+	sts	_ccb_flags+0, r24
+	sts	_ccb_flags+1, r25	
+	ldi	r24, low(120)
+	ldi	r25, high(120)
+	std	Y+scc_ctmo+0, r24
+	std	Y+scc_ctmo+1, r25
+	ldi	r24, low(mscp_softv)
+	ldi	r25, high(mscp_hardv)
+	std	Y+scc_csvr, r24
+	std	Y+scc_chvr, r25
+	std	Y+scc_cnti+0, zero
+	std	Y+scc_cnti+1, zero
+	std	Y+scc_cnti+2, zero
+	std	Y+scc_cnti+3, zero
+	std	Y+scc_cnti+4, zero
+	std	Y+scc_cnti+5, zero
+	lds	r24, _ccb_type
+	lds	r25, _ccb_type
+	std	Y+scc_cnti+6, r24
+	std	Y+scc_cnti+7, r25
+	std	Y+scc_mcnt+0, zero
+	std	Y+scc_mcnt+1, zero
+;
+;
+;
+do_scc900:
+	ldd	r24, Y+scc_opcd
+	ori	r24, op_end
+	std	Y+scc_opcd, r24
+	ldi	r24, low(rs_scc)
+	ldi	r25, high(rs_scc)
+	std	Y+pkt_size+0, r24
+	std	Y+pkt_size+1, r25
+	ldi	r24, mt_seq
+	std	Y+pkt_type, r24
 	movw	r25:r24, yh:yl
 	call	put_packet
 	pop	yh
 	pop	yl
 	ret
 
-/*
- *  file = DOSCC.C
- *  project = RQDX3
- *  author = Stephen F. Shirron
- *
- *  the SET CONTROLLER CHARACTERISTICS command
- */
-
-#include "defs.h"
-#include "pkt.h"
-#include "ccb.h"
-#include "mscp.h"
-
-extern struct $ccb _ccb;
-
-/*
- *  the SET CONTROLLER CHARACTERISTICS command packet
- */
-struct $sccc
-    {
-    long	p_crf;
-    word	p_r1[2];
-    byte	p_opcd;
-    byte	p_r2;
-    word	p_mod;
-    word	p_vrsn;
-    word	p_cntf;
-    word	p_htmo;
-    word	p_r3;
-    word	p_time[4];
-    word	p_ctpm[2];
-    };
-
-/*
- *  the SET CONTROLLER CHARACTERISTICS response packet
- */
-struct $sccr
-    {
-    long	p_crf;
-    word	p_r1[2];
-    byte	p_opcd;
-    byte	p_flgs;
-    word	p_sts;
-    word	p_vrsn;
-    word	p_cntf;
-    word	p_ctmo;
-    byte	p_csvr;
-    byte	p_chvr;
-    word	p_cnti[4];
-    word	p_mcnt[2];
-    };
-
-#define		rs_scc		sizeof( struct $sccr )
-
-;
-;	Offset definitions for error packet (used in doplf)
-;
-recordcont	pkt, data
-record		scc, crf, 4		; 6.
-record		scc, r1, 4		; 10.
-record		scc, opcd, 1		; 14.
-record		scc, flgs, 1		; 15.	
-record		scc, sts, 2		; 16.
-record		scc, vrsn, 2		; 18.
-record		scc, cntf, 2		; 20.
-record		scc, ctmo, 2		; 22.
-record		scc, csvr, 1		; 24.
-record		scc, chvr, 1		; 25.
-record		scc, cnti, 8		; 26.
-record		scc, mcnt, 4		; 34.
-recordend	scc, next		; 38.
-
-.equ	rs_scc	= scc_next - pkt_data
-
-
-#define PKT (*pkt)
-#define CMD (*(struct $sccc *)&(PKT.data))
-#define RSP (*(struct $sccr *)&(PKT.data))
-#define CCB _ccb
-
-do_scc( pkt )
-register struct $pkt *pkt;
-    {
-#if debug>=1
-    printf( "\nSET CONTROLLER CHARACTERISTICS" );
-#endif
-    RSP.p_flgs = 0;
-    /*
-     *  if the MSCP version number is not zero, barf royally
-     */
-    if( CMD.p_vrsn > 0 )
-	{
-	RSP.p_opcd = 0;
-	RSP.p_sts = st_cmd + i_vrsn;
-	}
-    else
-	{
-	/*
-	 *  get the timeout value and the controller flags, and return
-	 *  stuff like version numbers and controller identifiers
-	 */
-	RSP.p_sts = st_suc;
-	if( ( CCB.timeout = CMD.p_htmo ) != 0 )
-	    CCB.timeout += 2;
-	CCB.flags &= cf_rpl;
-	CCB.flags |= CMD.p_cntf & cf_msk;
-	RSP.p_cntf = CCB.flags;
-	RSP.p_ctmo = 120;
-	RSP.p_csvr = rqdx3_softv;
-	RSP.p_chvr = rqdx3_hardv;
-	RSP.p_cnti[0] = 0;
-	RSP.p_cnti[1] = 0;
-	RSP.p_cnti[2] = 0;
-	RSP.p_cnti[3] = CCB.type;
-	/*
-	 *  this is the maximum allowed byte count -- will VMS ever implement?
-	 */
-	RSP.p_mcnt[0] = 0;
-	RSP.p_mcnt[1] = 0;
-	}
-    RSP.p_opcd |= op_end;
-    PKT.size = rs_scc;
-    PKT.type = mt_seq;
-    put_packet( pkt );
-    }

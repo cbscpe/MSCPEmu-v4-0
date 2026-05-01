@@ -151,7 +151,7 @@ record		rsp, r2, 8		; 26.
 record		rsp, fbbk, 4		; 34.
 recordend	rsp, next
 
-.equ	rs_rw	= rsp_next - pkt_data	; End of Read/Write Response Packet
+;.equ	rs_rw	= rsp_next - pkt_data	; End of Read/Write Response Packet -> now defined in dorw.mac
 ;
 ;
 ;	Ring Descriptor

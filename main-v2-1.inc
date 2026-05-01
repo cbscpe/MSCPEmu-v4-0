@@ -98,8 +98,15 @@ initcount:	.byte	1
 .include "monitor-v2-0.inc"		; Interactive monitor
 .include "print-v2-0.inc"		; Print routine
 .include "tparse-v2-0.inc"		; Table Driven Parser
+; #ifdef rlv12emulation
 .include "rlv12-v2-0.inc"		; Disk Emulator
-
+; #endif
+#ifdef mscpemulation
+.include	"MSCP/_ccb.inc"
+.include	"MSCP/_pcb.inc"
+.include	"MSCP/_pkt.inc"
+.include	"MSCP/_data.inc"
+#endif
 RAMINITEND:
 ;--------------------------------------------------------------------------
 ;

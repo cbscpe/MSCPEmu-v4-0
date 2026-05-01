@@ -43,7 +43,7 @@
 	.db	"RLV12",	0, 0, 0
 	.db	"CLI",		0, 0, 0, 0, 0
 	.db	"SD-Card",	0
-	.db	"Seek",		0 , 0, 0, 0
+	.db	"Scan",		0 , 0, 0, 0
 #endif
 
 #ifdef mscpemulation
@@ -60,7 +60,26 @@
 	.db	"Poll",		0, 0, 0, 0
 	.db	"CLI",		0, 0, 0, 0, 0
 	.db	"SD-Card", 	0
-	.db	"Scan",		0 , 0, 0, 0
+	.db	"INIT",		0 , 0, 0, 0
+.equ ringlengthtable = (PC - 0x8000) * 2 + 0x8000
+	.dw	1, 0xFFFE
+	.dw	2, 0xFFFE
+	.dw	4, 0xFFFE
+	.dw	8, 0xFFFE
+	.dw	16, 0xFFFE
+	.dw	32, 0xFFFE
+	.dw	64, 0xFFFE
+	.dw	128, 0xFFFE
+.equ mscp_status_names = (PC - 0x8000) * 2 + 0x8000
+	.db	"INIT"
+	.db	"S1  "
+	.db	"S2  "
+	.db	"S3  "
+	.db	"S4  "
+	.db	"WRAP"
+	.db	"GO  "
+	.db	"inv."
+
 #endif
 
 	

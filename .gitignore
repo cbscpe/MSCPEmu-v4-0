@@ -9,6 +9,7 @@
 *.tmp
 *.aws
 *.lss
+*.txt
 Archive
 MSCPDocumentation
 .DS*

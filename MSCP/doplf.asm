@@ -37,9 +37,9 @@ do_plf:
 	push	r24
 	push	r25			; Save error code
 
-	ldi	r24, low(pkts)
-	ldi	r25, high(pkts)
-	call	deqf_head
+;	ldi	r24, low(pkts)
+;	ldi	r25, high(pkts)
+;	call	deqf_head
 	movw	yh:yl, r25:r24
 
 	std	Y+plf_crf+0, zero

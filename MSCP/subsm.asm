@@ -25,14 +25,27 @@
 getucb:
 
 ;	r25:r24		unitnumber
+	clr	zl
+	clr	zh
+	tst	r25
+	brne	getucb000
+	cpi	r24, units
+	brsh	getucb000		; not a valid unit number
+	movw	zh:zl, r25:r24
+	swap	zl
+	subi	zl, low(-unittable)	; then add base address of 
+	sbci	zh, high(-unittable)
+getucb000:
+	movw	r25:r24, zh:zl
+	ret
 
-	lds	r16, unitbase+0
-	lds	r17, unitbase+1
-	sub	r24, r16
-	sbc	r25, r17
-	brlt	getucb090		; not a valid unit number
-	cpi	r24, units+1
-	cpc	r25, zero
+;	lds	r16, unitbase+0
+;	lds	r17, unitbase+1
+;	sub	r24, r16
+;	sbc	r25, r17
+;	brlt	getucb090		; not a valid unit number
+;	cpi	r24, units+1
+;	cpc	r25, zero
 	brsh	getucb090		; not a valid unit number
 	movw	zh:zl, r25:r24		; each ucb is exactly 16 bytes so translate
 	swap	zl			; unitnumber to offset and

@@ -47,23 +47,42 @@
 .equ	RS1	= 1			; Register Select 1
 .equ	RS2	= 2			; Register Select 2
 ;	PB3	unused
-;	PB4	unused
+#ifdef mscpemulation
+.equ	SA	= 4
+.equ	IP	= 5			; GO Level1 -> Level0 signalling RLV12
+#endif
+#ifdef rlv12emulation
 .equ	GO	= 5			; GO Level1 -> Level0 signalling RLV12
+#endif
 
 #define	d_RS0	VPORTB_DIR, RS0
 #define	d_RS1	VPORTB_DIR, RS1
 #define	d_RS2	VPORTB_DIR, RS2
-#define	d_GO	VPORTB_DIR, GO	
-
-
 #define	b_RS0	VPORTB_OUT, RS0
 #define	b_RS1	VPORTB_OUT, RS1
 #define	b_RS2	VPORTB_OUT, RS2
+
+#ifdef mscpemulation
+#define	d_SA	VPORTB_DIR, SA	
+#define	b_SA	VPORTB_OUT, SA
+#define	f_SA	VPORTB_INTFLAGS, SA
+#define	c_SA	PORTB_PIN4CTRL
+
+#define	d_IP	VPORTB_DIR, IP	
+#define	b_IP	VPORTB_OUT, IP	
+#define	f_IP	VPORTB_INTFLAGS, IP
+#define	c_IP	PORTB_PIN5CTRL
+
+#define	v_IP	PORTB_PORT_vect
+#endif
+
+#ifdef rlv12emulation
+#define	d_GO	VPORTB_DIR, GO	
 #define	b_GO	VPORTB_OUT, GO	
 #define	f_GO	VPORTB_INTFLAGS, GO
 #define	c_GO	PORTB_PIN5CTRL
 #define	v_GO	PORTB_PORT_vect
-
+#endif
 ;-----------------------------------------------------------------------------
 ;
 ;	PORT C	MVIO (Bits0..7)

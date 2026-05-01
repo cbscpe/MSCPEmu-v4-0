@@ -30,21 +30,63 @@
 ;	- put_packet()
 ;
 
-.def	crcl	= r2
-.def	crch	= r3
 .def	datal	= r4			; DMA data
 .def	datah	= r5
-.def	bkcl	= r6
-.def	bkch	= r7			; For even bigger word counts
+.def	bkcl	= r6			; Block Counter for even bigger word counts
+.def	bkch	= r7			; 
 .def	wcnt	= r8			; Word Counter
-.def	count	= r9	
-.def	pktl	= r10
+.def	count	= r9			; Local Counter 
+.def	pktl	= r10			; MSCP Packet address
 .def	pkth	= r11
-.def	addrl	= r12
+.def	addrl	= r12			; I/O Buffer Address
 .def	addrh	= r13
-.def	ucbl	= r14
+.def	ucbl	= r14			; UCB Address
 .def	ucbh	= r15
 
+
+; 
+;	Offset definitions for READ, WRITE, COMPARE, ACCESS or ERASE command packet
+;
+recordcont	pkt, data		;	
+record		rwc, crf, 4		; 6.	Command Reference Number
+record		rwc, unit, 2		; 8.	Unit
+record		rwc, r1, 2		; 10.	reserved 1
+record		rwc, opcd, 1		; 12.	Op Code
+record		rwc, r2, 1		; 13.	reserved 2
+record		rwc, mod, 2		; 14.	Command Modifiers
+record		rwc, bcnt, 4		; 16.	Byte Count
+record		rwc, buff, 12		; 20.	Buffer Descriptor
+record		rwc, lbn, 4		; 32.	Logical Block Number
+recordend	rwc, next		; 50.
+
+recordcont	pkt, data		;	
+record		rwr, crf, 4		; 6.	Command Reference Number
+record		rwr, unit, 2		; 8.	Unit
+record		rwr, r1, 2		; 10.	reserved 1
+record		rwr, opcd, 1		; 12.	Op Code
+record		rwr, flgs, 1		; 13.	Flags
+record		rwr, sts, 2		; 14.	Status
+record		rwr, bcnt, 4		; 16.	Byte Count
+record		rwr, r2, 12		; 20.	reserved 2
+record		rwr, fbbk, 4		; 32.	First Bad Block
+recordend	rwr, next		; 50.
+
+.equ	rs_rw	= rwc_next - pkt_data
+
+;
+;	Register Conventions
+;
+;	yh:yl	Always points to the MSCP packet, may be used in special cases but
+;		only within local code that does not call any other sub-routine and
+;		must be restored when done
+;
+;	ucbh:ucbl	Unit Control Block is stored there after calling getucb
+;		
+;	
+;
+;
+;
+;
 do_acc:
 do_cmp:
 do_ers:
@@ -55,42 +97,47 @@ do_wr:
 ;
 	push	yl
 	push	yh
-	movw	zh:zl, r25:r24
-	std	Z+rsp_flgs, zero
-
+	movw	pkth:pktl, r25:r24	; Save PKT address locally
+	movw	yh:yl, pkth:pktl	; Get PKT address
+	std	Y+rwr_flgs, zero
 ;
-;	Check Parameters
+;	Check Drive Status
 ;
-	ldd	yl, Z+cmd_unit+0
-	ldd	yh, Z+cmd_unit+1
-	cpi	yl, units		; 
-	cpc	yh, zero
-	brlo	rwchkparam010
-	;
-	;	Return Status Offline
-	;
-	ldi	r16, low(st_ofl)	; Unit Offline
-	ldi	r17, high(st_ofl)	; Unit Unknown
-	std	Z+rsp_sts+0, r16
-	std	Z+rsp_sts+1, r17	;
-	rjmp	rwexit
+	ldd	r24, Y+rwc_unit+0
+	ldd	r25, Y+rwc_unit+1
+	call	getucb
+	logtr	0x50, r24, r25
+	sbiw	r25:r24, 0
+	breq	rwchkparam010
 
-rwchkparam010:
-	swap	yl			; unit*16 = offset to unittable
-	subi	yl, low(-unittable)
-	sbci	yh, high(-unittable)	
-	ldd	r18, Y+ucb_status
-	sbrc	r18, ucb__drdy		; 
+	movw	ucbh:ucbl, r25:r24	; Save UCB address locally
+	movw	zh:zl, ucbh:ucbl	; Get UCB address
+	ldd	r18, Z+ucb_status
+	sbrc	r18, ucb__onl		; 
 	rjmp	rwchkparam020
+	andi	r18, (1<<ucb__part) | (1<<ucb__file)
+	breq	rwchkparam010
 	;
 	;	Return unit Available
 	;
-	ldi	r18, st_avl		; Unit Available
-	std	Z+rsp_sts+0, r18
-	std	Z+rsp_sts+1, zero	;
+	ldi	r18, low(st_avl)	; Unit Offline
+	ldi	r19, high(st_avl)	; Unit Unknown
+	std	Y+rwr_sts+0, r18
+	std	Y+rwr_sts+1, r19	;
 	rjmp	rwexit
-	
-	
+
+rwchkparam010:
+	;
+	;	Return Status Offline
+	;
+	ldi	r18, low(st_ofl)	; Unit Offline
+	ldi	r19, high(st_ofl)	; Unit Unknown
+	std	Y+rwr_sts+0, r18
+	std	Y+rwr_sts+1, r19	;
+	rjmp	rwexit
+;
+;	Check Parameters	
+;
 rwchkparam020:
 ;
 ;	In mscp_server.cpp the logic is the following
@@ -101,31 +148,32 @@ rwchkparam020:
 ;	- if rctBlockNumber and bytecount != 512. retunr i_bcnt
 ;
 ;	
-	ldd	r24, Y+ucb_imgptr+0
-	ldd	r25, Y+ucb_imgptr+1	; 
+	ldd	r24, Z+ucb_imgptr+0	; get disk image control block
+	ldd	r25, Z+ucb_imgptr+1	; 
 .if ((fcb_drvtab - pcb_drvtab) != 0)
 	.error " Offsets fcb_drvtab and pcb_drvtab must be equal!"
 .endif
-	movw	xh:xl, yh:yl		; Save ucb pointer
-	movw	yh:yl, r25:r24
-	ldd	r24, Y+pcb_drvtab+0
-	ldd	r25, Y+pcb_drvtab+1
-	movw	yh:yl, r25:r24		; 
+	movw	zh:zl, r25:r24		; 
+	ldd	r24, Z+pcb_drvtab+0	;
+	ldd	r25, Z+pcb_drvtab+1	;
+	movw	zh:zl, r25:r24		; 
 
-	ldd	r20, Y+Drv_Capacity+0	; Total Diks capacity incl. RCT
-	ldd	r21, Y+Drv_Capacity+1
-	ldd	r22, Y+Drv_Capacity+2
-	ldd	r23, Y+Drv_Capacity+3
-	ldd	r24, Y+Drv_RCTSize+0
-	ldd	r25, Y+Drv_RCTSize+1
+	ldd	r20, Z+Drv_Capacity+0	; Total Diks capacity incl. RCT
+	ldd	r21, Z+Drv_Capacity+1
+	ldd	r22, Z+Drv_Capacity+2
+	ldd	r23, Z+Drv_Capacity+3
+	ldd	r24, Z+Drv_RCTSize+0
+	ldd	r25, Z+Drv_RCTSize+1
 	add	r20, r24
 	adc	r21, r25
 	adc	r22, zero
 	adc	r23, zero
-	ldd	r16, Z+cmd_lbn+0	; Get starting LNB
-	ldd	r17, Z+cmd_lbn+1
-	ldd	r18, Z+cmd_lbn+2
-	ldd	r19, Z+cmd_lbn+3
+	ldd	r16, Y+rwc_lbn+0	; Get starting LNB
+	ldd	r17, Y+rwc_lbn+1
+	ldd	r18, Y+rwc_lbn+2
+	ldd	r19, Y+rwc_lbn+3
+	logtr	0x51, r16, r17		; 
+	logtr	0x5F, r18, r19
 	cp	r16, r20
 	cpc	r17, r21
 	cpc	r18, r22
@@ -135,26 +183,26 @@ rwchkparam020:
 	;	Return Invalid Command, Subcode i_lbn
 	;
 	ldi	r18, st_cmd		; Invalid Command
-	std	Z+rsp_sts+0, r18
-	ldi	r18, i_lbn		; LBN
-	std	Z+rsp_sts+1, r18	;
+	ldi	r19, i_lbn		; LBN
+	std	Y+rwr_sts+0, r18
+	std	Y+rwr_sts+1, r19	;
 	rjmp	rwexit
 	
 rwchkparam030:				; Check for RCT
-	ldd	r20, Y+Drv_Capacity+0
-	ldd	r21, Y+Drv_Capacity+1
-	ldd	r22, Y+Drv_Capacity+2
-	ldd	r23, Y+Drv_Capacity+3
+	ldd	r20, Z+Drv_Capacity+0
+	ldd	r21, Z+Drv_Capacity+1
+	ldd	r22, Z+Drv_Capacity+2
+	ldd	r23, Z+Drv_Capacity+3
 	cp	r16, r20
 	cpc	r17, r21
 	cpc	r18, r22
 	cpc	r19, r23
 	brlo	rwchkparam040		; A regular block
 	
-	ldd	r20, Z+cmd_bcnt+0	; We are reading a RCT block
-	ldd	r21, Z+cmd_bcnt+1
-	ldd	r22, Z+cmd_bcnt+2
-	ldd	r23, Z+cmd_bcnt+3
+	ldd	r20, Y+rwc_bcnt+0	; We are reading a RCT block
+	ldd	r21, Y+rwc_bcnt+1
+	ldd	r22, Y+rwc_bcnt+2
+	ldd	r23, Y+rwc_bcnt+3
 	subi	r20, byte1(512)
 	sbci	r21, byte2(512)
 	sbci	r22, byte3(512)
@@ -164,39 +212,44 @@ rwchkparam030:				; Check for RCT
 	;	Return Invalid Command, Subcode i_bcnt
 	;
 	ldi	r18, st_cmd		; Invalid Command
-	std	Z+rsp_sts+0, r18
-	ldi	r18, i_bcnt		; LBN
-	std	Z+rsp_sts+1, r18	;
+	ldi	r19, i_bcnt		; LBN
+	std	Y+rwr_sts+0, r18
+	std	Y+rwr_sts+1, r19	;
 	rjmp	rwexit
 	
 rwchkparam040:
-	
-	ldd	r20, Z+cmd_bcnt+1	; Calculate the number of blocks
-	ldd	r21, Z+cmd_bcnt+2	; we are reading past the first LBN
-	ldd	r22, Z+cmd_bcnt+3
-	lsr	r22
+	ldd	r20, Y+rwc_bcnt+0
+	ldd	r21, Y+rwc_bcnt+1	; Calculate the number of blocks
+	ldd	r22, Y+rwc_bcnt+2	; we are reading past the first LBN
+	ldd	r23, Y+rwc_bcnt+3
+
+	logtr	0x52, r20, r21
+
+	lsr	r23
+	ror	r22
 	ror	r21
-	ror	r20
+
+	logtr	0x5F, r21, r22
 	
-	add	r16, r20
-	adc	r17, r21
-	adc	r18, r22
+	add	r16, r21
+	adc	r17, r22
+	adc	r18, r23
 	adc	r19, zero		; Last LBN we expect to read
 
-	ldd	r20, Y+Drv_Capacity+0	; Again the whole capacity
-	ldd	r21, Y+Drv_Capacity+1
-	ldd	r22, Y+Drv_Capacity+2
-	ldd	r23, Y+Drv_Capacity+3
-	ldd	r24, Y+Drv_RCTSize+0
-	ldd	r25, Y+Drv_RCTSize+1
+	ldd	r20, Z+Drv_Capacity+0	; Again the whole capacity
+	ldd	r21, Z+Drv_Capacity+1
+	ldd	r22, Z+Drv_Capacity+2
+	ldd	r23, Z+Drv_Capacity+3
+	ldd	r24, Z+Drv_RCTSize+0
+	ldd	r25, Z+Drv_RCTSize+1
 	add	r20, r24
 	adc	r21, r25
 	adc	r22, zero
 	adc	r23, zero
-	ldd	r16, Z+cmd_lbn+0
-	ldd	r17, Z+cmd_lbn+1
-	ldd	r18, Z+cmd_lbn+2
-	ldd	r19, Z+cmd_lbn+3
+	ldd	r16, Y+rwc_lbn+0
+	ldd	r17, Y+rwc_lbn+1
+	ldd	r18, Y+rwc_lbn+2
+	ldd	r19, Y+rwc_lbn+3
 	cp	r16, r20
 	cpc	r17, r21
 	cpc	r18, r22
@@ -207,49 +260,51 @@ rwchkparam040:
 	;	Return Invalid Command, Subcode i_bcnt
 	;
 	ldi	r18, st_cmd		; Invalid Command
-	std	Z+rsp_sts+0, r18
-	ldi	r18, i_bcnt		; LBN
-	std	Z+rsp_sts+1, r18	;
+	ldi	r19, i_bcnt		; LBN
+	std	Y+rwr_sts+0, r18
+	std	Y+rwr_sts+1, r19	;
 	rjmp	rwexit
 
 rwchkparam050:
 ;
 ;	Check Host Buffer
 ;
-	ldd	r18, Z+cmd_opcd
+	ldd	r18, Y+rwc_opcd
 	cpi	r18, op_ers
 	breq	rwchkparam080		; not required for ERASE
 	cpi	r18, op_acc
 	breq	rwchkparam080		; not required for ACCESS
-	ldd	r16, Z+cmd_bcnt+0
+	ldd	r16, Y+rwc_bcnt+0
 	sbrs	r16, 0			; Byte count must be even
 	rjmp	rwchkparam060
 	;
 	;	Return Invalid Host Buffer
 	;
-	ldi	r16, low(st_hst+st_sub*2)
-	ldi	r17, high(st_hst+st_sub*2)
-	std	Z+rsp_sts+0, r16
-	std	Z+rsp_sts+1, r17	;
+	ldi	r18, low(st_hst+st_sub*2)
+	ldi	r19, high(st_hst+st_sub*2)
+	std	Y+rwr_sts+0, r18
+	std	Y+rwr_sts+1, r19	;
 	rjmp	rwexit
 	
 rwchkparam060:
-	ldd	r16, Z+cmd_buff+0
+	ldd	r16, Y+rwc_buff+0
 	sbrs	r16, 0			; Address must be even
 	rjmp	rwchkparam070
 	;
 	;	Return Invalid Host Buffer
 	;
-	ldi	r16, low(st_hst+st_sub*1)
-	ldi	r17, high(st_hst+st_sub*1)
-	std	Z+rsp_sts+0, r16
-	std	Z+rsp_sts+1, r17	;
+	ldi	r18, low(st_hst+st_sub*1)
+	ldi	r19, high(st_hst+st_sub*1)
+	std	Y+rwr_sts+0, r18
+	std	Y+rwr_sts+1, r19	;
 	rjmp	rwexit
 	
-rwchkparam070:
-	ldd	r17, Z+cmd_buff+1
-	ldd	r18, Z+cmd_buff+2
-	ldd	r19, Z+cmd_buff+3
+rwchkparam070:				; Calculate End Address
+	ldd	r17, Y+rwc_buff+1
+	ldd	r18, Y+rwc_buff+2
+	ldd	r19, Y+rwc_buff+3
+	
+	logtr	0x53, r17, r18
 
 	subi	r16, byte1(020000000)
 	sbci	r17, byte2(020000000)
@@ -259,10 +314,10 @@ rwchkparam070:
 	;
 	;	Return Invalid Host Buffer
 	;
-	ldi	r16, low(st_hst+st_sub*1)
-	ldi	r17, high(st_hst+st_sub*1)
-	std	Z+rsp_sts+0, r16
-	std	Z+rsp_sts+1, r17	;
+	ldi	r18, low(st_hst+st_sub*1)
+	ldi	r19, high(st_hst+st_sub*1)
+	std	Y+rwr_sts+0, r18
+	std	Y+rwr_sts+1, r19	;
 	rjmp	rwexit
 
 rwchkparam080:
@@ -270,35 +325,34 @@ rwchkparam080:
 ;
 ;	now we have checked the parameters
 ;
-	ldd	r18, Z+cmd_opcd		; Get Opcode
-	
-					; Erase
-					; Compare
-					; Access
-					; Read
-					; Write
+	ldd	r18, Y+rwc_opcd		; Get Opcode
 
-	cpi	r18, op_rd
+	logtr	0x54, r18, zero
+	
+	
+	cpi	r18, op_rd		; Read
 	brne	rwchkparam110	
 	rjmp	mscp_rd
 
 rwchkparam110:
-	cpi	r18, op_wr
+
+	cpi	r18, op_wr		; Write
 	brne	rwchkparam120
-	rjmp	mscp_wr	
+	rjmp	mscp_write	
 
 rwchkparam120:
-	cpi	r18, op_cmp
+	cpi	r18, op_cmp		; Compare
 	brne	rwchkparam130
 	rjmp	mscp_cmp	
 	
 rwchkparam130:
-	cpi	r18, op_ers
+	cpi	r18, op_ers		; Erase
 	brne	rwchkparam140	
 ;--------------------------------------------------------------------------
 ;
 ;	ERASE
 ;
+	rcall	mscp_setupe
 	clr	count
 	movw	xh:xl, addrh:addrl
 mscp_era010:
@@ -308,14 +362,12 @@ mscp_era010:
 	brne	mscp_era010
 mscp_era020:
 	call	SD_CARD_WRITE
-
-	cp	bkcl, zero
-	cpc	bkch, zero
+	
+	movw	xh:xl, bkch:bkcl
+	sbiw	xh:xl, 0
 	breq	mscp_era030
-	ldi	r16, low(1)
-	ldi	r17, high(1)
-	sub	bkcl, r16
-	sbc	bkch, r17
+	sbiw	xh:xl, 1
+	movw	bkch:bkcl, xh:xl
 	rcall	mscp_rwnextsector
 	rjmp	mscp_era020
 
@@ -329,13 +381,13 @@ rwchkparam140:
 ;
 ;	ACCESS
 ;
-	rjmp	rwexit
+	rjmp	rwexit			; Access
 
-rwchkparam150:
-	ldi	r16, low(st_cmd)
-	ldi	r17, high(st_cmd)
-	std	Z+rsp_sts+0, r16
-	std	Z+rsp_sts+1, r17	;
+rwchkparam150:				; Invalid Command
+	ldi	r18, low(st_cmd)
+	ldi	r19, high(st_cmd)
+	std	Y+rwr_sts+0, r18
+	std	Y+rwr_sts+1, r19	;
 	rjmp	rwexit
 	
 ;--------------------------------------------------------------------------
@@ -344,33 +396,43 @@ rwchkparam150:
 ;
 mscp_rd:
 	rcall	mscp_setupw		; Write Host Memory
+;
+;	DMA Address has been set and the IO control block has been
+;	filled with all the necessary information to read a block
+;	from the SD-Card. The IO control block address is in yh:yl
+;	the number of blocks we need to read is in bkch:bkcl including
+;	a potential partail last block and the number of words to 
+;	transfer in the last block is in wcnt.
+;
 mscp_rd010:
-	clr	count
-	cp	bkcl, zero
-	cpc	bkch, zero
-	breq	mscp_rd020
-	mov	count, wcnt
+	movw	r25:r24, yh:yl		; get IO control block
+	call	SD_CARD_READ
+	movw	xh:xl, addrh:addrl	; Get Buffer Address
+	clr	count			; Assume we need to transfer the whole block
+	movw	r25:r24, bkch:bkcl	; Get Blocks to Read
+	sbiw	r25:r24, 1		; Is this the last block
+	brne	mscp_rd020		; no
+	tst	wcnt			; is the last block a partial block
+	breq	mscp_rd020		; no	
+	mov	count, wcnt		; partial block size
+	logtr	0x57, count, zero
+
 mscp_rd020:
-	call	SD_CARD_READ	
-	movw	xh:xl, addrh:addrl
-mscp_rd030:
 	ld	datal, X+
 	ld	datah, X+
-	dmawrt datal, datah
+	dmawrt	datal, datah
 	brcs	mscp_rd090
 	dec	count
-	brne	mscp_rd030	
-	cp	bkcl, zero
-	cpc	bkch, zero
-	breq	mscp_rd040
-	ldi	r16, low(1)
-	ldi	r17, high(1)
-	sub	bkcl, r16
-	sbc	bkch, r17
-	rcall	mscp_rwnextsector
+	brne	mscp_rd020		; Transfer to host memory
+	movw	r25:r24, bkch:bkcl	; Get Blocks to read
+	sbiw	r25:r24, 1		; More blocks to read
+	breq	mscp_rd030		; No - All done
+	movw	bkch:bkcl, r25:r24	; 
+	logtr	0x56, r24, r25
+	rcall	mscp_rwnextsector	; Calculate the next sector
 	rjmp	mscp_rd010
 
-mscp_rd040:
+mscp_rd030:
 	rjmp	rwexit
 mscp_rd090:
 	rjmp	rwdmaerror
@@ -378,47 +440,51 @@ mscp_rd090:
 ;
 ;	WRITE
 ;
-mscp_wr:
-	rcall	mscp_setupr
-mscp_wr010:
-	clr	count
-	cp	bkcl, zero
-	cpc	bkch, zero
-	breq	mscp_wr020
-	mov	count, wcnt
-mscp_wr020:
+mscp_write:
+	rcall	mscp_setupr		; Read Host Memory
+mscp_write010:
+	clr	count			; Assume Entire Block
+	movw	r25:r24, bkch:bkcl	; Get Blocks to Write
+	sbiw	r25:r24, 1		; Is this the last block
+	brne	mscp_write020		; no
+	tst	wcnt			; Is the last block a partial block
+	breq	mscp_write020		; no
+	movw	xh:xl, addrh:addrl	; For partial blocks make sure that we
+mscp_write015:				; fill the rest with zero
+	st	X+, zero
+	st	X+, zero
+	inc	count
+	brne	mscp_write015
+	mov	count, wcnt		; Only Partial Block
+	logtr	0x59, count, zero
+mscp_write020:
 	movw	xh:xl, addrh:addrl
-mscp_wr030:
-	dmaread	datal, datah
-	brcs	mscp_wr090
-	st	X+, datal
+mscp_write030:
+	dmaread	datal, datah		; Read Host Data
+	brcs	mscp_write090
+	st	X+, datal		; Save to Block
 	st	X+, datah
-	dec	count
-	brne	mscp_wr030
-	cp	bkcl, zero
-	cpc	bkch, zero
-	breq	mscp_wr040
-	call	SD_CARD_WRITE
-	rcall	mscp_rwnextsector
-	rjmp	mscp_wr010
-mscp_wr040:
-	tst	wcnt
-	breq	mscp_wr050
-	st	X+, zero
-	st	X+, zero
-	inc	wcnt
-	rjmp	mscp_wr040
-mscp_wr050:
-	call	SD_CARD_WRITE
+	dec	count			; More to go?
+	brne	mscp_write030
+	movw	r25:r24, yh:yl		; get IO control block
+	call	SD_CARD_WRITE		; Write the block
+	movw	r25:r24, bkch:bkcl	; Get Blocks to Write
+	sbiw	r25:r24, 1		; More Blocks to Write
+	breq	mscp_write040		; No - All done
+	logtr	0x58, r24, r25		; 
+	movw	bkch:bkcl, r25:r24
+	rcall	mscp_rwnextsector	; Calcualte the next sector
+	rjmp	mscp_write010
+mscp_write040:
 	rjmp	rwexit
-mscp_wr090:
+mscp_write090:
 	rjmp	rwdmaerror
 ;--------------------------------------------------------------------------
 ;
 ;	COMPARE
 ;
 mscp_cmp:
-	rcall	mscp_setupr		; Write Host Memory
+	rcall	mscp_setupr		; Read Host Memory
 mscp_cmp010:
 	clr	count
 	cp	bkcl, zero
@@ -461,6 +527,15 @@ rwdmaerror:
 rwerror:
 
 rwexit:
+	movw	yh:yl, pkth:pktl
+	ldd	r18, Y+rwr_opcd
+	ori	r18, op_end
+	std	Y+rwr_opcd, r18	; Set End Flag
+	ldi	r24, low(rs_rw)
+	ldi	r25, high(rs_rw)
+	std	Y+pkt_size+0, r24
+	std	Y+pkt_size+1, r25
+
 	movw	r25:r24, pkth:pktl
 	call	put_packet
 	pop	yh
@@ -469,80 +544,59 @@ rwexit:
 ;--------------------------------------------------------------------------
 ;
 ;	Input:
-;	Y		UCB
-;	Z		PKT
+;	Y		PKT
+;	ucbh:ucbl	UCB
 ;
 ;	Output:
-;	ucbh:ucbl	UCB
-;	pkth:pktl	Packet
 ;	wcnt		Word Count partial block
 ;	bkch:bkcl	Block Count
 ;	addrh:addrl	Buffer Address
 ;	CPLD		DMA direction and DMA start address are set
+;	Y		IO Control Block
 ;
 ;
-mscp_setupr:
+mscp_setupr:				; READ
 	set				; Set Direction bit
 	cpse	zero, zero		; Skip next instruction
-mscp_setupw:	
+mscp_setupw:				; WRITE
 	clt				; Clear Direction Bit
-	ldd	r20, Z+cmd_buff+0
-	ldd	r21, Z+cmd_buff+1
-	ldd	r22, Z+cmd_buff+2
+	ldd	r20, Y+rwc_buff+0
+	ldd	r21, Y+rwc_buff+1
+	ldd	r22, Y+rwc_buff+2
 	bld	r20, 0			; Copy Direction Bit
-	dmaaddr r20, r21, r22	; Start Address of DMA transfer
+	dmaaddr r20, r21, r22		; Start Address of DMA transfer
 
-	ldd	r16, Z+cmd_lbn+0	
-	ldd	r17, Z+cmd_lbn+1
-	ldd	r18, Z+cmd_lbn+2
-	ldd	r19, Z+cmd_lbn+3	; Logical Block Number
+mscp_setupe:				; ERASE
+;
+;	Now we need to convert the byte count into a word count and
+;	a block count. The good thing is a block is exactly 256. words
+;	in other words we just need to shift the byte count one bit
+;	to the right and then we can use the lower 8 bits as word count
+;	and the rest as block count
+;
+	ldd	wcnt, Y+rwc_bcnt+0
+	ldd	r24, Y+rwc_bcnt+1
+	ldd	r25, Y+rwc_bcnt+2	; we support only 2^24 bytes :-)
 	
-	ldd	wcnt, Z+cmd_bcnt+0
-	ldd	bkcl, Z+cmd_bcnt+1
-	ldd	bkch, Z+cmd_bcnt+2	; we support only 2^24 bytes :-)
-	
-	lsr	bkch			; Convert to word count, note LSR
-	ror	bkcl			; Clears bit7.
+	lsr	r25
+	ror	r24
 	ror	wcnt
+	cpse	wcnt, zero		; Is the last block a partial block
+	adiw	r25:r24, 1		; Account for partial block
+	movw	bkch:bkcl, r25:r24	
 
-	movw	ucbh:ucbl, yh:yl	; Save UCB
-	movw	pkth:pktl, zh:zl	; Save PKT
-;
-;	Logging
-;
-	movw	zh:zl, pkth:pktl	
-	ldi	r16, log_buff
-	ldd	r17, Z+cmd_buff+0
-	ldd	r18, Z+cmd_buff+1
-	ldd	r19, Z+cmd_buff+2
-	logptr	zl, zh, r25, r24
-	std	Z+0, r16
-	std	Z+1, r17
-	std	Z+2, r18
-	std	Z+3, r19
-	movw	zh:zl, pkth:pktl	
-	ldi	r16, log_bcnt
-	ldd	r17, Z+cmd_bcnt+0
-	ldd	r18, Z+cmd_bcnt+1
-	ldd	r19, Z+cmd_bcnt+2
-	logptr	zl, zh, r25, r24
-	std	Z+0, r16
-	std	Z+1, r17
-	std	Z+2, r18
-	std	Z+3, r19
-	movw	zh:zl, pkth:pktl	
-	ldi	r16, log_lbn
-	ldd	r17, Z+cmd_lbn+0
-	ldd	r18, Z+cmd_lbn+1
-	ldd	r19, Z+cmd_lbn+2
-	logptr	zl, zh, r25, r24
-	std	Z+0, r16
-	std	Z+1, r17
-	std	Z+2, r18
-	std	Z+3, r19
+	ldd	r16, Y+rwc_lbn+0	
+	ldd	r17, Y+rwc_lbn+1
+	ldd	r18, Y+rwc_lbn+2
+	ldd	r19, Y+rwc_lbn+3	; Logical Block Number
+	
+	logtr	0x55, r20, r21
+	logtr	0x5F, r22, wcnt
+	logtr	0x5F, bkcl, bkch
 ;
 ;	Get Image Pointer
 ;	
+	movw	yh:yl, ucbh:ucbl 	; Get UCB
 	ldd	zl, Y+ucb_imgptr+0	; Get pointer to disk image control block
 	ldd	zh, Y+ucb_imgptr+1
 	ldd	r20, Y+ucb_status	; Get the status
@@ -554,7 +608,7 @@ mscp_setupw:
 ;	which is then translated to a physical block number by using the
 ;	fragment list attached to the file control block
 ;
-	ldd	yl, Z+fcb_iob+0
+	ldd	yl, Z+fcb_iob+0		; Get pointer to IO control block
 	ldd	yh, Z+fcb_iob+1
 	std	Y+P_Cluster+0, r16	; Set start LBN for read or write
 	std	Y+P_Cluster+1, r17
@@ -577,7 +631,7 @@ mscp_rwsetup020:
 	adc	r17, r21
 	adc	r18, r22
 	adc	r19, r23
-	ldi	yl, low(sdio)		; Setup parameter block for general IO
+	ldi	yl, low(sdio)		; Address of common IO control block
 	ldi	yh, high(sdio)		; 
 	std	Y+P_Sector+0, r16	; Set start sector for read or write
 	std	Y+P_Sector+1, r17
@@ -598,26 +652,11 @@ mscp_rwsetup020:
 ;	retrieved, reading MPR always returns values from the FIFO
 ;
 mscp_rwsetup030:
-	sbis	FLAGS_LOG, log__pbn
-	rjmp	mscp_rwsetup035
-	logptr	zl, zh, r25, r24	; Destroys r25:r24, zh:zl
-	ldd	r16, Y+P_Sector+0	; Set start sector for read or write
-	ldd	r17, Y+P_Sector+1
-	ldd	r18, Y+P_Sector+2
-	ldd	r19, Y+P_Sector+3
-	std	Z+3, r16
-	std	Z+2, r17
-	std	Z+1, r18
-	andi	r19, 0x0F
-	ori	r19, log_pbn
-	std	Z+0, r19
-mscp_rwsetup035:	
-
 	ldi	r16, low(sdbuffer)	; 
 	ldi	r17, high(sdbuffer)	; 
 	std	Y+P_Address+0, r16	; Set buffer address for SD-Card block
 	std	Y+P_Address+1, r17	; 
-	movw	addrh:addrl, r17:r16
+	movw	addrh:addrl, r17:r16	; Keep Buffer Address
 	ret
 ;--------------------------------------------------------------------------
 ;
@@ -643,15 +682,6 @@ mscp_rwnextsector:
 	std	Y+P_Sector+1, r17
 	std	Y+P_Sector+2, r18
 	std	Y+P_Sector+3, r19
-	sbis	FLAGS_LOG, log__pbn
-	ret
-	logptr	zl, zh, r25, r24	; Destroys r25:r24, zh:zl
-	std	Z+3, r16
-	std	Z+2, r17
-	std	Z+1, r18
-	andi	r19, 0x0F
-	ori	r19, log_pbn
-	std	Z+0, r19	
 	ret
 
 mscp_rwnextsector010:
@@ -670,20 +700,11 @@ mscp_rwnextsector010:
 	ldd	r24, Z+ucb_imgptr+0	; This is the file control block
 	ldd	r25, Z+ucb_imgptr+1
 	call	Logical2Physical	; translate it to a PBN using the fragment list
-	ldd	r16, Y+P_Sector+0
-	ldd	r17, Y+P_Sector+1
-	ldd	r18, Y+P_Sector+2
-	ldd	r19, Y+P_Sector+3
-	sbis	FLAGS_LOG, log__pbn
+;??	ldd	r16, Y+P_Sector+0
+;??	ldd	r17, Y+P_Sector+1
+;??	ldd	r18, Y+P_Sector+2
+;??	ldd	r19, Y+P_Sector+3
 	ret
-	logptr	zl, zh, r25, r24		
-	std	Z+3, r16
-	std	Z+2, r17
-	std	Z+1, r18
-	andi	r19, 0x0F
-	ori	r19, log_pbn
-	std	Z+0, r19	
-	ret		
 
 
 	
@@ -699,8 +720,6 @@ mscp_rwnextsector010:
 
 
 
-.undef	crcl
-.undef	crch
 .undef	datal	
 .undef	datah	
 .undef	bkcl	

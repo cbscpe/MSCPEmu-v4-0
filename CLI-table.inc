@@ -388,6 +388,8 @@ cmd_show:
 	.dw	kw_showlog,	cmd_showlog,	cmd_done
 	.dw	kw_showvers,	cmd_showvers,	cmd_done
 	.dw	kw_jobs,	cmd_showjobs,	cmd_done
+	.dw	kw_rings,	cmd_showrings,	cmd_done
+	.dw	kw_message, 	cmd_showmessage,cmd_done
 	.dw	kw_status,	0,		cmd_status
 	.dw	0
 
@@ -502,3 +504,5 @@ kw_trace:	P_KEYWORD       "TRace"
 kw_iotest:	P_KEYWORD	"IOTest"
 kw_status:	P_KEYWORD	"STATus"
 kw_turbo:	P_KEYWORD	"TURBO"
+kw_rings:	P_KEYWORD	"RINgs"
+kw_message:	P_KEYWORD	"MESSage"

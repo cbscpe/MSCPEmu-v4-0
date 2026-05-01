@@ -73,5 +73,25 @@ mscp_reset020:
 ;
 ;
 ;
+	ldi	yh, mscp_init
 	sts	mscpstatus, yh
+	
+;
+; Reset drives 
+;
+	lds	zh, unittable+ucb_size*0+ucb_status+0
+	cbr	zh, (1<<ucb__onl) | (1<<ucb__ofl)
+	sts	unittable+ucb_size*0+ucb_status+0, zh
+
+	lds	zh, unittable+ucb_size*1+ucb_status+0
+	cbr	zh, (1<<ucb__onl) | (1<<ucb__ofl)
+	sts	unittable+ucb_size*1+ucb_status+0, zh
+
+	lds	zh, unittable+ucb_size*2+ucb_status+0
+	cbr	zh, (1<<ucb__onl) | (1<<ucb__ofl)
+	sts	unittable+ucb_size*2+ucb_status+0, zh
+
+	lds	zh, unittable+ucb_size*3+ucb_status+0
+	cbr	zh, (1<<ucb__onl) | (1<<ucb__ofl)
+	sts	unittable+ucb_size*3+ucb_status+0, zh
 	ret

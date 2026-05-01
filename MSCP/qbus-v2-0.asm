@@ -169,9 +169,8 @@ qbus_intq:
 	sbrc	zl, ROM			; 2/1
 	rjmp	qbus_rom		; 0/2
 qbus_mscp:
-	lds	zh, mscpstatus
 	andi	zl, 0x03		; 1 Get BDAL1 and BWTBT
-	andi	yh, 0x1c		; Isolate status bits
+	lds	zh, mscpstatus
 	or	zl, zh
 	clr	zh
 	subi	zl, low(-qbus_mscp_jmptbl)
@@ -179,53 +178,57 @@ qbus_mscp:
 	ijmp
 qbus_mscp_jmptbl:
 ;
-;	Status INIT	0
+;	Status INIT
 ;
 	rjmp	qbus_dati_ip
 	rjmp	qbus_dato_ip
-	rjmp	qbus_dati_sa
-	rjmp	qbus_dato_sa
+	rjmp	qbus_dati_sa_init
+	rjmp	qbus_dato_sa_init
 ;
-;	Status START	1
-;
-	rjmp	qbus_dati_ip
-	rjmp	qbus_dato_ip
-	rjmp	qbus_dati_sa
-	rjmp	qbus_dato_sa
-;
-;	Status CONFIG	2
+;	Status S1
 ;
 	rjmp	qbus_dati_ip
 	rjmp	qbus_dato_ip
-	rjmp	qbus_dati_sa
-	rjmp	qbus_dato_sa
+	rjmp	qbus_dati_sa_s1
+	rjmp	qbus_dato_sa_s1
 ;
-;	Status	READY	3
-;
-	rjmp	qbus_dati_ip
-	rjmp	qbus_dato_ip
-	rjmp	qbus_dati_sa
-	rjmp	qbus_dato_sa
-;
-;	Status GO	4
+;	Status S2
 ;
 	rjmp	qbus_dati_ip
 	rjmp	qbus_dato_ip
-	rjmp	qbus_dati_sa
-	rjmp	qbus_dato_sa
+	rjmp	qbus_dati_sa_s2
+	rjmp	qbus_dato_sa_s2
 ;
-;	Status INVALID	5,6,7
+;	Status	S3
 ;
 	rjmp	qbus_dati_ip
 	rjmp	qbus_dato_ip
-	rjmp	qbus_dati_sa
-	rjmp	qbus_dato_sa
-
+	rjmp	qbus_dati_sa_s3
+	rjmp	qbus_dato_sa_s3
+;
+;	Status S4
+;
 	rjmp	qbus_dati_ip
 	rjmp	qbus_dato_ip
-	rjmp	qbus_dati_sa
-	rjmp	qbus_dato_sa
-
+	rjmp	qbus_dati_sa_s4
+	rjmp	qbus_dato_sa_s4
+;
+;	Status Wrap Around
+;
+	rjmp	qbus_dati_ip
+	rjmp	qbus_dato_ip
+	rjmp	qbus_dati_sa_wr
+	rjmp	qbus_dato_sa_wr
+;
+;	Status GO
+;
+	rjmp	qbus_dati_ip_go
+	rjmp	qbus_dato_ip
+	rjmp	qbus_dati_sa_go
+	rjmp	qbus_dato_sa_go
+;
+;	Unused
+;	
 	rjmp	qbus_dati_ip
 	rjmp	qbus_dato_ip
 	rjmp	qbus_dati_sa
@@ -249,7 +252,7 @@ qbus_mscp_jmptbl:
 ;		and sets the AUTOBOOT flag.
 ;	173002	Returns 05007 (CLR PC), which is equivalent to a jump to the
 ;		address zero, where DMA has put a branch to itself instruction.
-;		The PDP-11 will now execute this instruction until auto-boot has
+;		The PDP-11 wil now execute this instruction until auto-boot has
 ;		first loaded the boot block words 1..255 to address 02..0776
 ;		and then writes word 0 of the boot block to address 0 which 
 ;		then starts execution of the boot block
@@ -272,33 +275,273 @@ qbus_rom020:
 qbus_rom030:
 	INTEXIT	log_dati|log_rom
 
-;--------------------------------------------------------------------------
+;=============================================================================
 ;
-;	MSCP
+;	MSCP Register IO
+;
+;-----------------------------------------------------------------------------
+;
+;	Read IP
+;
+;	Reading the IP register causes the controller to start polling. The
+;	register is typically read by the host if the command ring transitions
+;	from empty to non-empty.
 ;
 qbus_dati_ip:
 	lds	yl, ipr+0
 	lds	yh, ipr+1
 	DATI
 	INTEXIT	log_dati|log_ip
-	
-qbus_dati_sa:
-	lds	yl, sar+0
-	lds	yh, sar+1
-	DATI
-	INTEXIT	log_dati|log_sa
 
+qbus_dati_ip_go:
+	lds	yl, ipr+0
+	lds	yh, ipr+1
+	cbi	b_IP
+	DATI
+	INTEXIT	log_dati|log_ip
+
+;-----------------------------------------------------------------------------
+;
+;	Write IP
+;
+;	Writing the IP register causes the controller to initialise. For the
+;	moment we just wipe some data to make sure the controller is reset
+;	logically. Later we might restart the whole firmware to make sure we
+;	make a fresh start. However we need to be careful, as the SD-Card
+;	cannot be re-initialized without power-cycle. So we need to save the
+;	SD-Card status during such a restart. We will deal with this later
+;
 qbus_dato_ip:
 	DATO
 	sts	ipr+0, yl
 	sts	ipr+1, yh
+
+	clr	zl			; clear important states
+	sts	sa_s1+0, zl
+	sts	sa_s1+1, zl
+	sts	sa_s2+0, zl
+	sts	sa_s2+1, zl
+	sts	sa_s3+0, zl
+	sts	sa_s3+1, zl
+	sts	sa_s4+0, zl
+	sts	sa_s4+1, zl
+	sts	mscpstatus, zl
+
 	INTEXIT	log_dato|log_ip
+
+;-----------------------------------------------------------------------------
+;
+;	State: INIT
+;
+;	After a hard reset the controller is in INIT state the first read
+;	must return a ZERO before we switch to state 1. Switching to state
+;	1 is exepcted to happen within 100usec, in our case it is after one
+;	read to the SA, i.e. almost immediately. 
+;
+;	In case we will restart the system when IP is written we could make
+;	use of CRDY to acknowledge further reads or writes during restart.
+;	If CRDY is set the controller will just return a ZERO value and
+;	once the firmware is initialized the next read of IP will proceed
+;	to S1 state.
+;
+qbus_dati_sa_init:
+	clr	yl			;
+	clr	yh			; First Read after INIT must be zero
+	ldi	zl, mscp_s1		;
+	sts	mscpstatus, zl		;
+	DATI
+	INTEXIT	log_dati|log_sa
+
+qbus_dato_sa_init:
+	DATO				; Writing to SA in INIT state has no effect
+	sts	sar+0, yl		
+	sts	sar+1, yh
+	INTEXIT	log_dato|log_sa
+	
+;-----------------------------------------------------------------------------
+;
+;	State: S1
+;
+qbus_dati_sa_s1:
+	ldi	yl, low(step1)		; During state 1 we just report 
+	ldi	yh, high(step1)		; the state and capabilities
+;
+;	Signal Step 1
+;
+;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
+;	|ERR| 0 | 0 | 0 | 1 |NV |QB |DI ||           reserved            |
+;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
+;
+	DATI
+	INTEXIT	log_dati|log_sa
+;
+;	During state 1 we expect the host to write the following information
+;
+;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
+;	| 1 |WR |cmdringleng|resringleng||IE |   (int vector address)/4  |
+;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
+;
+;
+qbus_dato_sa_s1:
+	DATO
+	sts	sa_s1+0, yl		;
+	sts	sa_s1+1, yh		;
+	sbrs	yh, 7			; Check for MSB which must be set
+	rjmp	qbus_dato_sa_s1_090	; Invalid Value
+
+	sbrc	yh, 6			; check for Wrap Around
+	rjmp	qbus_dato_sa_s1_080
+
+	cbi	b_SA			; Soft Interrupt SA Write
+	rjmp	qbus_dato_sa_s1_090
+	
+qbus_dato_sa_s1_080:			; Wrap Around will be handled in the QBUS 
+	ldi	zl, mscp_wr		; interrupt routines
+	sts	mscpstatus, zl		; Set New State in QBUS to WRAP
+
+qbus_dato_sa_s1_090:
+	INTEXIT	log_dato|log_sa
+
+;-----------------------------------------------------------------------------
+;
+;	State: S2
+;
+qbus_dati_sa_s2:
+;					<<<<<<<<<<<<<<<<<<<<<<<<<
+;	Signal Step 2
+;
+;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
+;	|ERR| 0 | 0 | 1 | 0 | port type || 1 |WR |cmdringleng|resringleng|
+;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
+;
+	lds	yl, sa_s1+1		; Low byte is just what was previously written
+	ldi	yh, high(step2)
+	DATI
+	INTEXIT	log_dati|log_sa
+
+;
+;
+;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
+;	| ring based address low                                     |PI |
+;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
+;
+
+qbus_dato_sa_s2:
+	DATO
+	sts	sa_s2+0, yl
+	sts	sa_s2+1, yh
+	cbi	b_SA
+	INTEXIT	log_dato|log_sa
+	
+
+;-----------------------------------------------------------------------------
+;
+;	State: S3
+;
+;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
+;	|ERR| 0 | 1 | 0 | 0 | reserved  ||IE |   (int vector address)/4  |
+;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
+;
+qbus_dati_sa_s3:
+	lds	yl, sa_s1+0
+	ldi	yh, high(step3)
+	DATI
+	INTEXIT	log_dati|log_sa
+
+;
+;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
+;	|PP | ring based address high                                    |
+;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
+;
+
+qbus_dato_sa_s3:
+	DATO
+	sts	sa_s3+0, yl
+	sts	sa_s3+1, yh
+	cbi	b_SA
+	INTEXIT	log_dato|log_sa
+
+;-----------------------------------------------------------------------------
+;
+;	State: S4
+;
+;
+;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
+;	|ERR| 1 | 0 | 0 | 0 | reserved  ||  controller firmware version  |
+;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
+;
+qbus_dati_sa_s4:
+
+	lds	yl, sa_s1+0		;
+	lds	yl, 0x01
+	ldi	yh, high(step4)
+	DATI
+	INTEXIT	log_dati|log_sa
+;
+;
+;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
+;	|           reserved            ||   dma burst size      |LF |GO |
+;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
+;
+
+qbus_dato_sa_s4:
+	DATO
+	sts	sa_s4+0, yl
+	sts	sa_s4+1, yh
+	sbrc	yl, 0
+	cbi	b_SA
+	INTEXIT	log_dato|log_sa
+
+;--------------------------------------------------------------------------
+;
+;	Status WRAP
+;
+qbus_dati_sa_wr:
+	lds	yl, sa_wr+0
+	lds	yh, sa_wr+1
+	DATI
+	INTEXIT	log_dati|log_sa
+
+qbus_dato_sa_wr:
+	DATO
+	sts	sa_wr+0, yl
+	sts	sa_wr+1, yh
+	INTEXIT	log_dato|log_sa
+	
+;--------------------------------------------------------------------------
+;
+;	Status GO
+;
+qbus_dati_sa_go:
+	lds	yl, sa_go+0
+	lds	yh, sa_go+1
+	cbi	b_SA
+	DATI
+	INTEXIT	log_dati|log_sa
+
+qbus_dato_sa_go:
+	DATO
+	sts	sa_pu+0, yl
+	sts	sa_pu+1, yh
+	INTEXIT	log_dato|log_sa
+
+;--------------------------------------------------------------------------
+;
+;	Status invalid
+;
+qbus_dati_sa:
+	lds	yl, sa_na+0
+	lds	yh, sa_na+1
+	DATI
+	INTEXIT	log_dati|log_sa
 
 qbus_dato_sa:
 	DATO
-	sts	sar+0, yl
-	sts	sar+1, yh
+	sts	sa_na+0, yl
+	sts	sa_na+1, yh
 	INTEXIT	log_dato|log_sa
+	
+
 ;--------------------------------------------------------------------------
 ;
 ;	IACK
@@ -389,7 +632,7 @@ qbus_init_nolog:
 ;	The DCJ11 pauses for 69 cycles between asserting and de-asserting BINIT.
 ;	A microcycle is 4 clock cycles hence. Our CPU runs at 22Mhz, therefore
 ;	BINIT is asserted for approx. 12usec. There is enough time to call
-;	and execute rlv12_reset
+;	and execute the reset subroutine
 ;
 	sbic	i_INIT			; Skip if BINIT=High i.e. rising edge
 	call	mscp_reset

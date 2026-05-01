@@ -41,6 +41,10 @@
 ;
 ;	do_mscp destroys all registers!!!!
 ;
+;	r25:r24	address of message buffer packet link header, i.e. the
+;		MSCP message is preceeded by six bytes consisting of the 
+;		link header(2), message buffer length(2), credits/message 
+;		type(1) and connection id(1).
 ;
 do_mscp:
 	push	yl
@@ -48,11 +52,16 @@ do_mscp:
 	movw	yh:yl, r25:r24
 	ldd	zl, Y+cmd_opcd		; 016 (octal see rqdx3.das)
 	cpi	zl, 0x3F
+	mov	r16, zl
+	logtr	0x7D, r16, zero
 	brsh	do_default
 	clr	zh
-	subi	zl, low(-swmscp)
-	sbci	zh, high(-swmscp)
-	ijmp
+	subi	zl, low(-do_mscp_table)
+	sbci	zh, high(-do_mscp_table)
+	icall
+	pop	yh
+	pop	yl
+	ret
 
 ;--------------------------------------------------------------------------
 ;
@@ -64,18 +73,6 @@ do_default:
 	push	yl
 	push	yh
 	movw	yh:yl, r25:r24
-
-	logptr	zl, zh, r25, r24
-	ldi	r16, log_mscp
-	lds	r17, timestamp		; 
-	ldd	r18, Y+cmd_opcd
-	ldd	r19, Y+cmd_unit+0	; we do not expect units > 16
-	std	Z+0, r16
-	std	Z+1, r17
-	std	Z+2, r18
-	std	Z+3, r19
-
-
 	ori	r18, op_end
 	std	Y+rsp_opcd, r18
 	std	Y+rsp_flgs, zero
@@ -84,6 +81,7 @@ do_default:
 	std	Y+rsp_sts+0, r16
 	std	Y+rsp_sts+1, r17
 	rjmp	do_putpacket	
+
 ;
 ;	Return Success for Dummy Functions
 ;
@@ -101,6 +99,7 @@ do_flu:
 	ldi	r17, high(st_suc)
 	std	Y+rsp_sts+0, r16
 	std	Y+rsp_sts+1, r17
+
 do_putpacket:
 	ldi	r16, low(rs_min)
 	ldi	r17, high(rs_min)
@@ -116,7 +115,7 @@ do_putpacket:
 ;
 ;	Jump Table
 ;	
-swmscp:
+do_mscp_table:
 	rjmp	do_default		;
 	rjmp	do_abo			; Abort
 	rjmp	do_gcs			; Get Command Status
@@ -181,39 +180,3 @@ swmscp:
 	rjmp	do_default
 	rjmp	do_default
 	rjmp	do_default		; AVA?? Now Available
-
-
-
-
-
-;do_abo
-;do_gcs
-;do_gus
-;do_suc
-;do_ccd
-;do_ers:
-;do_cmp:
-;do_acc:
-;do_rd:
-;do_wr:
-
-do_scc:
-;do_avl:
-do_onl:
-	ret
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

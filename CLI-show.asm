@@ -72,6 +72,79 @@ cmd_showintirqs:
 	sts	datocount, zero
 	sts	iackcount, zero
 	sts	initcount, zero
+#ifdef mscpemulation
+	sbis	b_MSCP				; Skip if MSCP Emulation
+	rjmp	cmd_showintcsr
+
+;	lds	r16, ipr+0
+;	lds	r17, ipr+1
+;	sts	pprint+0, r16
+;	sts	pprint+1, r17
+;	lds	r16, sa_go+0
+;	lds	r17, sa_go+1
+;	sts	pprint+2, r16
+;	sts	pprint+3, r17
+;	lds	r16, mscpstatus
+;	sts	pprint+4, r16
+;	call	print
+;	.db	TAB, "IPR(octal) ", 0xA0, CR, LF, TAB, "SAR(octal) ", 0xA2, CR, LF
+;	.db	TAB, "MSCPstatus ", 0x84, CR, LF, 0
+
+	lds	r16, ipr+0
+	lds	r17, ipr+1
+	sts	pprint+0, r16
+	sts	pprint+1, r17
+	lds	r16, sa_s1+0
+	lds	r17, sa_s1+1
+	sts	pprint+2, r16
+	sts	pprint+3, r17
+	lds	r16, sa_s2+0
+	lds	r17, sa_s2+1
+	sts	pprint+4, r16
+	sts	pprint+5, r17
+	lds	r16, sa_s3+0
+	lds	r17, sa_s3+1
+	sts	pprint+6, r16
+	sts	pprint+7, r17
+	lds	r16, sa_s4+0
+	lds	r17, sa_s4+1
+	sts	pprint+8, r16
+	sts	pprint+9, r17
+
+	lds	zl, mscpstatus
+	andi	zl, 0x1C
+	clr	zh
+	subi	zl, low(-mscp_status_names)
+	sbci	zh, high(-mscp_status_names)
+	ld	r16, Z+
+	sts	pprint+12, r16
+	ld	r16, Z+
+	sts	pprint+13, r16
+	ld	r16, Z+
+	sts	pprint+14, r16
+	ld	r16, Z+
+	sts	pprint+15, r16
+
+
+	call	print
+	.db	TAB, "MSCP Controller IP, SA, Steps in octal", CR, LF, SPACE
+	.db	TAB, "IP         ", 0xA0, CR, LF, SPACE
+	.db	TAB, "MSCPstatus ", 0x9C, 0x9D, 0x9E, 0x9F, CR, LF
+	.db	TAB, "SA S1      ", 0xA2, CR, LF, SPACE
+	.db	TAB, "SA S2      ", 0xA4, CR, LF, SPACE
+	.db	TAB, "SA S3      ", 0xA6, CR, LF, SPACE
+	.db	TAB, "SA S4      ", 0xA8, CR, LF, 0
+
+	lds	r16, sawcount+0
+	lds	r17, sawcount+1
+	sts	pprint+0, r16
+	sts	pprint+1, r17
+	call	print
+	.db	TAB, "SAW Count  ", 0xC0, CR, LF, 0
+	ret
+#endif
+
+cmd_showintcsr:
 	lds	r16, CSRL
 	lds	r17, CSRH
 	sts	pprint+0, r16
@@ -171,6 +244,14 @@ cmd_showintports:
 	sts	pprint+0, r16
 	call	print
 	.db	TAB, "IRQ ...........:", 0x90, CR, LF, 0, 0
+#ifdef	mscpemulation
+	ldi	r16, '0'
+	sbic	b_SA
+	ldi	r16, '1'
+	sts	pprint+0, r16
+	call	print
+	.db	TAB, "SA ............:", 0x90, CR, LF, 0, 0
+#endif
 	ret
 ;--------------------------------------------------------------------------
 ;
@@ -236,7 +317,10 @@ cmd_showunitpart:
 	push	r17
 	rcall	cmd_showdriveinfo
 	pop	r17
+	ldd	r16, Y+ucb_status
+	sbrs	r16, ucb__onl
 	rjmp	cmd_showunitnext
+	rjmp	cmd_showunitnextonl
 ;
 ;
 ;
@@ -278,9 +362,15 @@ cmd_showunitfile030:
 	push	r17
 	rcall	cmd_showdriveinfo
 	pop	r17
+	ldd	r16, Y+ucb_status
+	sbrs	r16, ucb__onl
+	rjmp	cmd_showunitnext
 ;
 ;
 ;
+cmd_showunitnextonl:
+	call	print
+	.db	"  Unit is ONLINE ", CR, LF, 0
 cmd_showunitnext:
 	adiw	yh:yl, ucb_size
 	inc	r17
@@ -467,7 +557,7 @@ cmd_showdriveinfo010:
 	.db	" sectors/track, 0x", 0x85, " tracks/cylinder and 0x", 0x87, 0x86
 	.db	" cylinders  ", CR, LF
 	.db	"  Drive type/flags and name 0x", 0x88, "/0x", 0x89, "  ", 0x9a
-	.db	0x9b, 0x9c, 0x9d, CR, LF, CR, LF, NULL
+	.db	0x9b, 0x9c, 0x9d, CR, LF, NULL
 
 cmd_showdriveinfo090:
 	pop	r16
@@ -851,4 +941,169 @@ showfree090:
 	pop	r24
 	ret
 	
+;--------------------------------------------------------------------------
+;
+;	Show Rings
+;
+
+;recordstart	ring
+;record		ring, base, 4		; 000
+;record		ring, flag, 4		; 004
+;record		ring, size, 2		; 010
+;record		ring, mask, 2		; 012
+;record		ring, index, 2		; 014
+;recordend	ring, sz
+
+cmd_showrings:
+
+	lds	r16, cmd+0
+	sts	pprint+0, r16
+	lds	r16, cmd+1
+	sts	pprint+1, r16
+	lds	r16, cmd+2
+	sts	pprint+2, r16
+	lds	r16, cmd+3
+	sts	pprint+3, r16
+	lds	r16, cmd+4
+	sts	pprint+4, r16
+	lds	r16, cmd+5
+	sts	pprint+5, r16
+	lds	r16, cmd+6
+	sts	pprint+6, r16
+	lds	r16, cmd+7
+	sts	pprint+7, r16
+	lds	r16, cmd+8
+	sts	pprint+8, r16
+	lds	r16, cmd+9
+	sts	pprint+9, r16
+	lds	r16, cmd+10
+	sts	pprint+10, r16
+	lds	r16, cmd+11
+	sts	pprint+11, r16
+	lds	r16, cmd+12
+	sts	pprint+12, r16
+	lds	r16, cmd+13
+	sts	pprint+13, r16
+
+	call	print
+	.db	CR, LF, "Command Ring", CR, LF
+	.db	TAB, "Base Address ", 0xB0, CR, LF, SPACE
+	.db	TAB, "Flag Address ", 0xB4, CR, LF, SPACE
+	.db	TAB, "Size         ", 0xC8, CR, LF, SPACE
+	.db	TAB, "Mask         0x", 0x8A, 0x8B, CR, LF
+	.db	TAB, "Index        0x", 0x8C, 0x8D, CR, LF, NULL, NULL
+
+
+	lds	r16, rsp+0
+	sts	pprint+0, r16
+	lds	r16, rsp+1
+	sts	pprint+1, r16
+	lds	r16, rsp+2
+	sts	pprint+2, r16
+	lds	r16, rsp+3
+	sts	pprint+3, r16
+	lds	r16, rsp+4
+	sts	pprint+4, r16
+	lds	r16, rsp+5
+	sts	pprint+5, r16
+	lds	r16, rsp+6
+	sts	pprint+6, r16
+	lds	r16, rsp+7
+	sts	pprint+7, r16
+	lds	r16, rsp+8
+	sts	pprint+8, r16
+	lds	r16, rsp+9
+	sts	pprint+9, r16
+	lds	r16, rsp+10
+	sts	pprint+10, r16
+	lds	r16, rsp+11
+	sts	pprint+11, r16
+	lds	r16, rsp+12
+	sts	pprint+12, r16
+	lds	r16, rsp+13
+	sts	pprint+13, r16
+
+	call	print
+	.db	"Response Ring ", CR, LF
+	.db	TAB, "Base Address ", 0xB0, CR, LF, SPACE
+	.db	TAB, "Flag Address ", 0xB4, CR, LF, SPACE
+	.db	TAB, "Size         ", 0xC8, CR, LF, SPACE
+	.db	TAB, "Mask         0x", 0x8A, 0x8B, CR, LF
+	.db	TAB, "Index        0x", 0x8C, 0x8D, CR, LF, NULL, NULL
+	ret
+
+;--------------------------------------------------------------------------
+;
+;	Show Message
+;
+cmd_showmessage:
+	lds	r16, dmaflag+0
+	cpi	r16, 0
+	brne	cmd_showmessage010
+	inc	r16
+	sts	dmaflag+0, r16
+	lds	r22, dmapdp11+0
+	lds	r23, dmapdp11+1
+	lds	r24, dmapdp11+2
+	andi	r22, 0xFE
+	andi	r24, 0x3F
+	sts	pprint+0, r22
+	sts	pprint+1, r23
+	sts	pprint+2, r24
+	ori	r22, 0x01		; Read
+	call	print
+	.db	CR, LF, "Set Message Address   ", 0xb0, 0
+	dmaaddr r22, r23, r24
+cmd_showmessage010:
+	dmaread	r24, r25
+	sts	pprint+0, r24
+	sts	pprint+1, r25
+	call	print
+	.db	CR, LF
+	;-------TAB, "                 "
+	.db	TAB, "Message Length..:", 0xa0, CR, LF, 0
+	dmaread	r24, r25
+	mov	r23, r24
+	andi	r23, 0x0F
+	swap	r24
+	andi	r24, 0x0F
+	sts	pprint+0, r23
+	sts	pprint+1, r24
+	sts	pprint+2, r25
+	call	print
+	;-------TAB, "                 "
+	.db	TAB, "Credits.........:", 0xf0, CR, LF, SPACE
+	.db	TAB, "Message Type....:", 0xf1, CR, LF, SPACE
+	.db	TAB, "Connection ID...:", 0x82, CR, LF, 0
+	dmaread	r24, r25
+	sts	pprint+0, r24
+	sts	pprint+1, r25
+	dmaread	r24, r25
+	sts	pprint+2, r24
+	sts	pprint+3, r25
+	call	print
+	;-------TAB, "                 "
+	.db	TAB, "Refrence Number.:", 0x83, 0x82, 0x81, 0x80, CR, LF, 0, 0
+	dmaread	r24, r25
+	sts	pprint+0, r24
+	sts	pprint+1, r25
+	call	print
+	;-------TAB, "                 "
+	.db	TAB, "Unit Number.....:", 0xa0, CR, LF, 0
+	dmaread	r24, r25
+	sts	pprint+0, r24
+	sts	pprint+1, r25
+	call	print
+	;-------TAB, "                 "
+	.db	TAB, "reserved........:", 0xa0, CR, LF, 0
+	dmaread	r24, r25
+	sts	pprint+0, r24
+	sts	pprint+1, r25
+	call	print
+	;-------TAB, "                 "
+	.db	TAB, "Opcode..........:", 0xf0, CR, LF, 0
+	clc
+	ret
+
+
 

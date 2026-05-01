@@ -271,4 +271,13 @@
 #define	s4go		1
 #define	s4go_bp		0
 
+#define mscp_init	0*4
+#define mscp_s1		1*4
+#define mscp_s2		2*4
+#define mscp_s3		3*4
+#define mscp_s4		4*4
+#define mscp_wr		5*4
+#define mscp_go		6*4
+#define mscp_fatal	7*4
+
 

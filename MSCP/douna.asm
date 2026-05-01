@@ -44,9 +44,9 @@ do_una:
 	lds	r25, unitbase
 	add	r24, r25
 	push	r24			; Unit
-	ldi	r24, low(pkts)
-	ldi	r25, high(pkts)
-	call	deqf_head
+;	ldi	r24, low(pkts)
+;	ldi	r25, high(pkts)
+; 	call	deqf_head
 	movw	zh:zl, r25:r24
 	pop	r24			; Unit
 	std	Z+una_crf+0, zero

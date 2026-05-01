@@ -38,6 +38,8 @@
 ;	7	ROM Configuration
 ;	
 	.macro	dmaaddr
+	sbi	b_ABO
+	cbi	b_ABO			; Abort any pending DMA
 	#if cpldif==40
 	cli				;
 	cbi	b_RS0			;;; 1

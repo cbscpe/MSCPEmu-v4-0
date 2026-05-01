@@ -16,6 +16,9 @@
 .include "diskemu.inc"			; Global Definitions
 .include "control-blocks.inc"		; Control Blocks
 .include "error.inc"			; Error code definitions
+#ifdef mscpemulation
+.include "MSCP/_mscp.inc"
+#endif
 ;--------------------------------------------------------------------------
 ;
 ;	Data Segment
@@ -44,11 +47,12 @@
 	.org	v_QBUS			; External Level 1 Q-Bus Interrupt
 	jmp	qbus_			; Module qbus-v2-0.asm
 	
-	.org	v_GO			; Software Interrupt Controller GO
 	#ifdef	rlv12emulation
+	.org	v_GO			; Software Interrupt Controller GO
 	jmp	go_			; Module rlv12-v2-0.asm
 	#endif
 	#ifdef	mscpemulation
+	.org	v_IP			; Software Interrupt Controller IP, SA
 	jmp	poll_
 	#endif
 
@@ -362,12 +366,26 @@ pitwait:
 ;	Q-Bus Service Routine has finished and an eventually running Level 0  
 ;	service routine that has been interrupted by the Level 1 interrupt.   
 ;
+#ifdef mscpemulation
+	sbi	d_SA			; SA Write Soft Interrupt
+	sbi	b_SA
+	sbi	f_SA			; SA must be in the same port as IP
+	ldi	r18, PORT_ISC_LEVEL_gc	; Level Sense Interrupt
+	sts	c_SA, r18		; Pin Control
+
+	sbi	d_IP			; IP Soft Interrupt
+	sbi	b_IP			; Set Level = High 
+	sbi	f_IP			; Acknowledge any pending interrupt
+	ldi	r18, PORT_ISC_LEVEL_gc	; Level Sense Interrupt
+	sts	c_IP, r18		; Pin Control
+#endif
+#ifdef rlv12emulation
 	sbi	d_GO			; GO Soft Interrupt
 	sbi	b_GO			; Set Level = High 
 	sbi	f_GO			; Acknowledge any pending interrupt
 	ldi	r18, PORT_ISC_LEVEL_gc	; Level Sense Interrupt
-;	ldi	r18, PORT_ISC_FALLING_gc
 	sts	c_GO, r18		; Pin Control
+#endif
 ;
 ;	Q-Bus Interrupts - Level 1 Interrupt
 ;
@@ -613,7 +631,7 @@ pitwait:
 ;	Crash
 ;
 ;crash:	rjmp	start
-.include	"crash.asm"
+.include "crash.asm"
 ;=============================================================================
 ;
 ;	Serial In/Out Support routines
@@ -665,7 +683,12 @@ serin100:				; Else proceed with polled IO
 main:
 	call	print
 	.db	CR, LF, "Hallo RTOS on Universal Disk Emulator ", CR, LF, 0, 0
+#ifdef mscpemulation
+	call	mscp_reset
+#endif
+#ifdef rlv12emulation
 	call	rlv12_reset
+#endif
 ;
 ;	Card Detect Job
 ;
@@ -748,7 +771,7 @@ main:
 #endif
 #ifdef mscpemulation
 ;
-;	Pool
+;	Poll
 ;
 	ldi	zl, low(jcb2)
 	ldi	zh, high(jcb2)
@@ -774,12 +797,12 @@ main:
 	movw	r25:r24, zh:zl
 	call	create
 ;
-;	Seek Job
+;	Init Job
 ;
 	ldi	zl, low(jcb3)
 	ldi	zh, high(jcb3)
-	ldi	xl, low(scanjob)	; start address requires word address
-	ldi	xh, high(scanjob)
+	ldi	xl, low(initjob)	; start address requires word address
+	ldi	xh, high(initjob)
 	ldi	r24, low(usersp3)	
 	ldi	r25, high(usersp3)	
 	std	Z+jcb_stack+0, r24
@@ -795,7 +818,7 @@ main:
 	std	Z+jcb_flags, r18
 
 	call	print
-	.db	"Create Scan Job", CR, LF, 0
+	.db	"Create Init Job", CR, LF, 0
 	rcall	prtcreate
 	movw	r25:r24, zh:zl
 	call	create
@@ -933,7 +956,7 @@ prtcreate:
 ;	
 ;
 .include	"seekjob.asm"		; Our seek job
-.include	"scanjob.asm"		; MSCP scan job
+;.include	"scanjob.asm"		; MSCP scan job
 .include	"sdcardjob.asm"		; SD-Card Insert/Remove and LED routine
 .include	"SD-Card-Print-v1-0.asm"; Print SD-Card messages
 .include	"SD-Card-v1-0.asm"	; Main SD-Card routines
@@ -984,12 +1007,9 @@ prtcreate:
 
 .include	"readcmdline.asm"	; Read Command Line
 .include	"readinit.asm"		; Read Init File
-.include	"rlv12-v2-0.asm"	; RLV12 Disk Emulation
 #ifdef rlv12emulation
+.include	"rlv12-v2-0.asm"	; RLV12 Disk Emulation
 .include	"qbus-v2-0.asm"		; RLV12 Q-Bus Interface
-#endif
-#ifdef mscpemulation
-.include	"MSCP/qbus-v2-0.asm"	; RLV12 Q-Bus Interface
 #endif
 .include	"readonlydata.asm"	; Read Only Memory mapped to data space
 
@@ -999,15 +1019,9 @@ prtcreate:
 ;	but not actually used for the moment
 ;
 #ifdef mscpemulation
-		.dseg
-.include	"MSCP/_ccb.inc"
-.include	"MSCP/_mscp.inc"
-.include	"MSCP/_pcb.inc"
-.include	"MSCP/_pkt.inc"
-.include	"MSCP/_data.inc"
-		.cseg
+.include	"MSCP/qbus-v2-0.asm"	; RLV12 Q-Bus Interface
 .include	"MSCP/clear.asm"
-.include	"MSCP/poll-v1-0.asm"
+.include	"MSCP/poll-v2-0.asm"
 .include	"MSCP/init.asm"
 .include	"MSCP/doabo.asm"
 .include	"MSCP/doavl.asm"
@@ -1016,6 +1030,8 @@ prtcreate:
 .include	"MSCP/dosuc.asm"
 .include	"MSCP/dogcs.asm"
 .include	"MSCP/doplf.asm"
+.include	"MSCP/doscc.asm"	; work in progress
+.include	"MSCP/doonl.asm"	; work in progress
 .include	"MSCP/dorw.asm"
 .include	"MSCP/douna.asm"
 .include	"MSCP/mscp.asm"
