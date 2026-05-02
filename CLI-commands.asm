@@ -164,6 +164,60 @@ loadiotest010:
 	clc
 	ret
 	
+;--------------------------------------------------------------------------
+;
+;	load	- load duboot
+;
+loadduboot:
+	ldi	r24, low(dmalock)
+	ldi	r25, high(dmalock)
+	call	acquire
+	lds	r22, nbr+0
+	lds	r23, nbr+1
+	tst	r23
+	brmi	loadduboot005
+	call	print
+	.db	CR, LF
+	.db	"Warning!! Load address outside working range 0100000 to 0157776", CR, LF, 0
+loadduboot005:
+	lds	r24, nbr+2
+	andi	r22, 0xFE		; We need an even 22-bit address for DMA
+	andi	r24, 0x3F		; PDP-11 Address has only 22 bits
+	sts	pprint+0, r22
+	sts	pprint+1, r23
+	sts	pprint+2, r24
+	dmaaddr r22, r23, r24
+	subi	r22, byte1(-4)
+	sbci	r23, byte2(-4)
+	sbci	r24, byte3(-4)
+	sts	pprint+5, r22
+	sts	pprint+6, r23
+;	call	print
+;	.db	CR, LF
+;	.db	"LOAD Address Test: ", 0xb0, CR, LF, 0, 0
+	ldi	r17, dubootsize
+	sts	pprint+3, r17
+	sts	pprint+4, zero
+	call	print
+	.db	CR, LF
+	.db	"Writing ", 0xc3, " Words of DUBOOT to ", 0xb0, ", use ", 0xa5, "g " ,CR, LF, 0
+	ldi	xl, low(duboot)
+	ldi	xh, high(duboot)
+loadduboot010:
+	ld	r24, X+
+	ld	r25, X+
+;	sts	pprint+0, r24
+;	sts	pprint+1, r25
+;	call	print
+;	.db	CR, LF, "Write: ", 0xa0, CR, LF, 0
+	dmawrt r24, r25
+	dec	r17
+	brne	loadduboot010
+	ldi	r24, low(dmalock)
+	ldi	r25, high(dmalock)
+	call	release
+	clc
+	ret
 
 ;--------------------------------------------------------------------------
 ;
