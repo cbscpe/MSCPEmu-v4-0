@@ -43,3 +43,8 @@ verify :
 	
 readflash :
 	avrdude -p AVR128DB48 -c atmelice_updi -U flash:r:main-v2-1.hex:i
+
+
+duboot :
+	macro11 -l DUBOOT.LST -o DUBOOT.OBJ DUBOOT.MAC
+	perl obj2bin.pl --raw --rt11 --outfile=DUBOOT.BIN DUBOOT.OBJ
