@@ -106,42 +106,54 @@ poll100:
 poll120:
 	movw	yh:yl, r25:r24
 
-	ldd	r16, Y+pkt_type
-	ldd	r17, Y+pkt_connid
-;	logtr	0x79, r16, r17
+	ldd	r16, Y+pkt_size+0
+	ldd	r17, Y+pkt_size+1
+	ldd	r18, Y+pkt_type
+	ldd	r19, Y+pkt_connid
+	ldd	r20, Y+cmd_unit+0
+	ldd	r21, Y+cmd_unit+1
+	ldd	r22, Y+cmd_opcd
 
-	andi	r16, 0xF0		; Mask credit fields to get message type
+	mov	xl, r22
+	andi	xl, 0x3F
+	clr	xh
+	subi	xl, low(-op_stats)
+	sbci	xh, high(-op_stats)
+	ld	r23, X
+	inc	r23
+	breq	poll120a		; 255=overflow
+	st	X, r23
+poll120a:
+	logtr	0x79, r16, r17
+	logtr	0x7F, r18, r19
+	logtr	0x7F, r20, r22		; Unit / Opcode
+	andi	r18, 0xF0		; Mask credit fields to get message type
 	brne	poll140			; This is not a sequential message -> fatal
-
-	tst	r17
+	tst	r19
 	brne	poll130
 
-	ldd	r16, Y+cmd_opcd	; Get Opcode
-
-	logtr	0x79, r16, r17
-	
-	cpi	r16, op_onl
+	cpi	r22, op_onl
 	brne	poll121
 	call	do_onl
 	rjmp	poll100
 poll121:
-	cpi	r16, op_scc
+	cpi	r22, op_scc
 	brne	poll122
 	call	do_scc
 	rjmp	poll100
 poll122:
-	cpi	r16, op_rd
+	cpi	r22, op_rd
 	brne	poll123
 	call	do_rd
 	rjmp	poll100
 poll123:
-	cpi	r16, op_wr
+	cpi	r22, op_wr
 	brne	poll124
 	call	do_wr
 	rjmp	poll100
 poll124:
-	ori	r16, op_end
-	std	Y+rsp_opcd, r16	; Set End Flag
+	ori	r22, op_end
+	std	Y+rsp_opcd, r22	; Set End Flag
 	rcall	put_packet
 	rjmp	poll100
 	
@@ -228,42 +240,48 @@ get_packet100:
 	lds	r16, descriptor+0
 	lds	r17, descriptor+1
 	lds	r18, descriptor+2
-;-22	lds	r19, descriptor+3
+	lds	r19, descriptor+3
 	subi	r16, byte1(4)
 	sbci	r17, byte2(4)
 	sbci	r18, byte3(4)
-;-22	sbci	r19, byte4(4)
+	sbci	r19, byte4(4)
 	ori	r16, 1
 	logtr	0x76, r16, r17		;-----> logging
 	dmaaddr r16, r17, r18
 
 	ldi	xl, low(cmd_link)
-	ldi	xh, high(cmd_link)	
+	ldi	xh, high(cmd_link)
 	movw	r21:r20, xh:xl
-	adiw	xh:xl, 2		; skip link header
+	adiw	xh:xl, 2	
 
-	dmaread r24, r25		; Get Packet Size
+	dmaread r16, r17		; Get Packet Size
 	brcc	get_packet101
 	rjmp	get_packet120
 get_packet101:
-	st	X+, r24			; Save Packet Size in cmd_buffer
-	st	X+, r25
-	logtr	0x77, r24, r25		;-----> logging
+	st	X+, r16			; Save Packet Size in cmd_buffer
+	st	X+, r17
+
+	logtr	0x77, r16, r17		;-----> logging
+
 	dmaread r16, r17		; Get Connection ID and Packet Type
 	brcc	get_packet102
 	rjmp	get_packet120
 get_packet102:
 	st	X+, r16			; Save in cmd_buffer
 	st	X+, r17
+
 	logtr	0x77, r16, r17		;-----> logging
+
+	ldi	r24, low(040)		; RQDX3 always reads 040 (octal) words
+	ldi	r25, high(040)
 get_packet105:
 	dmaread r16, r17
 	brcs	get_packet120
 
-	logtr	0x77, r16, r17		;-----> logging
+;	logtr	0x77, r16, r17		;-----> logging
 	st	X+, r16
 	st	X+, r17
-	sbiw	r25:r24, 2		; two bytes done
+	sbiw	r25:r24, 1		; one word done
 	brne	get_packet105
 	ldi	r24, low(cmd)
 	ldi	r25, high(cmd)
@@ -347,11 +365,11 @@ put_packet140:
 	lds	r16, descriptor+0
 	lds	r17, descriptor+1
 	lds	r18, descriptor+2
-;-22	lds	r19, descriptor+3
+	lds	r19, descriptor+3
 	subi	r16, byte1(4)
 	sbci	r17, byte2(4)
 	sbci	r18, byte3(4)
-;-22	sbci	r19, byte4(4)
+	sbci	r19, byte4(4)
 
 	logtr	0x7A, r16, r17
 
@@ -369,7 +387,7 @@ put_packet140:
 put_packet145:
 	ld	r16, X+
 	ld	r17, X+
-	logtr	0x7C, r16, r17
+;	logtr	0x7C, r16, r17
 
 	dmawrt	r16, r17
 	brcs	put_packet160
@@ -427,19 +445,19 @@ get_descriptor:
 	ldd	r16, Y+ring_base+0	; get address to poll using the ring
 	ldd	r17, Y+ring_base+1	; base address and the current index
 	ldd	r18, Y+ring_base+2
-;-22	ldd	r19, Y+ring_base+3	; The Q-Bus has only 22 address bits
+	ldd	r19, Y+ring_base+3	; The Q-Bus has only 22 address bits
 	ldd	r20, Y+ring_index+0
 	ldd	r21, Y+ring_index+1
 
 	add	r16, r20
 	adc	r17, r21
 	adc	r18, zero
-;-22	adc	r19, zero
+	adc	r19, zero
 
 	sts	descr_addr+0, r16	; save descriptor address in case we need
 	sts	descr_addr+1, r17	; it later
 	sts	descr_addr+2, r18
-;-22	sts	descr_addr+3, r19
+	sts	descr_addr+3, r19
 
 	ori	r16, 1			; DMA Read
 	logtr	0x72, r16, r17
@@ -485,11 +503,11 @@ put_descriptor:
 	lds	r16, descr_addr+0
 	lds	r17, descr_addr+1
 	lds	r18, descr_addr+2
-;-22	lds	r19, descr_addr+3
+	lds	r19, descr_addr+3
 	subi	r16, byte1(-2)
 	sbci	r17, byte2(-2)
 	sbci	r18, byte3(-2)
-;-22	sbci	r19, byte4(-2)		; We only need to update the second word
+	sbci	r19, byte4(-2)		; We only need to update the second word
 
 	lds	r22, descriptor+2
 	lds	r23, descriptor+3
@@ -517,7 +535,7 @@ put_descriptor060:
 	ldd	r16, Y+ring_base+0	; get address of ring
 	ldd	r17, Y+ring_base+1
 	ldd	r18, Y+ring_base+2
-;-22	ldd	r19, Y+ring_base+3
+	ldd	r19, Y+ring_base+3
 
 	ldd	r24, Y+ring_index+0	; create index of previous 
 	ldd	r25, Y+ring_index+1	; descriptor to poll
@@ -531,7 +549,7 @@ put_descriptor060:
 	add	r16, r24		; calculate the host memory address of
 	adc	r17, r25		; the descriptor
 	adc	r18, zero
-;-22	adc	r19, zero
+	adc	r19, zero
 
 	ori	r16, 1			; DMA read
 
@@ -541,10 +559,10 @@ put_descriptor060:
 	dmaread	r16, r17		; read the 2nd word of the descrption
 	brcc	put_descriptor070
 	rjmp	put_descriptor120
+put_descriptor070:
 
 	logtr	0x78, r16, r17		;-----> high word of previous descriptor
 
-put_descriptor070:
 	tst	r17			; do we own the previous entry
 	brmi	put_descriptor100
 	rjmp	put_descriptor110	; no
@@ -567,26 +585,25 @@ put_descriptor100:
 ;	the flag we just need to write a value one to the flag location.
 
 
-	ldd	r16, Y+ring_flag+0	; The ring transition requries to interrupt
+	ldd	r16, Y+ring_flag+0	; The ring transition requires to interrupt
 	ldd	r17, Y+ring_flag+1	; the host, each ring keeps the memory 
 	ldd	r18, Y+ring_flag+2	; address of the flag word which must be set
-;-22	ldd	r19, Y+ring_flag+3	; to a non-zero value before we activate the
-	ldi	r20, low(1)		; interrupt
-	ldi	r21, high(1)
+	ldd	r19, Y+ring_flag+3	; to a non-zero value before we activate the
+	ldi	r24, low(1)		; interrupt
+	ldi	r25, high(1)
 
 	logtr	0x7E, r16, r17		
 
 	dmaaddr	r16, r17, r18
-	dmawrt	r20, r21
+	dmawrt	r24, r25
 	brcs	put_descriptor120
-
 	lds	r24, vector+0
 	lds	r25, vector+1
 	sbiw	r25:r24, 0		; is a vector defined
 	breq	put_descriptor110	; no
 	sbi	b_IRQ			; set interrupt
 put_descriptor110:
-	ldd	r24, Y+ring_index+0	; point to the nect slot
+	ldd	r24, Y+ring_index+0	; point to the next slot
 	ldd	r25, Y+ring_index+1
 	ldd	r18, Y+ring_mask+0
 	ldd	r19, Y+ring_mask+1
@@ -595,7 +612,9 @@ put_descriptor110:
 	and	r25, r19
 	std	Y+ring_index+0, r24
 	std	Y+ring_index+1, r25
+
 	logtr	0x75, r24, r25		;----> New descriptor index
+
 	pop	yh
 	pop	yl
 	ret
