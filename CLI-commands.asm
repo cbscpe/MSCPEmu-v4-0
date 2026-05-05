@@ -178,7 +178,7 @@ loadduboot:
 	brmi	loadduboot005
 	call	print
 	.db	CR, LF
-	.db	"Warning!! Load address outside working range 0100000 to 0157776", CR, LF, 0
+	.db	"Warning!! Load address outside working range 0100000 to 0157700", CR, LF, 0
 loadduboot005:
 	lds	r24, nbr+2
 	andi	r22, 0xFE		; We need an even 22-bit address for DMA
@@ -192,9 +192,6 @@ loadduboot005:
 	sbci	r24, byte3(-4)
 	sts	pprint+5, r22
 	sts	pprint+6, r23
-;	call	print
-;	.db	CR, LF
-;	.db	"LOAD Address Test: ", 0xb0, CR, LF, 0, 0
 	ldi	r17, dubootsize
 	sts	pprint+3, r17
 	sts	pprint+4, zero
@@ -206,10 +203,6 @@ loadduboot005:
 loadduboot010:
 	ld	r24, X+
 	ld	r25, X+
-;	sts	pprint+0, r24
-;	sts	pprint+1, r25
-;	call	print
-;	.db	CR, LF, "Write: ", 0xa0, CR, LF, 0
 	dmawrt r24, r25
 	dec	r17
 	brne	loadduboot010

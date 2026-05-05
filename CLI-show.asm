@@ -141,6 +141,29 @@ cmd_showintirqs:
 	sts	pprint+1, r17
 	call	print
 	.db	TAB, "SAW Count  ", 0xC0, CR, LF, 0
+
+	ldi	r16, 0x40		; Print OP STATS Table
+	ldi	xl, low(mscp_names)
+	ldi	xh, high(mscp_names)
+	ldi	zl, low(op_stats)
+	ldi	zh, high(op_stats)
+cmd_showintstats010:
+	ld	r20, X+
+	sts	pprint+0, r20
+	ld	r20, X+
+	sts	pprint+1, r20
+	ld	r20, X+
+	sts	pprint+2, r20
+	ld	r20, X+
+	sts	pprint+3, r20
+	ld	r20, Z
+	st	Z+, zero
+	sts	pprint+4, r20
+	sts	pprint+5, zero
+	call	print
+	.db	TAB, 0x90, 0x91, 0x92, 0x93, ": ", 0xc4, CR, LF, 0, 0
+	dec	r16
+	brne	cmd_showintstats010
 	ret
 #endif
 
