@@ -318,7 +318,7 @@
 	st	Z+, @1			;;;  2
 	st	Z+, @2			;;;  2
 	sbrc	zh, log_overflow	;;;  2/1
-	subi	zh, high(log_size)	;;;  0/1
+	ldi	zh, high(log_buffer+log_begin)
 	sts	log_pointer+0, zl	;;;  2
 	sts	log_pointer+1, zh	;;;  2
 	sei				;;;  1	-> 23 cycles ~1usec
