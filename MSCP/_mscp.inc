@@ -280,4 +280,8 @@
 #define mscp_go		6*4
 #define mscp_fatal	7*4
 
-
+/*
+ *	device information
+ */
+#define rd_type		( 2<<8 ) + 6
+#define rd_media	0x25644033
