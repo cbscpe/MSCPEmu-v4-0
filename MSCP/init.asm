@@ -107,8 +107,22 @@ init_s1:
 ;
 ;	Process S1 responses
 ;
-init110:
-;
+	lds	r16, unittable+ucb_size*0+ucb_status+0		
+	cbr	r16, (1<<ucb__onl) | (1<<ucb__ofl)		
+	sts	unittable+ucb_size*0+ucb_status+0, r16		
+
+	lds	r16, unittable+ucb_size*1+ucb_status+0
+	cbr	r16, (1<<ucb__onl) | (1<<ucb__ofl)
+	sts	unittable+ucb_size*1+ucb_status+0, r16
+
+	lds	r16, unittable+ucb_size*2+ucb_status+0
+	cbr	r16, (1<<ucb__onl) | (1<<ucb__ofl)
+	sts	unittable+ucb_size*2+ucb_status+0, r16
+
+	lds	r16, unittable+ucb_size*3+ucb_status+0
+	cbr	r16, (1<<ucb__onl) | (1<<ucb__ofl)
+	sts	unittable+ucb_size*3+ucb_status+0, r16
+
 ;	Calculate vector address
 ;
 	mov	r16, r20		; Get low-byte of S1 response
@@ -126,28 +140,48 @@ init110:
 	mov	r17, r21		; Get ring lengths
 	lsl	r17			; 
 	swap	r17
-	andi	r17, 7			; isolate command ring length
 	ldi	r16, 1			; Prepare to make it a power of 2
-	rjmp	init130			;
+	andi	r17, 7			; isolate command ring length
+	breq	init130
 init120:
 	lsl	r16			; r16 = r16*2
-init130:
 	dec	r17			; already reached the end
-	brpl	init120			; possible values are 1,2,4,8,16,32,64,128
+	brne	init120			; possible values are 1,2,4,8,16,32,64,128
+init130:
 	clr	r17			; Make it a 16-bit word value
 	sts	cmd+ring_size+0, r16	; save it
 	sts	cmd+ring_size+1, r17	; save it
 
 	logtr	0x10, r16, r17
 	
+;
+;	ahhhhhh
+;
+;	If the ring size is 0, then the number of ring entries is 2**0=1, each
+;	ring entry has 4 bytes, therefore the size of the ring is 4 bytes
+;	MASK is 0xFFF4
+;
+;	If the ring size is 1, then the number of ring entries is 2**1=4, each
+;	ring entry has 4 bytes, therefore the size of the ring is 8 bytes
+;	MASK is 0FFF8
+;
+;	If the ring size is 2, then the number of ring entries is 2**2=4, each
+;	ring entry has 4 bytes, therefore the size of the ring is 16 bytes
+;	MASK is 0xFFF0
+;
+;	If the ring size is 3, then the number of ring entries is 2**3=8, each
+;	ring entry has 4 byutes, therefore the size of the ring is 32 bytes
+;	MASK is 0xFFE0
+	
 	subi	r16, low(1)		; convert size to overflow mask
 	sbci	r17, high(1)		; possible values are 0,1,3,7,15,31,63,127
-	lsl	r16			; multiply by four 
+	lsl	r16			; multiply by four so we can mask out valid
+	rol	r17			; indices which must be multiple of four
+	lsl	r16			; the mask assures a circular buffer index
 	rol	r17			;
-	lsl	r16			;
-	rol	r17			;
-	sts	cmd+ring_mask+0, r16
-	sts	cmd+ring_mask+1, r17
+	sts	cmd+ring_mask+0, r16	; RQDX3 code saves the complement as the DCT11
+	sts	cmd+ring_mask+1, r17	; has a BIC instruction, but the AVR has an AND
+					; instruction
 
 	logtr	0x11, r16, r17
 
@@ -155,14 +189,14 @@ init130:
 ;	Calculate the response ring size and mask
 ;
 	mov	r17, r21		; isolate response ring length 
-	andi	r17, 7
 	ldi	r16, 1
-	rjmp	init150
+	andi	r17, 7
+	breq	init150
 init140:
 	lsl	r16
-init150:
 	dec	r17
-	brpl	init140
+	brne	init140
+init150:
 	clr	r17
 	sts	rsp+ring_size+0, r16	
 	sts	rsp+ring_size+1, r17	
