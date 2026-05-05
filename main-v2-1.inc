@@ -85,6 +85,7 @@ vector:		.byte	2		; Interrupt Vector
 	align	4
 heap:		.byte	4		; Queue Header for malloc() and free()
 log_pointer:	.byte	2		; current pointer into circular logging buffer
+log_previous:	.byte	4
 daticount:	.byte	1		; debugging counter
 datocount:	.byte	1
 iackcount:	.byte	1
@@ -106,6 +107,7 @@ initcount:	.byte	1
 .include	"MSCP/_pcb.inc"
 .include	"MSCP/_pkt.inc"
 .include	"MSCP/_data.inc"
+op_stats:	.byte	64
 #endif
 RAMINITEND:
 ;--------------------------------------------------------------------------
