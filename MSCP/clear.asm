@@ -1,16 +1,16 @@
 ;
 ;
 ;
-mscp_reset:
-	clr	yh						;  1
-	ldi	zl, low(cmd)					;  1
-	ldi	zh, high(cmd)					;  1
-	ldi	yl, ring_sz					;  1
+;mscp_reset:
+	clr	yh						
+	ldi	zl, low(cmd)					
+	ldi	zh, high(cmd)					
+	ldi	yl, ring_sz					
 mscp_reset010:
-	st	Z+, yh						;  3
-	dec	yl						;  1
-	brne	mscp_reset010					;  2 -> * 8
-								; 52+
+	st	Z+, yh						
+	dec	yl						
+	brne	mscp_reset010					
+								
 ;
 ;
 ;
@@ -21,19 +21,21 @@ mscp_reset020:
 	st	Z+, yh
 	dec	yl
 	brne	mscp_reset020
-								; 51+
+								
 ;
 ;
 ;
-	ldi	yl, mscp_init					;  1
-	sts	mscpstatus, yl					;  3
+	ldi	yl, mscp_init					
+	sts	mscpstatus, yl					
 	
 ;
 ; Reset drives 
 ;
-	lds	zh, unittable+ucb_size*0+ucb_status+0		;  1
-	cbr	zh, (1<<ucb__onl) | (1<<ucb__ofl)		;  1
-	sts	unittable+ucb_size*0+ucb_status+0, zh		;  3
+mscp_reset:
+	clr	yh
+	lds	zh, unittable+ucb_size*0+ucb_status+0		
+	cbr	zh, (1<<ucb__onl) | (1<<ucb__ofl)		
+	sts	unittable+ucb_size*0+ucb_status+0, zh		
 
 	lds	zh, unittable+ucb_size*1+ucb_status+0
 	cbr	zh, (1<<ucb__onl) | (1<<ucb__ofl)
@@ -46,8 +48,8 @@ mscp_reset020:
 	lds	zh, unittable+ucb_size*3+ucb_status+0
 	cbr	zh, (1<<ucb__onl) | (1<<ucb__ofl)
 	sts	unittable+ucb_size*3+ucb_status+0, zh
-								; 24+
-	sts	unitbase+0, yh					; yh==0
+								
+	sts	unitbase+0, yh					
 	sts	unitbase+1, yh
 	ldi	zl, 60
 	sts	_ccb_timeout, zl
@@ -64,9 +66,9 @@ mscp_reset020:
 	sts	credits, zl
 	ldi	zl, 60 + 1
 	sts	ha_time, zl
-								; 37+
+								
 
-	ret							;  4+
-								;----
-								;170
-								;===
+	ret							
+								
+								
+								
