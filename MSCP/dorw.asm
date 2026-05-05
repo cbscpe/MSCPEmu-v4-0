@@ -218,18 +218,18 @@ rwchkparam030:				; Check for RCT
 	rjmp	rwexit
 	
 rwchkparam040:
-	ldd	r20, Y+rwc_bcnt+0
-	ldd	r21, Y+rwc_bcnt+1	; Calculate the number of blocks
-	ldd	r22, Y+rwc_bcnt+2	; we are reading past the first LBN
-	ldd	r23, Y+rwc_bcnt+3
+	ldd	r20, Y+rwc_bcnt+0	; Get Byte count and calculate the
+	ldd	r21, Y+rwc_bcnt+1	; number of blocks to verify the
+	ldd	r22, Y+rwc_bcnt+2	; request does not go beyond the
+	ldd	r23, Y+rwc_bcnt+3	; disk size
 
-	logtr	0x52, r20, r21
+	logtr	0x52, r20, r21		; Byte Count Low
 
 	lsr	r23
 	ror	r22
 	ror	r21
 
-	logtr	0x5F, r21, r22
+	logtr	0x5F, r21, r22		; Block Count
 	
 	add	r16, r21
 	adc	r17, r22
@@ -326,10 +326,6 @@ rwchkparam080:
 ;	now we have checked the parameters
 ;
 	ldd	r18, Y+rwc_opcd		; Get Opcode
-
-	logtr	0x54, r18, zero
-	
-	
 	cpi	r18, op_rd		; Read
 	brne	rwchkparam110	
 	rjmp	mscp_rd
@@ -590,9 +586,9 @@ mscp_setupe:				; ERASE
 	ldd	r18, Y+rwc_lbn+2
 	ldd	r19, Y+rwc_lbn+3	; Logical Block Number
 	
-	logtr	0x55, r20, r21
-	logtr	0x5F, r22, wcnt
-	logtr	0x5F, bkcl, bkch
+	logtr	0x55, r20, r21		; DMA Start Address and word
+	logtr	0x5F, r22, wcnt		; count in last block (0=entire block)
+	logtr	0x5F, bkcl, bkch	; block count
 ;
 ;	Get Image Pointer
 ;	
