@@ -1,23 +1,3 @@
-/*
- *  process an ONLINE command
- *
- *  This is a sequential command, so if there are any non-sequential commands
- *  outstanding, we must hold this command pending until they are complete; if
- *  not (the UCB.tcbs list is empty), then we can attempt to actually bring
- *  the unit online.  The unit must actually exist (and be either an RD or an
- *  RX), and it must not be offline (i.e., if an RD, the run/stop button must
- *  not be pressed; if an RX, there must be media inserted and the door must
- *  be closed).  If the unit is an RD, then unless the "ignore media format"
- *  modifier is set an integrity check of the RCT is performed (see the file
- *  CIBBR.C for details); if this check fails, a status of "media format
- *  error" is returned.  If the unit is an RX, then an attempt is made to
- *  determine the density of the media inserted; if this fails, a status of
- *  "media format error" is returned.  Host settable flags are set, including
- *  software write protect (if enabled), and the unit is marked online.  This
- *  command returns certain media-dependent information to the host as its
- *  final step.
- */
-
 ;
 ;	For the disk emulator this translates into the following
 ;	--------------------------------------------------------
@@ -70,11 +50,14 @@ do_onl:					; Online
 ;
 ;	Hier den entsprechenden code einfügen
 ;	
+	std	Y+onl_flgs, zero
 	ldd	r24, Y+onl_unit+0
 	ldd	r25, Y+onl_unit+1
+	std	Y+onl_shun+0, r24
+	std	Y+onl_shun+1, r25
 	logtr	0x60, r24, r25
 	call	getucb			;
-	logtr	0x60, r24, r25
+	logtr	0x61, r24, r25
 	adiw	r25:r24, 0
 	breq	do_onl010		; Set Offline
 ;
@@ -111,6 +94,8 @@ do_onl030:
 	std	Y+onl_sts+0, r24
 	std	Y+onl_sts+1, r25	; 
 
+	logtr	0x62, r24, r25
+
 	ldd	r24, Y+onl_unit+0
 	ldd	r25, Y+onl_unit+1
 
@@ -122,10 +107,19 @@ do_onl030:
 	std	Y+onl_unti+3, zero
 	std	Y+onl_unti+4, zero
 	std	Y+onl_unti+5, zero
-	ldi	r24, low(ucb_type)
-	ldi	r25, high(ucb_type)
+	ldi	r24, low(rd_type)
+	ldi	r25, high(rd_type)
 	std	Y+onl_unti+6, r24
 	std	Y+onl_unti+7, r25
+	
+	ldi	r20, byte1(rd_media)
+	ldi	r21, byte2(rd_media)
+	ldi	r22, byte3(rd_media)
+	ldi	r23, byte4(rd_media)
+	std	Y+onl_medi+0, r20
+	std	Y+onl_medi+1, r21
+	std	Y+onl_medi+2, r22
+	std	Y+onl_medi+3, r23
 	
 	ldd	r18, Z+ucb_imgptr+0
 	ldd	r19, Z+ucb_imgptr+1
@@ -161,11 +155,6 @@ do_onl050:
 	std	Y+onl_vser+2, zl
 	std	Y+onl_vser+3, zh
 	
-	std	Y+onl_medi+0, zero
-	std	Y+onl_medi+1, zero
-	std	Y+onl_medi+2, zero
-	std	Y+onl_medi+3, zero
-
 do_onl900:
 	ldd	r16, Y+onl_opcd
 	ori	r16, op_end
@@ -181,4 +170,3 @@ do_onl900:
 	pop	yh
 	pop	yl
 	ret
-
