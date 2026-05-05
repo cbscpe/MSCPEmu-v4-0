@@ -11,17 +11,36 @@
 	.macro	INTEXIT			; 23/44 cycles
 	sbis	FLAGS_LOG, log__reg	; 1/2 
 	rjmp	nolog			; 2/0
+;
+;	Experimental suppress multiple identical entries
+;
+	lds	zl, log_previous+0
+	cpi	zl, @0
+	brne	log
+	lds	zl, log_previous+2	; Is it the same value
+	cp	zl, yl
+	brne	log
+	lds	zh, log_previous+3
+	cp	zh, yh
+	breq	nolog			; same action and same vlue
+;
+;
+;
+log:
 	lds	zl, log_pointer+0	; 3 Logging is done only if log__reg is set
 	lds	zh, log_pointer+1	; 3
 	std	Z+2, yl			; 1
+	sts	log_previous+2, yl
 	std	Z+3, yh			; 1
+	sts	log_previous+3, yh
 	ldi	yl, @0			; 1
 	std	Z+0, yl			; 1
+	sts	log_previous+0, yl
 	lds	yl, timestamp		; 3
 	std	Z+1, yl			; 1
 	adiw	zh:zl, 4		; 2
 	sbrc	zh, log_overflow	; 2/1
-	subi	zh, high(log_size)	; 0/1
+	ldi	zh, high(log_buffer+log_begin)
 	sts	log_pointer+0, zl	; 2
 	sts	log_pointer+1, zh	; 2
 nolog:
@@ -248,8 +267,9 @@ qbus_mscp_jmptbl:
 ;	173000	Returns 0777 (branch to itself) and initiates a DMA. The
 ;		DMA will write 0777 (branch to itself) at address zero.
 ;		When the DMA has finished it will return 05001 (CLR R1)
-;		which sets R1 to the unit number we are going to boot from
-;		and sets the AUTOBOOT flag.
+;		which sets R1 to the unit number we are going to boot from.
+;		In addition we will set the auto__boot flag to signal
+;		that AUTOBOOT has been started.
 ;	173002	Returns 05007 (CLR PC), which is equivalent to a jump to the
 ;		address zero, where DMA has put a branch to itself instruction.
 ;		The PDP-11 wil now execute this instruction until auto-boot has
@@ -258,22 +278,119 @@ qbus_mscp_jmptbl:
 ;		then starts execution of the boot block
 ;
 qbus_rom:
-	mov	yl, zl
-	clr	yh
-	andi	zl, 0x03		; 
-	cpi	zl, 0x00
-	brne	qbus_rom010
-	rjmp	qbus_dati_ip
-qbus_rom010:
-	cpi	zl, 0x02
-	brne	qbus_rom020
-	rjmp	qbus_dati_sa
-qbus_rom020:
-	sbrs	zl, 0
-	breq	qbus_rom030
+	andi	zl, 0x03
+	clr	zh
+	subi	zl, low(-qbus_rom_table)
+	sbci	zh, high(-qbus_rom_table)
+	ijmp
+
+qbus_rom_table:
+	rjmp	qbus_rom0_dati
+	rjmp	qbus_rom_dato
+	rjmp	qbus_rom2_dati
+	rjmp	qbus_rom_dato
+
+qbus_rom_dato:
 	INTEXIT	log_dato|log_rom
-qbus_rom030:
-	INTEXIT	log_dati|log_rom
+
+qbus_rom0_dati:
+	ldi	yl, low(0777)		; 1 Assume DMA still pending
+	ldi	yh, high(0777)		; 1
+	sbis	b_DMR			; 2/1 did we already request DMA?
+	rjmp	qbus_rom0_dati_dma	; 2 no do it now
+	sbis	i_DMG			; 2/1 did it finish?
+	rjmp	qbus_rom0_dati_cont	; 2 no continue to send BR .
+	cbi	b_DMR			; 1 remove DMA request
+	ldi	yl, low(05001)		; 1 DMA finished return a CLR R1
+	ldi	yh, high(05001)		; 1
+        sbi	FLAGS_COMMON, auto__boot    ; 1 Auto Boot Requested
+qbus_rom0_dati_cont:
+	DATI				; 13|15
+	INTEXIT	log_dati|log_boot4	; 23|44
+;
+;	The first time we read BOOT4 we start a DMA to transfer BR .
+;	instruction to adddress zero and as well return a BR. instruction.
+;	
+qbus_rom0_dati_dma:
+	#if cpldif==40
+	cbi	b_RD
+	ldi	zl, 0xFF
+	out	dataportdir, zl
+	clr	zl
+	out	dataportout, zl
+	sbi	b_WR			; Register selected is 4
+	cbi	b_WR
+	sbi	b_RS0
+	sbi	b_WR			; Register selected is 5
+	cbi	b_WR
+	sbi	b_RS1
+	sbi	b_WR			; Register selected is 7
+	cbi	b_WR
+	cbi	b_RS2
+	out	dataportout, yh
+	sbi	b_WR			; Register selected is 3
+	cbi	b_WR
+	out	dataportout, yl
+	cbi	b_RS0
+	sbi	b_WR			; Register selected is 2
+	cbi	b_WR
+	sbi	b_DMR			; Request DMA
+	cbi	b_RS1			; 
+	out	dataportout, yl		; 
+	sbi	b_WR			; Register selected is 0
+	cbi	b_WR			; 
+	sbi	b_RS0			; 
+	out	dataportout, yh		; 
+	sbi	b_WR			; Register selected is 1
+	cbi	b_WR			; 30 cycles
+	#endif
+	#if cpldif==22
+	cbi	b_RD
+	ldi	zl, 0xFF
+	out	dataportdir, zl
+	ldi	zl, 0x04		; DMA Address Registers
+	out	dataportout, zl
+	sbi	b_ALEW
+	cbi	b_ALEW			; Latch Write Register Address
+	ldi	zl, 0x00
+	out	dataportout, zl		; Set output to zero
+	sbi	b_WR
+	cbi	b_WR			; Latch Address Low
+	sbi	b_WR
+	cbi	b_WR			; Latch Address High
+	sbi	b_WR
+	cbi	b_WR			; Latch Address Extended
+	sbi	b_DMR			; Already Request DMA so it starts asap
+	sbi	dataportout, 1		; DMA Data Registers (set bit1 gives value 0x02)
+	sbi	b_ALEW
+	cbi	b_ALEW			; Latch Write Register Address
+	out	dataportout, yl		; Low-byte of 0777
+	sbi	b_WR
+	cbi	b_WR
+	out	dataportout, yh		; High-byte of 0777
+	sbi	b_WR
+	cbi	b_WR
+	ldi	zl, 0x00
+	out	dataportout, zl		; Q-Bus Data Register
+	sbi	b_ALEW
+	cbi	b_ALEW			; Latch Write Register Address
+	out	dataportout, yl		; Low-byte of 0777
+	sbi	b_WR
+	cbi	b_WR
+	out	dataportout, yh		; High-byte of 0777
+	sbi	b_WR
+	cbi	b_WR			; 35 cycles
+	#endif
+	INTEXIT	log_dati|log_boot4	; 23|44
+;
+
+qbus_rom2_dati:
+        ldi     yl, low(05007)		; 1
+        ldi     yh, high(05007)         ; 1 "CLR  PC" instruction
+	DATI				; 13|15
+        sbic	FLAGS_COMMON, auto__boot    ; 2/1 Auto Boot Requested
+        cbi     b_SA                    ; 0/1 Trigger Main RLV12 Programm
+        INTEXIT log_dati|log_boot6	; 23|44
 
 ;=============================================================================
 ;
@@ -304,12 +421,19 @@ qbus_dati_ip_go:
 ;
 ;	Write IP
 ;
-;	Writing the IP register causes the controller to initialise. For the
-;	moment we just wipe some data to make sure the controller is reset
-;	logically. Later we might restart the whole firmware to make sure we
-;	make a fresh start. However we need to be careful, as the SD-Card
-;	cannot be re-initialized without power-cycle. So we need to save the
-;	SD-Card status during such a restart. We will deal with this later
+;	Writing the IP register causes the controller to initialise. 
+;
+;	2026-05-03 PS	In our case there is not much to do during initialisation
+;			we just wipe all the configuration data and the mscpstatus.
+;			Probably we should also clear some controller status 
+;			information, but on the other hand we also have the INIT
+;			Job that has much more time to initialise data structures
+;			and status bits. In the Level1 interrupt we should keep
+;			things to a minimum. To be save all processes should check
+;			the mscpstatus before doing any actions. For the moment
+;			POLL is not protected by spurious activations, but so far
+;			I don't see any issue with that as b_IP is only cleared
+;			in GO state.
 ;
 qbus_dato_ip:
 	DATO
@@ -586,7 +710,7 @@ qbus_iack:
 	std	Z+1, yl			; 2
 	adiw	zh:zl, 4		; 2 
 	sbrc	zh, log_overflow
-	subi	zh, high(log_size)
+	ldi	zh, high(log_buffer+log_begin)
 	sts	log_pointer+0, zl	; 2 
 	sts	log_pointer+1, zh	; 2 
 qbus_iack_nolog:
@@ -620,7 +744,7 @@ qbus_init:
 	std	Z+1, yl
 	adiw	zh:zl, 4		; 
 	sbrc	zh, log_overflow
-	subi	zh, high(log_size)
+	ldi	zh, high(log_buffer+log_begin)
 	sts	log_pointer+0, zl	; 
 	sts	log_pointer+1, zh	; 
 qbus_init_nolog:
