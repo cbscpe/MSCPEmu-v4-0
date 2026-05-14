@@ -109,13 +109,18 @@ do_onl030:
 	std	Y+onl_unti+5, zero
 	ldi	r24, low(rd_type)
 	ldi	r25, high(rd_type)
+	ldi	r24, 4
+	ldi	r25, 2				; see comparison with simh
 	std	Y+onl_unti+6, r24
 	std	Y+onl_unti+7, r25
 	
-	ldi	r20, byte1(rd_media)
-	ldi	r21, byte2(rd_media)
-	ldi	r22, byte3(rd_media)
-	ldi	r23, byte4(rd_media)
+;#define my_media	0x22a4103c	; RA60
+#define my_media	0x25641050	; RD54
+
+	ldi	r20, byte1(my_media)
+	ldi	r21, byte2(my_media)
+	ldi	r22, byte3(my_media)
+	ldi	r23, byte4(my_media)
 	std	Y+onl_medi+0, r20
 	std	Y+onl_medi+1, r21
 	std	Y+onl_medi+2, r22
@@ -130,10 +135,25 @@ do_onl030:
 ;
 ;	Unit is attached to a paritition, so we copy partition size to unit size
 ;
-	ldd	r20, Z+pcb_sectors+0
-	ldd	r21, Z+pcb_sectors+1
-	ldd	r22, Z+pcb_sectors+2
-	ldd	r23, Z+pcb_sectors+3
+;	ldd	r20, Z+pcb_sectors+0
+;	ldd	r21, Z+pcb_sectors+1
+;	ldd	r22, Z+pcb_sectors+2
+;	ldd	r23, Z+pcb_sectors+3
+	
+;
+;	Partitions do not always match the exact disk size therefore here is
+;	a hack because of a DU: image of 311300. blocks we are using during
+;	tests with RSX-11M+ and it seems SAV will not bring the volume online
+;	if it does not exactly match (perhaps this is the issue here). Instead
+;	of the partition size we will report the Drv_Capacity from DriveTab
+;
+	ldd	xl, Z+pcb_drvtab+0
+	ldd	xh, Z+pcb_drvtab+1
+	adiw	xh:xl, Drv_Capacity
+	ld	r20, X+
+	ld	r21, X+
+	ld	r22, X+
+	ld	r23, X+
 	rjmp	do_onl050
 ;
 ;
@@ -145,15 +165,83 @@ do_onl040:
 	ldd	r23, Z+fcb_filesize+3
 
 do_onl050:
+
 	std	Y+onl_unsz+0, r20
 	std	Y+onl_unsz+1, r21
 	std	Y+onl_unsz+2, r22
 	std	Y+onl_unsz+3, r23
 
-	std	Y+onl_vser+0, zero
-	std	Y+onl_vser+1, zero
-	std	Y+onl_vser+2, zl
-	std	Y+onl_vser+3, zh
+#define my_serial 0x029c
+	ldi	r24, low(my_serial)
+	ldi	r25, high(my_serial)
+	std	Y+onl_vser+0, r24
+	std	Y+onl_vser+1, r25
+	std	Y+onl_vser+3, zero
+	std	Y+onl_vser+2, zero
+;
+;	Comparison of response sent by simh to our solution * marks differences
+;
+
+/*
+0x726C Trace ID 0x60, Bytes 0x00 0x00 Word 000000
+0x7270 Trace ID 0x61, Bytes 0x90 0x4D Word 046620
+0x7274 Trace ID 0x62, Bytes 0x00 0x00 Word 000000
+
+                                           Emulator	simh		offset	description
+0x7278 Trace ID 0x80, Bytes 0x2C 0x00 Word 000054	0x002c		 2.	Message Length
+0x727C Trace ID 0x8F, Bytes 0x00 0x00 Word 000000	0x0000		 4.	Credits / Message Type / Connection ID
+0x7280 Trace ID 0x8F, Bytes 0x02 0x00 Word 000002	0x0002		 6.	CRF Low
+0x7284 Trace ID 0x8F, Bytes 0xD0 0x26 Word 023320	0x26d0		 8.	CRF High
+0x7288 Trace ID 0x8F, Bytes 0x00 0x00 Word 000000	0x0000		10.	unit number
+0x728C Trace ID 0x8F, Bytes 0x00 0x00 Word 000000	0x0000		12.	reserved
+0x7290 Trace ID 0x8F, Bytes 0x89 0x00 Word 000211	0x0089		14.	opcode
+0x7294 Trace ID 0x8F, Bytes 0x00 0x00 Word 000000	0x0000		16.	status
+0x7298 Trace ID 0x8F, Bytes 0x00 0x00 Word 000000	0x0000		18.	multi unit code
+0x729C Trace ID 0x8F, Bytes 0x00 0x00 Word 000000	0x8080*!	20.	unit flags
+0x72A0 Trace ID 0x8F, Bytes 0x00 0x00 Word 000000	0x0000		22.	reserved
+0x72A4 Trace ID 0x8F, Bytes 0x00 0x00 Word 000000	0x0000
+0x72A8 Trace ID 0x8F, Bytes 0x00 0x00 Word 000000	0x0000		26.	unit identifier
+0x72AC Trace ID 0x8F, Bytes 0x00 0x00 Word 000000	0x0000
+0x72B0 Trace ID 0x8F, Bytes 0x00 0x00 Word 000000	0x0000
+0x72B4 Trace ID 0x8F, Bytes 0x02 0x01 Word 000402	0x0204*!	
+0x72B8 Trace ID 0x8F, Bytes 0x50 0x10 Word 010120	0x103c*!	34.	media type identifier
+0x72BC Trace ID 0x8F, Bytes 0x64 0x25 Word 022544	0x22a4*!
+0x72C0 Trace ID 0x8F, Bytes 0x00 0x00 Word 000000	0x0000		38.	reserved
+0x72C4 Trace ID 0x8F, Bytes 0x00 0x00 Word 000000	0x0000!		40.	reserved
+0x72C8 Trace ID 0x8F, Bytes 0xEC 0xC3 Word 141754	0x1b30*!	42.	unit size
+0x72CC Trace ID 0x8F, Bytes 0x04 0x00 Word 000004	0x0006*
+0x72D0 Trace ID 0x8F, Bytes 0x00 0x00 Word 000000	0x029c		46.	volume serial number
+0x72D4 Trace ID 0x8F, Bytes 0x02 0x6F Word 067402	0x0000
+0x72D8 IACK    (C1) Vector  000154
+
+
+4.	-------------------------------------------------------------------
+
+DBG(9546200)> RQ REQ: cmd=0009(ONL), mod=0000, unit=0, bc=00000000, ma=00000000, lbn=00000000
+DBG(9546200)> RQ TRACE: rq_mscp - Queue
+DBG(9546200)> RQ TRACE: rq_onl
+DBG(9546200)> RQ TRACE: rq_putr_unit
+DBG(9546200)> RQ REQ: rsp=0089, sts=0000
+DBG(9546200)> RQ TRACE: txt=002C, 0000, 0002, 26D0, 0000, 0000, 0089, 0000
+DBG(9546200)> RQ TRACE: txt=0000, 8080, 0000, 0000, 0000, 0000, 0000, 0204
+DBG(9546200)> RQ TRACE: txt=103C, 22A4, 0000, 0000, 1B30, 0006, 029C, 0000
+DBG(9546200)> RQ TRACE: rq_setint
+DBG(9546200)> RQ TRACE: rq_clrint
+DBG(9546400)> RQ TRACE: rq_quesvc
+DBG(9546617)> RQ REQ: poll started, PC=C6A6
+DBG(9546817)> RQ TRACE: rq_quesvc
+
+*/
+;
+;	Following we make sure things are according to simh
+;
+	ldi	r24, low(uf_rpl | uf_rmv)
+	ldi	r25, high(uf_rpl | uf_rmv)
+	std	Y+onl_unfl+0, r24
+	std	Y+onl_unfl+1, r25
+;
+;	hard code 
+;
 	
 do_onl900:
 	ldd	r16, Y+onl_opcd
@@ -165,6 +253,20 @@ do_onl900:
 	std	Y+pkt_size+1, r25
 	ldi	r16, mt_seq
 	std	Y+pkt_type, r16
+	movw	xh:xl, yh:yl
+	adiw	xh:xl, 2		; no need to logg the link word
+	ld	r16, X+
+	ld	r17, X+
+	logtr	0x80, r16, r17
+	ld	r16, X+
+	ld	r17, X+
+	logtr	0x8F, r16, r17
+do_onl910:
+	ld	r16, X+
+	ld	r17, X+
+	logtr	0x8F, r16, r17
+	sbiw	r25:r24, 2
+	brne	do_onl910
 	movw	r25:r24, yh:yl
 	call	put_packet
 	pop	yh

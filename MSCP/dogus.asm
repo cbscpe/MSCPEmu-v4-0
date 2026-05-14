@@ -14,28 +14,28 @@
  */
 
 
-recordcont	pkt, data
-record		gus, crf, 4	
-record		gus, unit, 2	
-record		gus, r1, 2	
-record		gus, opcd, 1	
-record		gus, flgs, 1	
-record		gus, sts, 2	
-record		gus, mlun, 2	
-record		gus, unfl, 2	
-record		gus, r2, 4	
-record		gus, unti, 8	
-record		gus, medi, 4	
-record		gus, shun, 2	
-record		gus, shst, 2	
-record		gus, trk, 2	
-record		gus, grp, 2	
-record		gus, cyl, 2	
-record		gus, usvr, 1	
-record		gus, uhvr, 1	
-record		gus, rcts, 2	
-record		gus, rbns, 1	
-record		gus, rctc, 1	
+recordcont	pkt, data			;	command / response
+record		gus, crf, 4			; 6.	command reference number
+record		gus, unit, 2			; 10.	unit number
+record		gus, r1, 2			; 12.	reserved
+record		gus, opcd, 1			; 14.	opcode (9)
+record		gus, flgs, 1			; 15.	reserved / flags
+record		gus, sts, 2			; 16.	modifiers / status
+record		gus, mlun, 2			; 18.	reserved / multi unit code
+record		gus, unfl, 2			; 20.	unit flags
+record		gus, r2, 4			; 22.	reserved
+record		gus, unti, 8			; 26.	reserved / unit identifier
+record		gus, medi, 4			; 34.	device dependent parameters / media type identifier
+record		gus, shun, 2			; 38.	reserved
+record		gus, shst, 2			; 40.	reserved
+record		gus, trk, 2			; 42.		/ unit size
+record		gus, grp, 2			; 46.		/ volume serial number
+record		gus, cyl, 2			; 50.
+record		gus, usvr, 1			; 52.
+record		gus, uhvr, 1			; 53.
+record		gus, rcts, 2			; 54.
+record		gus, rbns, 1			; 56.
+record		gus, rctc, 1			; 57.
 recordend	rs, gus
 
 do_gus:					; Get Unit Status
@@ -175,20 +175,83 @@ do_gus050:
 	std	Y+gus_rctc, r16		; Number of RCT
 	std	Y+gus_shst+0, zero
 	std	Y+gus_shst+1, zero
-	
+
+/*
+A.	-------------------------------------------------------------------
+
+DBG(9546817)> RQ REQ: cmd=0003(GUS), mod=0000, unit=0, bc=00000200, ma=0003A236, lbn=00000000
+DBG(9546817)> RQ TRACE: rq_mscp - Queue
+DBG(9546817)> RQ TRACE: rq_gus
+DBG(9546817)> RQ TRACE: rq_putr_unit
+DBG(9546817)> RQ REQ: rsp=0083, sts=0000
+DBG(9546817)> RQ TRACE: txt=0030, 0000, 0003, 26D0, 0000, 0000, 0083, 0000
+DBG(9546817)> RQ TRACE: txt=0000, 8080, 0000, 0000, 0000, 0000, 0000, 0204
+DBG(9546817)> RQ TRACE: txt=103C, 22A4, 0000, 0000, 002A, 0006, 0001, 0000
+DBG(9546817)> RQ TRACE: rq_setint
+DBG(9546817)> RQ TRACE: rq_clrint
+DBG(9547017)> RQ TRACE: rq_quesvc
+DBG(9548131)> RQ REQ: poll started, PC=C6A6
+DBG(9548331)> RQ TRACE: rq_quesvc
+
+B.	-------------------------------------------------------------------
+
+DBG(9548331)> RQ REQ: cmd=0003(GUS), mod=0000, unit=0, bc=00000200, ma=00036404, lbn=00005012
+DBG(9548331)> RQ TRACE: rq_mscp - Queue
+DBG(9548331)> RQ TRACE: rq_gus
+DBG(9548331)> RQ TRACE: rq_putr_unit
+DBG(9548331)> RQ REQ: rsp=0083, sts=0000
+DBG(9548331)> RQ TRACE: txt=0030, 0000, 0004, 26D0, 0000, 0000, 0083, 0000
+DBG(9548331)> RQ TRACE: txt=0000, 8080, 0000, 0000, 0000, 0000, 0000, 0204
+DBG(9548331)> RQ TRACE: txt=103C, 22A4, 0000, 0000, 002A, 0006, 0001, 0000
+DBG(9548331)> RQ TRACE: rq_setint
+DBG(9548331)> RQ TRACE: rq_clrint
+DBG(9548531)> RQ TRACE: rq_quesvc
+DBG(9565522)> RQ REQ: poll started, PC=C6A6
+DBG(9565722)> RQ TRACE: rq_quesvc
+
+C.	-------------------------------------------------------------------
+
+DBG(488665951)> RQ REQ: cmd=0003(GUS), mod=0000, unit=0, bc=000031C0, ma=0003D0C0, lbn=0000531C
+DBG(488665951)> RQ TRACE: rq_mscp - Queue
+DBG(488665951)> RQ TRACE: rq_gus
+DBG(488665951)> RQ TRACE: rq_putr_unit
+DBG(488665951)> RQ REQ: rsp=0083, sts=0000
+DBG(488665951)> RQ TRACE: txt=0030, 0000, 0003, 26D0, 0000, 0000, 0083, 0000
+DBG(488665951)> RQ TRACE: txt=0000, 8080, 0000, 0000, 0000, 0000, 0000, 0204
+DBG(488665951)> RQ TRACE: txt=103C, 22A4, 0000, 0000, 002A, 0006, 0001, 0000
+DBG(488665951)> RQ TRACE: rq_setint
+DBG(488665958)> RQ TRACE: rq_clrint
+DBG(488666151)> RQ TRACE: rq_quesvc
+DBG(488667397)> RQ REQ: poll started, PC=C6A6
+DBG(488667597)> RQ TRACE: rq_quesvc
+
+ */
+
 	ldd	r18, Y+cmd_opcd
 	ori	r18, op_end
 	std	Y+gus_opcd, r18
-	ldi	r16, low(rs_gus)
-	ldi	r17, high(rs_gus)
-	std	Y+pkt_size+0, r16
-	std	Y+pkt_size+1, r17
-	ldi	r18, mt_seq
-	std	Y+pkt_type, r18
-	
-	
+	ldi	r24, low(rs_gus)
+	ldi	r25, high(rs_gus)
+	std	Y+pkt_size+0, r24
+	std	Y+pkt_size+1, r25
+	ldi	r16, mt_seq
+	std	Y+pkt_type, r16
 
-	
+	movw	xh:xl, yh:yl
+	adiw	xh:xl, 2		; no need to logg the link word
+	ld	r16, X+
+	ld	r17, X+
+	logtr	0x40, r16, r17
+	ld	r16, X+
+	ld	r17, X+
+	logtr	0x4F, r16, r17
+do_gus910:
+	ld	r16, X+
+	ld	r17, X+
+	logtr	0x4F, r16, r17
+	sbiw	r25:r24, 2
+	brne	do_gus910
+
 do_gus070:	
 	
 	movw	r25:r24, yh:yl

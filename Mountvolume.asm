@@ -99,6 +99,9 @@ MountAnalyzeErr1:			; IO Error
 ;	0x07	exFAT		<-- Ignored
 ;	0x0B	FAT32		<-- Data Volume not supported
 ;	0x83	Linux		<-- potential Unit
+;	0xAF	HFS+		this is a candidate for diskimages as with FAT12
+;				added because of MSCP emulation to support drives
+;				larger than FAT12 allows
 ;
 ;	There are always 4 partition entries in one partition table. There should
 ;	be only one extended partition per table. Normally it is but it has not to

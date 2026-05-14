@@ -216,6 +216,7 @@
 #define		pe_snd		476
 #define		pe_rcv		477
 #define		pe_nsr		478
+#define		pe_tmo		077
 
 /*
  *  message types

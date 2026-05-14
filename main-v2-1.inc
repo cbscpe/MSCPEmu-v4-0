@@ -120,3 +120,4 @@ RAMINITEND:
 	align	4
 sd_status:	.byte	1
 reset_status:	.byte	1
+put_packet_wait:.byte	1

@@ -38,23 +38,12 @@ commandlist:
 	.dw	kw_sdinit,	0,		cmd_sdinit
 	.dw	kw_mount,	0, 		cmd_mount
 	.dw	kw_dismount,	0,		cmd_dismount
-	.dw	kw_sdread,	0,		cmd_sdread
+	.dw	kw_sdread,	a_sdinit,	cmd_sdread
 	.dw	kw_set,		0,		cmd_set
 	.dw	kw_turbo,	0,		cmd_turbo
 	.dw	kw_eol,		0,		cmd_done
 	.dw	0
 
-cmd_sdread:
-	.dw	kw_number, 	a_nbr,		cmd_sdread1
-	.dw	0
-	
-cmd_sdread1:
-	.dw	kw_number, 	a_nbr1,		cmd_sdread2
-	.dw	0
-	
-cmd_sdread2:
-	.dw	kw_eol,		cmdsdread,	cmd_done
-	.dw	0
 
 cmd_rlv12init:
 	.dw	kw_eol,		0,		cmd_done
@@ -244,6 +233,7 @@ cmd_logging:
 	.dw	kw_interrupt,	0,		cmd_loginterrupt
 	.dw	kw_units,	0,		cmd_logunits
 	.dw	kw_attdev, 	a_dev,		cmd_logunit
+	.dw	kw_attunit, 	a_dev,		cmd_logunit
 	.dw	kw_pbn,		0,		cmd_logpbn
 	.dw	kw_trace,	0,		cmd_logtrace
 	.dw	kw_entry,	a_logentry,	cmd_logentry
@@ -297,6 +287,7 @@ cmd_initialise1:
 
 cmd_attach:
 	.dw	kw_attdev,	a_dev,		cmd_attach0
+	.dw	kw_attunit, 	a_dev,		cmd_attach0
 	.dw	0
 
 cmd_attach0:
@@ -315,6 +306,7 @@ cmd_attach2:
 
 cmd_detach:
 	.dw	kw_attdev,	a_dev,		cmd_detach1
+	.dw	kw_attunit, 	a_dev,		cmd_detach1
 	.dw	0
 
 cmd_detach1:
@@ -395,6 +387,7 @@ cmd_show:
 	.dw	kw_jobs,	cmd_showjobs,	cmd_done
 	.dw	kw_rings,	cmd_showrings,	cmd_done
 	.dw	kw_message, 	cmd_showmessage,cmd_done
+	.dw	kw_opcodes,	cmd_showfncstats,cmd_done
 	.dw	kw_status,	0,		cmd_status
 	.dw	0
 
@@ -451,6 +444,7 @@ kw_dir:		P_KEYWORD	"DIR"
 kw_pwd:		P_KEYWORD	"PWD"
 kw_attach:	P_KEYWORD	"ATTach"
 kw_attdev:	P_KEYSUFF	"RL"
+kw_attunit:	P_KEYSUFF	"UNit"
 kw_attpar:	P_KEYSUFF	"Partition"
 kw_detach:	P_KEYWORD	"DEtach"
 kw_mount:	P_KEYWORD	"MOUnt"
@@ -512,3 +506,45 @@ kw_status:	P_KEYWORD	"STATus"
 kw_turbo:	P_KEYWORD	"TURBO"
 kw_rings:	P_KEYWORD	"RINgs"
 kw_message:	P_KEYWORD	"MESSage"
+kw_opcodes:	P_KEYWORD	"OPCodes"
+
+kw_sdclbn:	P_KEYWORD	"Lbn"
+kw_sdcaddr:	P_KEYWORD	"Address"
+
+cmd_sdread:
+	.dw	kw_sdclbn,	0,		cmd_sdread010
+	.dw	kw_sdcaddr,	0,		cmd_sdread020
+	.dw	0
+	
+cmd_sdread010:
+	.dw	kw_number,	a_sdlbn,	cmd_sdread011
+	.dw	0
+
+cmd_sdread011:
+	.dw	kw_sdcaddr,	0,		cmd_sdread012
+	.dw	0
+	
+cmd_sdread012:
+	.dw	kw_number,	a_sdaddr,	cmd_sdread013
+	.dw	0
+
+cmd_sdread013:
+	.dw	kw_eol,		cmdsdread,	cmd_done
+	.dw	0
+	
+
+cmd_sdread020:	
+	.dw	kw_number,	a_sdaddr,	cmd_sdread021
+	.dw	0
+	
+cmd_sdread021:
+	.dw	kw_sdclbn,	0,		cmd_sdread022
+	.dw	0
+
+cmd_sdread022:
+	.dw	kw_number,	a_sdlbn,	cmd_sdread023
+	.dw	0
+	
+cmd_sdread023:
+	.dw	kw_eol,		cmdsdread,	cmd_done
+	.dw	0

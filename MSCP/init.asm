@@ -10,7 +10,18 @@
 ;
 ;	In other words we have a lot of time between each step to initialize
 ;	the whole controller.
-
+;
+;	Trace Output
+;	0x10	command ring size
+;	0x11	command ring mask
+;	0x12	response ring size
+;	0x13	response ring mask
+;	0x14	low word of communication area address
+;	0x15	high byte of communication area address and purge flag
+;	0x16	response ring size
+;	0x17	command ring size
+;	0x18	zap communication area
+;
 initjob:
 	cli
 	lds	r18, _ccb_state
@@ -123,6 +134,26 @@ init_s1:
 	cbr	r16, (1<<ucb__onl) | (1<<ucb__ofl)
 	sts	unittable+ucb_size*3+ucb_status+0, r16
 
+
+	sts	unitbase+0, zero
+	sts	unitbase+1, zero
+	ldi	r16, 60
+	sts	_ccb_timeout, r16
+	sts	_pcb_timeout, r16
+	ldi	r16, low(cf_rpl)
+	ldi	r17, high(cf_rpl)
+	sts	_ccb_flags+0, r16
+	sts	_ccb_flags+1, r17
+	ldi	r16, mscp_model
+	ldi	r17, mscp_class
+	sts	_ccb_type+0, r16
+	sts	_ccb_type+0, r17
+	ldi	r16, max_commands - 1
+	sts	credits, r16
+	ldi	r16, 60 + 1
+	sts	ha_time, r16
+
+
 ;	Calculate vector address
 ;
 	mov	r16, r20		; Get low-byte of S1 response
@@ -152,7 +183,7 @@ init130:
 	sts	cmd+ring_size+0, r16	; save it
 	sts	cmd+ring_size+1, r17	; save it
 
-	logtr	0x10, r16, r17
+	logtr	0x10, r16, r17		;
 	
 ;
 ;	ahhhhhh
@@ -487,6 +518,7 @@ init410:
 	sts	_ccb_state, r18
 	ldi	r16, mscp_go
 	sts	mscpstatus, r16
+	cbi	b_CRDY			; Disable SA Read Interrupt
 	rjmp	init010
 ;--------------------------------------------------------------------------
 ;

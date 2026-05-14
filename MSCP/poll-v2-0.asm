@@ -17,7 +17,48 @@
 ;		to the SA register during writes and for reads to the SA
 ;		register when the initialisation state has reached the GO 
 ;		state
-;		
+;
+;	2026-05-06 Peter Schranz
+;		After the first Milestone, creating a new image under RT-11
+;		and be able to boot RT-11 from the MSCP emulator, was achieved
+;		the next step was to boot RSX-11M+, there was a RD54 image 
+;		available on the internet with V4.6 BL87. Unfortunately this
+;		image stops after loading with the message:
+;			SAV -- Booted device cannot be brought online
+;		RT-11 uses a ring size of one and RSX-11M1 a ring size of four
+;		and this might be the problem. So I decided completely redefine
+;		trace logging output for POLL. 
+;
+;		0x71	get_descriptor DMA address as the ring area is fixed
+;			we only show the lower 16-bit of the address
+;		0x72	get_descriptor the descriptor itself
+;		0x73	put_descriptor, address of descriptor high word and value
+;		0x74	put_descriptor, address of previous descriptor high word
+;			and value
+;		0x75	put_descriptor, address of interrupt flag
+;		0x76	put_descriptor, new index
+;		0x77	poll: block
+;
+;		0x7A	put_packet return end-code, flags, status 
+;		0x7B	put_packet message size, Packet-type, Credits, Connection ID
+;		0x7C	put_packet response status
+;		0x7E	poll: unit, opcode, packet type and connection ID of received
+;			packet
+;
+;		0x7F	follows any trace in case more then 16-bits need to be
+;			logged.
+;
+.macro	hickup		; Create visible gap in LA output
+	push	r24
+	ldi	r24, @0
+h1:
+	dec	r24
+	brne	h1
+	pop	r24
+.endmacro
+;--------------------------------------------------------------------------
+;
+;
 ;
 poll_:
 	sbis	f_IP
@@ -88,18 +129,23 @@ polljob:
 	clr	r9			; and can be displayed with "show jobs".
 	ldi	r24, low(mscpipr)	; In the source code of the RQDX3 controller
 	ldi	r25, high(mscpipr)	; POLL first performs a get_packet, which in
+	;logtr	0x77, r8, r9
 	call	block			; my opinion is not correct.
 ;
 ;	Main Loop
 ;
 poll100:
+	lds	r16, mscpstatus
+	cpi	r16, mscp_go
+	brne	poll110
 	rcall	get_packet		; Get Packet
-	logtr	0x70, r24, r25
 	sbiw	r25:r24, 0
 	brne	poll120			; No Packet
 
+poll110:
 	ldi	r24, low(mscpipr)
 	ldi	r25, high(mscpipr)
+	;logtr	0x77, r25, r24
 	call	block
 	rjmp	poll100
 
@@ -124,9 +170,8 @@ poll120:
 	breq	poll120a		; 255=overflow
 	st	X, r23
 poll120a:
-	logtr	0x79, r16, r17
-	logtr	0x7F, r18, r19
-	logtr	0x7F, r20, r22		; Unit / Opcode
+	logtr	0x7E, r20, r22		; Unit / Opcode
+	;logtr	0x7F, r18, r19		; Packet Type / Connection ID
 	andi	r18, 0xF0		; Mask credit fields to get message type
 	brne	poll140			; This is not a sequential message -> fatal
 	tst	r19
@@ -139,7 +184,7 @@ poll120a:
 poll121:
 	cpi	r22, op_scc
 	brne	poll122
-	call	do_scc
+	call	do_scc;logtr
 	rjmp	poll100
 poll122:
 	cpi	r22, op_rd
@@ -152,12 +197,15 @@ poll123:
 	call	do_wr
 	rjmp	poll100
 poll124:
+	cpi	r22, op_gus
+	brne	poll125
+	call	do_gus
+	rjmp	poll100
+poll125:
 	ori	r22, op_end
 	std	Y+rsp_opcd, r22	; Set End Flag
 	rcall	put_packet
 	rjmp	poll100
-	
-;>>>>>>>>
 	
 
 ;	lds	r16, cmd_link+cmd_opcd	; Get Opcode
@@ -173,7 +221,6 @@ poll124:
 ;	call	put_packet
 ;	rjmp	poll100
 ;
-poll110:
 ;	cpi	r16, 2
 ;	brne	poll130
 ;
@@ -232,8 +279,8 @@ get_packet:
 	ldi	r25, high(cmd)
 	rcall	get_descriptor		;
 	brmi	get_packet100
-	clr	r20
-	clr	r21
+	clr	r10
+	clr	r11
 	rjmp	get_packet110
 
 get_packet100:
@@ -246,12 +293,11 @@ get_packet100:
 	sbci	r18, byte3(4)
 	sbci	r19, byte4(4)
 	ori	r16, 1
-	logtr	0x76, r16, r17		;-----> logging
-	dmaaddr r16, r17, r18
+	dmaaddr r16, r17, r18		; Address can be seen in the descriptor trace
 
 	ldi	xl, low(cmd_link)
 	ldi	xh, high(cmd_link)
-	movw	r21:r20, xh:xl
+	movw	r11:r10, xh:xl
 	adiw	xh:xl, 2	
 
 	dmaread r16, r17		; Get Packet Size
@@ -260,25 +306,17 @@ get_packet100:
 get_packet101:
 	st	X+, r16			; Save Packet Size in cmd_buffer
 	st	X+, r17
-
-	logtr	0x77, r16, r17		;-----> logging
-
 	dmaread r16, r17		; Get Connection ID and Packet Type
 	brcc	get_packet102
 	rjmp	get_packet120
 get_packet102:
 	st	X+, r16			; Save in cmd_buffer
 	st	X+, r17
-
-	logtr	0x77, r16, r17		;-----> logging
-
 	ldi	r24, low(040)		; RQDX3 always reads 040 (octal) words
 	ldi	r25, high(040)
 get_packet105:
 	dmaread r16, r17
 	brcs	get_packet120
-
-;	logtr	0x77, r16, r17		;-----> logging
 	st	X+, r16
 	st	X+, r17
 	sbiw	r25:r24, 1		; one word done
@@ -290,7 +328,7 @@ get_packet110:
 	ldi	r24, low(dmalock)
 	ldi	r25, high(dmalock)
 	call	release
-	movw	r25:r24, r21:r20
+	movw	r25:r24, r11:r10
 	ret
 
 get_packet120:
@@ -309,10 +347,17 @@ put_packet:
 	push	yl
 	push	yh
 	movw	yh:yl, r25:r24
-put_packet100:
 
+	ldd	r16, Y+rsp_opcd+0
+	ldd	r17, Y+rsp_flgs+0
+	ldd	r18, Y+rsp_sts+0
+	ldd	r19, Y+rsp_sts+1
+	;logtr	0x7A, r16, r17			
+	;logtr	0x7F, r18, r19	
 	ldi	r16, 10
-	mov	r10, r16
+put_packet090:
+	sts	put_packet_wait, r16
+put_packet100:
 	ldi	r24, low(dmalock)	; Acquire the DMA engine
 	ldi	r25, high(dmalock)
 	call	acquire
@@ -323,19 +368,15 @@ put_packet100:
 	ldi	r24, low(dmalock)	; Release the DMA engine
 	ldi	r25, high(dmalock)
 	call	release
-	logtr	0x71, r12, r13
-	pop	yh
-	pop	yl
-	ret;------->
-	
 	ldi	r24, low(20)		; Sleep for a bit
 	ldi	r25, high(20)
 	call	delay
-	dec	r10
-	breq	put_packet090
-	rjmp	put_packet100
-put_packet090:
-	ret
+	lds	r16, put_packet_wait
+	dec	r16
+	brne	put_packet090
+	ldi	r24, low(pe_tmo)
+	ldi	r25, high(pe_tmo)
+	rcall	fatal_error
 
 put_packet110:
 
@@ -370,30 +411,38 @@ put_packet140:
 	sbci	r17, byte2(4)
 	sbci	r18, byte3(4)
 	sbci	r19, byte4(4)
-
-	logtr	0x7A, r16, r17
-
 	dmaaddr r16, r17, r18
+
+	ldd	r24, Y+rsp_sts+0
+	ldd	r25, Y+rsp_sts+1
+
+	logtr	0x7C, r24, r25
 
 	movw	xh:xl, yh:yl		; Get Packet Address
 	adiw	xh:xl, 2		; Skip Link Header
 
-	ld	r24, X+			; Get Packet Size
+	ld	r24, X+			; Get Message Size
 	ld	r25, X+
-	logtr	0x7B, r24, r25
-	dmawrt	r24, r25
-	adiw	r25:r24, 2		; Account for Conn ID, Type, Credits
+	dmawrt	r24, r25		; Put Message Size
 
+	;logtr	0x7B, r24, r25
+
+	ld	r16, X+			; Get Packet-type, Credits, Connection ID
+	ld	r17, X+
+
+	;logtr	0x7F, r16, r17		; Packet-type, Credits, Connection ID
+
+	dmawrt	r16, r17		; Put Packet-type, Credits, Connection ID
 put_packet145:
 	ld	r16, X+
 	ld	r17, X+
-;	logtr	0x7C, r16, r17
-
 	dmawrt	r16, r17
 	brcs	put_packet160
 	sbiw	r25:r24, 2		; two bytes done
 	brne	put_packet145
 	
+	hickup	14
+
 	ldi	r24, low(rsp)
 	ldi	r25, high(rsp)
 	rcall	put_descriptor
@@ -460,11 +509,13 @@ get_descriptor:
 	sts	descr_addr+3, r19
 
 	ori	r16, 1			; DMA Read
-	logtr	0x72, r16, r17
+	;logtr	0x71, r16, r17		; 
 	dmaaddr r16, r17, r18
 
+	clr	r12
 	dmaread	r20, r21		; Read full descriptor
 	brcs	get_descriptor040
+	inc	r12
 	dmaread	r22, r23		; 
 	brcc	get_descriptor050
 get_descriptor040:
@@ -475,8 +526,8 @@ get_descriptor050:
 	sts	descriptor+2, r22
 	sts	descriptor+3, r23
 	
-	logtr	0x73, r20, r21		; Low
-	logtr	0x73, r22, r23		; High word of descriptor
+	;logtr	0x72, r20, r21		; Low
+	;logtr	0x7F, r22, r23		; High word of descriptor
 
 get_descriptor100:
 	pop	yh
@@ -514,9 +565,11 @@ put_descriptor:
 	ori	r23, 0x40		; set F flag
 	andi	r23, 0x7F		; clear O flag (ownership)
 
-	dmaaddr r16, r17, r18
+	;logtr	0x73, r16, r17
+	;logtr	0x7F, r22, r23
 
-	dmawrt r22, r23	
+	dmaaddr r16, r17, r18
+	dmawrt	r22, r23	
 	brcc	put_descriptor050
 put_descriptor040:	
 	rjmp	put_descriptor120
@@ -525,45 +578,41 @@ put_descriptor050:
 	lds	r23, descriptor+3	
 	sbrs	r23, 6			; was the F flag set
 	rjmp	put_descriptor110	; no - don't interrupt the host
-
 	ldd	r24, Y+ring_size+0	; is it a ring of size one?
 	ldd	r25, Y+ring_size+1	; 
 	sbiw	r25:r24, 1		; 
 	brne	put_descriptor060	;
 	rjmp	put_descriptor100	; yes - always interrupt the host
 put_descriptor060:
-	ldd	r16, Y+ring_base+0	; get address of ring
-	ldd	r17, Y+ring_base+1
-	ldd	r18, Y+ring_base+2
-	ldd	r19, Y+ring_base+3
-
+	ldd	r20, Y+ring_base+0	; get address of ring
+	ldd	r21, Y+ring_base+1
+	ldd	r22, Y+ring_base+2
+	ldd	r23, Y+ring_base+3
 	ldd	r24, Y+ring_index+0	; create index of previous 
 	ldd	r25, Y+ring_index+1	; descriptor to poll
 	sbiw	r25:r24, 4		;
-	ldd	r22, Y+ring_mask+0	; make sure the index is within the ring
-	ldd	r23, y+ring_mask+1	; buffer size
-	and	r24, r22
-	and	r25, r23
+	ldd	r16, Y+ring_mask+0	; make sure the index is within the ring
+	ldd	r17, y+ring_mask+1	; buffer size
+	and	r24, r16
+	and	r25, r17
 	adiw	r25:r24, 2		; get the second word of the descriptors
 
-	add	r16, r24		; calculate the host memory address of
-	adc	r17, r25		; the descriptor
-	adc	r18, zero
-	adc	r19, zero
-
-	ori	r16, 1			; DMA read
-
-	logtr	0x74, r16, r17		;-----> address of high word of previous descriptor
-
-	dmaaddr r16, r17, r18	; set DMA address
-	dmaread	r16, r17		; read the 2nd word of the descrption
+	add	r20, r24		; calculate the host memory address of
+	adc	r21, r25		; the descriptor
+	adc	r22, zero
+	adc	r23, zero
+	ori	r20, 1			; DMA read
+	dmaaddr r20, r21, r22		; set DMA address
+	dmaread	r24, r25		; read the 2nd word of the descrption
 	brcc	put_descriptor070
 	rjmp	put_descriptor120
 put_descriptor070:
 
-	logtr	0x78, r16, r17		;-----> high word of previous descriptor
+	;logtr	0x74, r20, r21		; Full DMA addres (32-bit) of second word
+	;logtr	0x7F, r22, r23		; of previous descriptor
+	;logtr	0x7F, r24, r25		; value
 
-	tst	r17			; do we own the previous entry
+	tst	r25			; do we own the previous entry
 	brmi	put_descriptor100
 	rjmp	put_descriptor110	; no
 put_descriptor100:
@@ -592,7 +641,7 @@ put_descriptor100:
 	ldi	r24, low(1)		; interrupt
 	ldi	r25, high(1)
 
-	logtr	0x7E, r16, r17		
+	;logtr	0x75, r16, r17		
 
 	dmaaddr	r16, r17, r18
 	dmawrt	r24, r25
@@ -613,7 +662,7 @@ put_descriptor110:
 	std	Y+ring_index+0, r24
 	std	Y+ring_index+1, r25
 
-	logtr	0x75, r24, r25		;----> New descriptor index
+	;logtr	0x76, r24, r25		;----> New descriptor index
 
 	pop	yh
 	pop	yl
@@ -634,6 +683,7 @@ put_descriptor120:
 fatal_error:
 	sts	sa_go+0, r24
 	sts	sa_go+1, r25
+	sbi	b_CRDY
 	movw	r9:r8, r25:r24
 fatal_error010:
 	ldi	r24, low(10240)		;;; 10 seconds

@@ -134,12 +134,13 @@ printcvtbyte:
 	clr	r25
 printcvtbyte010:
 	subi	r24, 10
-	brcs	printcvtbyte020
-	subi	r25, -10
+	brmi	printcvtbyte020
+	inc	r25
 	rjmp	printcvtbyte010
 printcvtbyte020:
 	subi	r24, -10
-	add	r24, r25
+	swap	r25
+	or	r24, r25
 	pop	r25
 	ret
 

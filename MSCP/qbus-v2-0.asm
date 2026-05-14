@@ -14,15 +14,15 @@
 ;
 ;	Experimental suppress multiple identical entries
 ;
-	lds	zl, log_previous+0
-	cpi	zl, @0
-	brne	log
-	lds	zl, log_previous+2	; Is it the same value
-	cp	zl, yl
-	brne	log
-	lds	zh, log_previous+3
-	cp	zh, yh
-	breq	nolog			; same action and same vlue
+;	lds	zl, log_previous+0
+;	cpi	zl, @0
+;	brne	log
+;	lds	zl, log_previous+2	; Is it the same value
+;	cp	zl, yl
+;	brne	log
+;	lds	zh, log_previous+3
+;	cp	zh, yh
+;	breq	nolog			; same action and same vlue
 ;
 ;
 ;
@@ -58,6 +58,9 @@ nolog:
 ;--------------------------------------------------------------------------
 ;
 	.macro	DATI
+	lds	zl, daticount
+	inc	zl
+	sts	daticount, zl
 	#if cpldif==40
 	cbi	b_RD			; 1
 	ldi	zl, 0xFF		; 1
@@ -90,6 +93,9 @@ nolog:
 ;--------------------------------------------------------------------------
 ;
 	.macro	DATO
+	lds	yl, datocount
+	inc	yl
+	sts	datocount, yl
 	#if cpldif==40
 	cbi	b_RS2			; 1 Switch from CSR Address to Q-Bus Data Low
 	waitin				; 3-5
@@ -450,7 +456,7 @@ qbus_dato_ip:
 	sts	sa_s4+0, zl
 	sts	sa_s4+1, zl
 	sts	mscpstatus, zl
-
+	sbi	b_CRDY			; Enable SA Read Interrupt
 	INTEXIT	log_dato|log_ip
 
 ;-----------------------------------------------------------------------------

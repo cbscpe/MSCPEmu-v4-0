@@ -32,6 +32,19 @@
 ;	Wrap writing dummy bytes into a macro as it seems we need to make 
 ;	sure we check DRE
 ;
+
+;SPI_transfer_dummy:
+;	ldi	r24, 0xff
+;SPI_transfer:
+;	sts	SPI1_DATA, r24
+;SPI_transfer010:
+;	lds	r24, SPI1_INTFLAGS
+;	sbrs	r24, SPI_IF_bp
+;	rjmp	SPI_transfer010
+;	lds	r24, SPI1_DATA
+;	ret								; Done
+
+
 .macro	stspi
 l1:
 	lds	r18, SPI1_INTFLAGS
@@ -58,7 +71,7 @@ l1:
 SD_CARD_MULTIPLE:
 	push	r4			; Save Registers
 	push	r5
-	push	yl
+	push	r6
 	push	yh
 	movw	yh:yl, r25:r24		; Copy Parameter Block Address
 	rcall	SPI_transfer_dummy	;
@@ -114,10 +127,10 @@ SD_CARD_MULTIPLE030:
 SD_CARD_MULTIPLE040:
 	ldd	xl, Y+P_Wordcount+0	; Get Word Count
 	ldd	xh, Y+P_Wordcount+1	;
-	lds	r21, SPI1_CTRLA
-	sts	SPI1_CTRLA, zero
+	lds	r21, SPI1_CTRLA		; Save current SPI config
+	sts	SPI1_CTRLA, zero	; Stop SPI
 	lds	r18, SPI1_CTRLB
-	sbr	r18, SPI_BUFEN_bm	; Set SPI buffered mode so we can do the
+	sbr	r18, SPI_BUFEN_bm 	; Set SPI buffered mode so we can do the
 	sts	SPI1_CTRLB, r18		; transfer in 16-bit chunks
 	sts	SPI1_CTRLA, r21
 	ldd	r20, Y+P_Flag		; Possibly skip the first RL01/02
@@ -198,6 +211,12 @@ SD_CARD_MULTIPLE120:			;
 	rjmp	SD_CARD_MULTIPLE170	;
 SD_CARD_MULTIPLE130:
 	cbi	b_DMR			; Acknowledge state machine
+
+	nop
+	nop
+	nop
+	nop
+
 	adiw	xh:xl, 1		; Wordcount
 	brne	SD_CARD_MULTIPLE135
 	ldi	r24, SD_SUCCESS	
@@ -209,14 +228,14 @@ SD_CARD_MULTIPLE135:
 SD_CARD_MULTIPLE140:
 	ldspi	r21			; Retrieve CRC-16, high-byte first
 	ldspi	r20
+	;logtr	0x37, r4, r5
+	;logtr	0x3F, r20, r21
 	cp	r4, r20			; Match?
 	cpc	r5, r21			; 
 	breq	SD_CARD_MULTIPLE160	; CRC matches
 	ldd	r20, Y+P_Flag
 	sbrc	r20, P__Nocheck		; 
 	rjmp	SD_CARD_MULTIPLE160	; We don't care about CRC
-	logtr	0x77, r4, r5
-	logtr	0x78, r20, r21
 	ldi	r24, SD_ERR_CRC		; oh no CRC error
 	rjmp	SD_CARD_MULTIPLE180	; 
 ;
@@ -235,18 +254,20 @@ SD_CARD_MULTIPLE165:
 	ldi	r24, SD_ERR_INV_TOKEN	; Assume invalid Token
 	cpi	r20, SD_START_TOKEN	; Data Token?
 	brne	SD_CARD_MULTIPLE180	; not good
+;	call	print
+;	.db	CR, LF, "165", 0
 	rjmp	SD_CARD_MULTIPLE080	; Got a token get next block
 ;
 ;	Retrieve the two pending bytes before we proceed
 ;
 SD_CARD_MULTIPLE170:			; remove 2 bytes
-	ldspi	r20
+	ldspi	r21			; 
 	ldspi	r20
 SD_CARD_MULTIPLE180:
 	mov	r4, r24			; Save Return Code
 	std	Y+P_Wordcount+0, xl	; Return Remaining Word Count
 	std	Y+P_Wordcount+1, xh
-	logtr	0x79, xl, xh
+	;logtr	0x39, xl, xh
 	lds	r21, SPI1_CTRLA		; Reset Buffered Mode
 	sts	SPI1_CTRLA, zero
 	lds	r18, SPI1_CTRLB
@@ -290,13 +311,13 @@ SD_CARD_MULTIPLE220:
 	tst	r24			; 
 	breq	SD_CARD_MULTIPLE999	; Do not overwrite status in r4
 	ldi	r24, SD_ERROR		; Assume yes
-	mov	r4, r24			; General Error
 SD_CARD_MULTIPLE999:
+	push	r24
 	rcall	SPI_transfer_dummy
 	sbi	b_SS
 	rcall	SD_readTimer		; And insert timer to IOStatus
 	rcall	SPI_transfer_dummy
-	mov	r24, r4
+	pop	r24
 	pop	yh
 	pop	yl
 	pop	r5

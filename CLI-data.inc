@@ -32,3 +32,7 @@ portname:	.byte	1
 logdataentry:	.byte	4
 logdataentryc:	.byte	1
 
+sdcardlbn:	.byte	4
+sdcardaddr:	.byte	4
+sdcardflag:	.byte	1
+

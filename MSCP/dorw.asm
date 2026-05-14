@@ -30,12 +30,25 @@
 ;	- put_packet()
 ;
 
+;
+;	Logging
+;
+;	0x50	ucb
+;	0x51	lbn
+;	0x52	byte count
+;	0x53	count of 64k blocks
+;	0x54	2's complement of word count in last 64k block
+;	0x55	DMA Address, word-count in block, block count
+;	0x5F	multi-word output
+
+
+.def	count	= r3			; Local Counter 
 .def	datal	= r4			; DMA data
 .def	datah	= r5
 .def	bkcl	= r6			; Block Counter for even bigger word counts
 .def	bkch	= r7			; 
-.def	wcnt	= r8			; Word Counter
-.def	count	= r9			; Local Counter 
+.def	wcntl	= r8			; Word Counter
+.def	wcnth	= r9			; Word Counter
 .def	pktl	= r10			; MSCP Packet address
 .def	pkth	= r11
 .def	addrl	= r12			; I/O Buffer Address
@@ -106,7 +119,7 @@ do_wr:
 	ldd	r24, Y+rwc_unit+0
 	ldd	r25, Y+rwc_unit+1
 	call	getucb
-	logtr	0x50, r24, r25
+	;logtr	0x50, r24, r25
 	sbiw	r25:r24, 0
 	breq	rwchkparam010
 
@@ -172,8 +185,8 @@ rwchkparam020:
 	ldd	r17, Y+rwc_lbn+1
 	ldd	r18, Y+rwc_lbn+2
 	ldd	r19, Y+rwc_lbn+3
-	logtr	0x51, r16, r17		; 
-	logtr	0x5F, r18, r19
+	;logtr	0x51, r16, r17		; 
+	;logtr	0x5F, r18, r19
 	cp	r16, r20
 	cpc	r17, r21
 	cpc	r18, r22
@@ -223,13 +236,12 @@ rwchkparam040:
 	ldd	r22, Y+rwc_bcnt+2	; request does not go beyond the
 	ldd	r23, Y+rwc_bcnt+3	; disk size
 
-	logtr	0x52, r20, r21		; Byte Count Low
-
+	;logtr	0x52, r20, r21		; Byte Count Low
+	;logtr	0x5F, r22, r23
+	
 	lsr	r23
 	ror	r22
 	ror	r21
-
-	logtr	0x5F, r21, r22		; Block Count
 	
 	add	r16, r21
 	adc	r17, r22
@@ -271,9 +283,9 @@ rwchkparam050:
 ;
 	ldd	r18, Y+rwc_opcd
 	cpi	r18, op_ers
-	breq	rwchkparam080		; not required for ERASE
+	breq	rwchkparam055		; not required for ERASE
 	cpi	r18, op_acc
-	breq	rwchkparam080		; not required for ACCESS
+	breq	rwchkparam055		; not required for ACCESS
 	ldd	r16, Y+rwc_bcnt+0
 	sbrs	r16, 0			; Byte count must be even
 	rjmp	rwchkparam060
@@ -285,6 +297,9 @@ rwchkparam050:
 	std	Y+rwr_sts+0, r18
 	std	Y+rwr_sts+1, r19	;
 	rjmp	rwexit
+
+rwchkparam055:
+	rjmp	rwchkparam080
 	
 rwchkparam060:
 	ldd	r16, Y+rwc_buff+0
@@ -303,8 +318,6 @@ rwchkparam070:				; Calculate End Address
 	ldd	r17, Y+rwc_buff+1
 	ldd	r18, Y+rwc_buff+2
 	ldd	r19, Y+rwc_buff+3
-	
-	logtr	0x53, r17, r18
 
 	subi	r16, byte1(020000000)
 	sbci	r17, byte2(020000000)
@@ -398,8 +411,13 @@ mscp_rd:
 ;	from the SD-Card. The IO control block address is in yh:yl
 ;	the number of blocks we need to read is in bkch:bkcl including
 ;	a potential partail last block and the number of words to 
-;	transfer in the last block is in wcnt.
+;	transfer in the last block is in wcntl.
 ;
+	movw	zh:zl, ucbh:ucbl
+	ldd	r16, Z+ucb_status
+	sbrc	r16, ucb__part
+	rjmp	mscp_rd100
+
 mscp_rd010:
 	movw	r25:r24, yh:yl		; get IO control block
 	call	SD_CARD_READ
@@ -408,10 +426,9 @@ mscp_rd010:
 	movw	r25:r24, bkch:bkcl	; Get Blocks to Read
 	sbiw	r25:r24, 1		; Is this the last block
 	brne	mscp_rd020		; no
-	tst	wcnt			; is the last block a partial block
+	tst	wcntl			; is the last block a partial block
 	breq	mscp_rd020		; no	
-	mov	count, wcnt		; partial block size
-	logtr	0x57, count, zero
+	mov	count, wcntl		; partial block size
 
 mscp_rd020:
 	ld	datal, X+
@@ -424,7 +441,6 @@ mscp_rd020:
 	sbiw	r25:r24, 1		; More blocks to read
 	breq	mscp_rd030		; No - All done
 	movw	bkch:bkcl, r25:r24	; 
-	logtr	0x56, r24, r25
 	rcall	mscp_rwnextsector	; Calculate the next sector
 	rjmp	mscp_rd010
 
@@ -432,6 +448,54 @@ mscp_rd030:
 	rjmp	rwexit
 mscp_rd090:
 	rjmp	rwdmaerror
+	
+;
+;	Experimental code for SD_CARD_MULTIPE
+;
+mscp_rd100:
+	movw	zh:zl, pkth:pktl	; Get Packet
+	ldd	r22, Z+rwc_bcnt+0	; Get Byte Count, which is at this moment
+	ldd	r23, Z+rwc_bcnt+1	; verified to be valid
+	ldd	r24, Z+rwc_bcnt+2
+	ldd	r25, Z+rwc_bcnt+3
+	lsr	r25			; Make word count
+	ror	r24
+	ror	r23
+	ror	r22
+	com	r23
+	neg	r22
+	sbci	r23, -1			; Make 2's complement and save word count
+	movw	wcnth:wcntl, r23:r22	; of last block of 65536 words
+
+	;logtr	0x53, r24, r25	; Show how many blocks we are going to do
+
+	rjmp	mscp_rd120
+;------------------------------
+;
+;
+;
+mscp_rd110:
+	movw	bkch:bkcl, r25:r24	; Save remaining block count
+	movw	r25:r24, yh:yl		; Get IO control block
+	call	SD_CARD_MULTIPLE
+	movw	r25:r24, bkch:bkcl
+;
+;
+;
+mscp_rd120:
+	std	Y+P_Wordcount+0, zero	; Assume 65536 words
+	std	Y+P_Wordcount+1, zero
+	sbiw	r25:r24, 1		; 
+	brpl	mscp_rd110		; do full block
+	std	Y+P_Wordcount+0, wcntl	; Remaining Words
+	std	Y+P_Wordcount+1, wcnth
+	;logtr	0x54, wcntl, wcnth	; We are doing the rest of the block
+	movw	r25:r24, yh:yl		; Get IO control block
+	call	SD_CARD_MULTIPLE
+	rjmp	rwexit	
+;
+;
+;
 ;--------------------------------------------------------------------------
 ;
 ;	WRITE
@@ -443,7 +507,7 @@ mscp_write010:
 	movw	r25:r24, bkch:bkcl	; Get Blocks to Write
 	sbiw	r25:r24, 1		; Is this the last block
 	brne	mscp_write020		; no
-	tst	wcnt			; Is the last block a partial block
+	tst	wcntl			; Is the last block a partial block
 	breq	mscp_write020		; no
 	movw	xh:xl, addrh:addrl	; For partial blocks make sure that we
 mscp_write015:				; fill the rest with zero
@@ -451,8 +515,7 @@ mscp_write015:				; fill the rest with zero
 	st	X+, zero
 	inc	count
 	brne	mscp_write015
-	mov	count, wcnt		; Only Partial Block
-	logtr	0x59, count, zero
+	mov	count, wcntl		; Only Partial Block
 mscp_write020:
 	movw	xh:xl, addrh:addrl
 mscp_write030:
@@ -467,7 +530,6 @@ mscp_write030:
 	movw	r25:r24, bkch:bkcl	; Get Blocks to Write
 	sbiw	r25:r24, 1		; More Blocks to Write
 	breq	mscp_write040		; No - All done
-	logtr	0x58, r24, r25		; 
 	movw	bkch:bkcl, r25:r24
 	rcall	mscp_rwnextsector	; Calcualte the next sector
 	rjmp	mscp_write010
@@ -486,7 +548,7 @@ mscp_cmp010:
 	cp	bkcl, zero
 	cpc	bkch, zero
 	breq	mscp_cmp020
-	mov	count, wcnt
+	mov	count, wcntl
 mscp_cmp020:
 	call	SD_CARD_READ	
 	movw	xh:xl, addrh:addrl
@@ -544,7 +606,7 @@ rwexit:
 ;	ucbh:ucbl	UCB
 ;
 ;	Output:
-;	wcnt		Word Count partial block
+;	wcntl		Word Count partial block
 ;	bkch:bkcl	Block Count
 ;	addrh:addrl	Buffer Address
 ;	CPLD		DMA direction and DMA start address are set
@@ -570,14 +632,14 @@ mscp_setupe:				; ERASE
 ;	to the right and then we can use the lower 8 bits as word count
 ;	and the rest as block count
 ;
-	ldd	wcnt, Y+rwc_bcnt+0
+	ldd	wcntl, Y+rwc_bcnt+0
 	ldd	r24, Y+rwc_bcnt+1
 	ldd	r25, Y+rwc_bcnt+2	; we support only 2^24 bytes :-)
 	
 	lsr	r25
 	ror	r24
-	ror	wcnt
-	cpse	wcnt, zero		; Is the last block a partial block
+	ror	wcntl
+	cpse	wcntl, zero		; Is the last block a partial block
 	adiw	r25:r24, 1		; Account for partial block
 	movw	bkch:bkcl, r25:r24	
 
@@ -586,9 +648,9 @@ mscp_setupe:				; ERASE
 	ldd	r18, Y+rwc_lbn+2
 	ldd	r19, Y+rwc_lbn+3	; Logical Block Number
 	
-	logtr	0x55, r20, r21		; DMA Start Address and word
-	logtr	0x5F, r22, wcnt		; count in last block (0=entire block)
-	logtr	0x5F, bkcl, bkch	; block count
+	;logtr	0x55, r20, r21		; DMA Start Address and word
+	;logtr	0x5F, r22, wcntl		; count in last block (0=entire block)
+	;logtr	0x5F, bkcl, bkch	; block count
 ;
 ;	Get Image Pointer
 ;	
@@ -648,6 +710,8 @@ mscp_rwsetup020:
 ;	retrieved, reading MPR always returns values from the FIFO
 ;
 mscp_rwsetup030:
+	ldi	r16, (1<<P__Nocheck)	; don't check CRC, no partial start block
+	std	Y+P_Flag, r16		; 
 	ldi	r16, low(sdbuffer)	; 
 	ldi	r17, high(sdbuffer)	; 
 	std	Y+P_Address+0, r16	; Set buffer address for SD-Card block
@@ -720,7 +784,7 @@ mscp_rwnextsector010:
 .undef	datah	
 .undef	bkcl	
 .undef	bkch
-.undef	wcnt
+.undef	wcntl
 .undef	count
 .undef	addrl
 .undef	addrh

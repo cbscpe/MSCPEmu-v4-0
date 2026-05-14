@@ -66,8 +66,6 @@ mscp_reset:
 	sts	credits, zl
 	ldi	zl, 60 + 1
 	sts	ha_time, zl
-								
-
 	ret							
 								
 								

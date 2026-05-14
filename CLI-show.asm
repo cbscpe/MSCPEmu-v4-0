@@ -141,13 +141,17 @@ cmd_showintirqs:
 	sts	pprint+1, r17
 	call	print
 	.db	TAB, "SAW Count  ", 0xC0, CR, LF, 0
-
+	ret
+	
+cmd_showfncstats:
+	call	print
+	.db	CR, LF, "Function Statistics", CR, LF, 0	
 	ldi	r16, 0x40		; Print OP STATS Table
 	ldi	xl, low(mscp_names)
 	ldi	xh, high(mscp_names)
 	ldi	zl, low(op_stats)
 	ldi	zh, high(op_stats)
-cmd_showintstats010:
+cmd_showfncstats010:
 	ld	r20, X+
 	sts	pprint+0, r20
 	ld	r20, X+
@@ -163,7 +167,7 @@ cmd_showintstats010:
 	call	print
 	.db	TAB, 0x90, 0x91, 0x92, 0x93, ": ", 0xc4, CR, LF, 0, 0
 	dec	r16
-	brne	cmd_showintstats010
+	brne	cmd_showfncstats010
 	ret
 #endif
 
@@ -224,8 +228,47 @@ cmd_showintprint:
 	.db	TAB, "Num Sector.. 0x", 0x8e, SPACE, CR, LF
 	.db	TAB, "Dir Count... 0x", 0x8f, CR, LF, 0
 	ret
-	
+
 cmd_showintports:
+#ifdef mscpemulation
+	ldi	r16, '0'
+	sbic	b_IP
+	ldi	r16, '1'
+	sts	pprint+0, r16
+	call	print
+	.db	TAB, "IP ............:", 0x90, CR, LF, 0, 0
+
+	ldi	r16, '0'
+	sbic	f_IP
+	ldi	r16, '1'
+	sts	pprint+0, r16
+	call	print
+	.db	TAB, "IP Int Flag....:", 0x90, CR, LF, 0, 0
+
+	lds	r16, c_IP
+	sts	pprint+0, r16
+	call	print
+	.db	TAB, "IP Config......:", 0x80, CR, LF, 0, 0
+
+	ldi	r16, '0'
+	sbic	b_SA
+	ldi	r16, '1'
+	sts	pprint+0, r16
+	call	print
+	.db	TAB, "SA ............:", 0x90, CR, LF, 0, 0
+
+	ldi	r16, '0'
+	sbic	f_SA
+	ldi	r16, '1'
+	sts	pprint+0, r16
+	call	print
+	.db	TAB, "SA Int Flag....:", 0x90, CR, LF, 0, 0
+
+	lds	r16, c_SA
+	sts	pprint+0, r16
+	call	print
+	.db	TAB, "SA Config......:", 0x80, CR, LF, 0, 0
+#endif
 	ldi	r16, '0'
 	sbic	b_CRDY
 	ldi	r16, '1'
@@ -267,14 +310,6 @@ cmd_showintports:
 	sts	pprint+0, r16
 	call	print
 	.db	TAB, "IRQ ...........:", 0x90, CR, LF, 0, 0
-#ifdef	mscpemulation
-	ldi	r16, '0'
-	sbic	b_SA
-	ldi	r16, '1'
-	sts	pprint+0, r16
-	call	print
-	.db	TAB, "SA ............:", 0x90, CR, LF, 0, 0
-#endif
 	ret
 ;--------------------------------------------------------------------------
 ;

@@ -154,7 +154,7 @@
 #define rlv12job_prio 2
 
 #define polljob_id 0
-#define polljob_prio 2
+#define polljob_prio 6
 
 #define main_id 1
 #define main_prio 4
