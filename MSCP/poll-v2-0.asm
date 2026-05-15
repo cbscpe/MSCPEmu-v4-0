@@ -167,9 +167,8 @@ poll120:
 	sbci	xh, high(-op_stats)
 	ld	r23, X
 	inc	r23
-	breq	poll120a		; 255=overflow
+	cpse	r23, zero		; Don't save overflow
 	st	X, r23
-poll120a:
 	logtr	0x7E, r20, r22		; Unit / Opcode
 	;logtr	0x7F, r18, r19		; Packet Type / Connection ID
 	andi	r18, 0xF0		; Mask credit fields to get message type
@@ -177,62 +176,13 @@ poll120a:
 	tst	r19
 	brne	poll130
 
-	cpi	r22, op_onl
-	brne	poll121
-	call	do_onl
-	rjmp	poll100
-poll121:
-	cpi	r22, op_scc
-	brne	poll122
-	call	do_scc;logtr
-	rjmp	poll100
-poll122:
-	cpi	r22, op_rd
-	brne	poll123
-	call	do_rd
-	rjmp	poll100
-poll123:
-	cpi	r22, op_wr
-	brne	poll124
-	call	do_wr
-	rjmp	poll100
-poll124:
-	cpi	r22, op_gus
-	brne	poll125
-	call	do_gus
-	rjmp	poll100
-poll125:
-	ori	r22, op_end
-	std	Y+rsp_opcd, r22	; Set End Flag
-	rcall	put_packet
-	rjmp	poll100
-	
-
-;	lds	r16, cmd_link+cmd_opcd	; Get Opcode
-;	ori	r16, op_end
-;	sts	cmd_link+rsp_opcd, r16	; Set End Flag
-;
-;	ldi	r24, low(rsp_link)
-;	ldi	r25, high(rsp_link)
-;	call	do_mscp			; do_mscp
-;
-;	ldi	r24, low(cmd_link)
-;	ldi	r25, high(cmd_link)
-;	call	put_packet
-;	rjmp	poll100
-;
-;	cpi	r16, 2
-;	brne	poll130
-;
-;	lds	r16, cmd_link+cmd_opcd	; Get Opcode
-;	ori	r16, op_end
-;	sts	cmd_link+rsp_opcd, r16	; Set End Flag
-;
-;	ldi	r24, low(cmd_link)
-;	ldi	r25, high(cmd_link)
-;	call	put_packet
-;	rjmp	poll100
-
+	mov	zl, r22			; Get Opcode
+	andi	zl, 0x3F		; 
+	clr	zh
+	subi	zl, low(-do_mscp_table)	; Index to jump table
+	sbci	zh, high(-do_mscp_table)
+	icall				; Execute function
+	rjmp	poll100			; loop
 
 poll130:
 	ldi	r24, low(pe_ici)	; illegal connection identifier
@@ -243,6 +193,78 @@ poll140:
 	ldi	r24, low(pe_pie)	; protocol incompatibility error
 	ldi	r25, high(pe_pie)
 	call	fatal_error
+;----------------------------------------------------------------------------
+;
+;	Jump Table
+;	
+do_mscp_table:
+	rjmp	do_default		;
+	rjmp	do_abo			; Abort
+	rjmp	do_gcs			; Get Command Status
+	rjmp	do_gus			; Get Unit Status
+	rjmp	do_scc			; Set Controller Characteristics
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_avl			; Available
+	rjmp	do_onl			; Online
+	rjmp	do_suc			; Set Unit Characteristics
+	rjmp	do_dap			; No-Op
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_acc			; Access
+	rjmp	do_ccd			; No-Op
+	rjmp	do_ers			; Erase
+	rjmp	do_flu			; No-Op
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_new			; Format (24)
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_cmp			; Compare	
+	rjmp	do_rd			; Read
+	rjmp	do_wr			; Write
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_fmt			; Format (47)
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default
+	rjmp	do_default		; AVA?? Now Available
+
+
+
 ;----------------------------------------------------------------------------
 ;
 ;	Communication to the host is done via two rings. Each ring 

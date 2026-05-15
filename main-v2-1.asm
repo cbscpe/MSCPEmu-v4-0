@@ -1021,7 +1021,6 @@ prtcreate:
 #ifdef mscpemulation
 .include	"MSCP/qbus-v2-0.asm"	; RLV12 Q-Bus Interface
 .include	"MSCP/clear.asm"
-.include	"MSCP/poll-v2-0.asm"
 .include	"MSCP/init.asm"
 .include	"MSCP/doabo.asm"
 .include	"MSCP/doavl.asm"
@@ -1034,6 +1033,8 @@ prtcreate:
 .include	"MSCP/doonl.asm"	; work in progress
 .include	"MSCP/dorw.asm"
 .include	"MSCP/douna.asm"
-.include	"MSCP/mscp.asm"
+.include	"MSCP/doother.asm"
+.include	"MSCP/poll-v2-0.asm"
+;.include	"MSCP/mscp.asm"
 .include	"MSCP/dup.asm"
 #endif
