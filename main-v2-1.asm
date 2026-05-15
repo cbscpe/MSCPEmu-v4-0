@@ -996,7 +996,7 @@ prtcreate:
 .include "FAT/CreatePath.asm"
 .include "FAT/FreeList.asm"
 .include "FAT/LinkedCluster.asm"
-.include "FAT/Logical2Physical.asm"
+.include "FAT/Logical2PhysicalB.asm"
 .include "FAT/MatchFileName.asm"
 .include "FAT/Name2DirEntry.asm"
 .include "FAT/OpenDir.asm"
@@ -1035,6 +1035,5 @@ prtcreate:
 .include	"MSCP/douna.asm"
 .include	"MSCP/doother.asm"
 .include	"MSCP/poll-v2-0.asm"
-;.include	"MSCP/mscp.asm"
 .include	"MSCP/dup.asm"
 #endif
