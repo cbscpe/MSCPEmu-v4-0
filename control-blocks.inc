@@ -14,6 +14,7 @@ record		P, Error, 2
 record		P, Duration, 2
 
 record		P, Cluster, 4		; Current Cluster
+record		P, Maxsector, 0
 record		P, Extended, 4		; During Mount Volume
 					;
 record		P, Flag, 1
