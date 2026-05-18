@@ -162,12 +162,16 @@ cmd_showfncstats010:
 	sts	pprint+3, r20
 	ld	r20, Z
 	st	Z+, zero
+	tst	r20
+	breq	cmd_showfncstats020
 	sts	pprint+4, r20
 	sts	pprint+5, zero
 	call	print
 	.db	TAB, 0x90, 0x91, 0x92, 0x93, ": ", 0xc4, CR, LF, 0, 0
+cmd_showfncstats020:
 	dec	r16
 	brne	cmd_showfncstats010
+	clc
 	ret
 #endif
 
@@ -404,7 +408,7 @@ cmd_showunitfile020:
 	sbrs	r16, F__Contig
 	rjmp	cmd_showunitfile030
 	call	print
-	.db	"  File is continguous.", CR, LF, 0, 0
+	.db	"  File is contiguous.", CR, LF, 0
 cmd_showunitfile030:
 	push	yl
 	push	yh

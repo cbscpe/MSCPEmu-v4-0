@@ -166,7 +166,7 @@
 ;
 	.db	"RD54"
 	.dd	0x25644036		; Media ID
-	.dd	312300
+	.dd	311300
 	.dd	312377;/311200
 	.dw	7			; RCT Size
 	.db	17, 15
@@ -189,10 +189,10 @@
 	.db	"RA83"
 	.dd	0x25641052		; Media ID
 	.dd	1954001
-	.dd	1954001+8
-	.dw	3420			; RCT Size
-	.db	57, 15
-	.dw	1423
+	.dd	1954200
+	.dw	4500			; RCT Size
+	.db	87, 15
+	.dw	1498
 	.db	0, 0
 ;
 ;	RA82	57	15	1423	622Mbyte

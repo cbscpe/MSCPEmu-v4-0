@@ -486,6 +486,16 @@ cmdmemtesterror:
 ;
 ;
 ;	
+cmdpoll:
+	ldi	r24, low(mscpipr)
+	ldi	r25, high(mscpipr)
+	call	unblock
+	clc
+	ret
+;--------------------------------------------------------------------------
+;
+;
+;	
 cmdcontbsy:
 	cbi	b_CRDY
 	clc
