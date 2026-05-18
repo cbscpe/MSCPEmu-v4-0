@@ -14,7 +14,7 @@ record		P, Error, 2
 record		P, Duration, 2
 
 record		P, Cluster, 4		; Current Cluster
-record		P, Maxsector, 0
+record		P, MaxSector, 0		; Maximum Sectors that can be read 
 record		P, Extended, 4		; During Mount Volume
 					;
 record		P, Flag, 1
@@ -104,7 +104,7 @@ record		fcb, sectperclst, 1
 record		fcb, filename, 2
 record		fcb, fraglist, 2
 record		fcb, position, 4
-record		fcb, filesize, 4
+record		fcb, filesize, 4	; in entire blocks!!
 record		fcb, byteinsec, 2
 record		fcb, volume, 2		; Pointer to Volume Control Block
 recordend	fcb, size
