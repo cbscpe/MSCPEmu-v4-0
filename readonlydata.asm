@@ -48,14 +48,22 @@
 
 #ifdef mscpemulation
 .equ REGName = (PC - 0x8000) * 2 + 0x8000
-	.db	"IP ", 0
-	.db	"SA ", 0
-	.db	"IP ", 0
-	.db	"SA ", 0
-	.db	"IP ", 0
-	.db	"SA ", 0
-	.db	"IP ", 0
-	.db	"SA ", 0
+	.db	"IP     ", 0
+	.db	"IP (S1)", 0
+	.db	"IP (S2)", 0
+	.db	"IP (S3)", 0
+	.db	"IP (S4)", 0
+	.db	"IP (WR)", 0
+	.db	"IP (GO)", 0
+	.db	"IP (ER)", 0
+	.db	"SA     ", 0
+	.db	"SA (S1)", 0
+	.db	"SA (S2)", 0
+	.db	"SA (S3)", 0
+	.db	"SA (S4)", 0
+	.db	"SA (WR)", 0
+	.db	"SA (GO)", 0
+	.db	"SA (ER)", 0
 .equ JobNames = (PC - 0x8000) * 2 + 0x8000
 	.db	"Poll",		0, 0, 0, 0
 	.db	"CLI",		0, 0, 0, 0, 0

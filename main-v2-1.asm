@@ -387,6 +387,11 @@ pitwait:
 	sts	c_GO, r18		; Pin Control
 #endif
 ;
+;	Debug
+;
+	sbi	d_DBG
+	cbi	b_DBG
+;
 ;	Q-Bus Interrupts - Level 1 Interrupt
 ;
 	cbi	d_INTI			; Q-Bus IACK Interrupt
@@ -810,9 +815,9 @@ main:
 	std	Z+jcb_joblist+0, xl
 	std	Z+jcb_joblist+1, xh
 
-	ldi	r18, scan_id
+	ldi	r18, init_id
 	std	Z+jcb_jobid, r18
-	ldi	r18, scan_prio		; Must be the lowest priority
+	ldi	r18, init_prio		; Must be the lowest priority
 	std	Z+jcb_priority, r18	; carddetect job
 	clr	r18
 	std	Z+jcb_flags, r18

@@ -42,6 +42,7 @@
 ;		0x7A	put_packet return end-code, flags, status 
 ;		0x7B	put_packet message size, Packet-type, Credits, Connection ID
 ;		0x7C	put_packet response status
+;		0x7D	IP-Read or SA-Write interrupt
 ;		0x7E	poll: unit, opcode, packet type and connection ID of received
 ;			packet
 ;
@@ -76,6 +77,24 @@ poll_:
 	push	yh
 	push	yl
 	sbi	f_IP			; Acknowledge interrupt
+
+	cli
+	lds	zl, log_pointer+0	; 3 Logging is done only if log__reg is set
+	lds	zh, log_pointer+1	; 3
+	ldi	yl, log_trace
+	st	Z+, yl
+	ldi	yl, 0x7D
+	st	Z+, yl
+	ldi	yl, (1<<IP)
+	st	Z+, yl
+	in	yl, VPORTB_OUT
+	st	Z+, yl
+	sbrc	zh, log_overflow	; 2/1
+	ldi	zh, high(log_buffer+log_begin)
+	sts	log_pointer+0, zl	; 2
+	sts	log_pointer+1, zh	; 2
+	sei	
+	
 	ldi	zl, low(mscpipr)
 	ldi	zh, high(mscpipr)
 	jmp	unblocki
@@ -96,6 +115,24 @@ poll_010:
 	push	yh
 	push	yl
 	sbi	f_SA			; Acknowledge interrupt
+
+	cli
+	lds	zl, log_pointer+0	; 3 Logging is done only if log__reg is set
+	lds	zh, log_pointer+1	; 3
+	ldi	yl, log_trace
+	st	Z+, yl
+	ldi	yl, 0x7D
+	st	Z+, yl
+	ldi	yl, (1<<SA)
+	st	Z+, yl
+	in	yl, VPORTB_OUT
+	st	Z+, yl
+	sbrc	zh, log_overflow	; 2/1
+	ldi	zh, high(log_buffer+log_begin)
+	sts	log_pointer+0, zl	; 2
+	sts	log_pointer+1, zh	; 2
+	sei	
+
 	ldi	zl, low(mscpsaw)
 	ldi	zh, high(mscpsaw)
 	jmp	unblocki
@@ -135,9 +172,9 @@ polljob:
 ;	Main Loop
 ;
 poll100:
-	lds	r16, mscpstatus
-	cpi	r16, mscp_go
-	brne	poll110
+;	lds	r16, mscpstatus
+;	cpi	r16, mscp_go
+;	brne	poll110
 	rcall	get_packet		; Get Packet
 	sbiw	r25:r24, 0
 	brne	poll120			; No Packet
@@ -486,6 +523,9 @@ put_packet150:
 	ret
 
 put_packet160:
+	ldi	r24, low(dmalock)
+	ldi	r25, high(dmalock)
+	call	release
 	ldi	r24, low(pe_pwe)
 	ldi	r25, high(pe_pwe)
 	rcall	fatal_error
@@ -560,6 +600,9 @@ get_descriptor100:
 	ret
 
 get_descriptor110:
+	ldi	r24, low(dmalock)
+	ldi	r25, high(dmalock)
+	call	release
 	ldi	r24, low(pe_qre)	; Queue read error
 	ldi	r25, high(pe_qre)
 	rcall	fatal_error	
@@ -672,6 +715,9 @@ put_descriptor100:
 	lds	r25, vector+1
 	sbiw	r25:r24, 0		; is a vector defined
 	breq	put_descriptor110	; no
+;	lds	r24, mscpstatus		; BSD 2.11
+;	cpi	r24, mscp_go		; BSD 2.11
+;	brne	put_descriptor110	; BSD 2.11
 	sbi	b_IRQ			; set interrupt
 put_descriptor110:
 	ldd	r24, Y+ring_index+0	; point to the next slot
@@ -691,6 +737,9 @@ put_descriptor110:
 	ret
 
 put_descriptor120:
+	ldi	r24, low(dmalock)
+	ldi	r25, high(dmalock)
+	call	release
 	ldi	r24, low(pe_qwe)	; Queue write error
 	ldi	r25, high(pe_qwe)
 	rcall	fatal_error

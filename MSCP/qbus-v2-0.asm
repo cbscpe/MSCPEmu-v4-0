@@ -212,35 +212,35 @@ qbus_mscp_jmptbl:
 ;
 ;	Status S1
 ;
-	rjmp	qbus_dati_ip
+	rjmp	qbus_dati_ip_s1
 	rjmp	qbus_dato_ip
 	rjmp	qbus_dati_sa_s1
 	rjmp	qbus_dato_sa_s1
 ;
 ;	Status S2
 ;
-	rjmp	qbus_dati_ip
+	rjmp	qbus_dati_ip_s2
 	rjmp	qbus_dato_ip
 	rjmp	qbus_dati_sa_s2
 	rjmp	qbus_dato_sa_s2
 ;
 ;	Status	S3
 ;
-	rjmp	qbus_dati_ip
+	rjmp	qbus_dati_ip_s3
 	rjmp	qbus_dato_ip
 	rjmp	qbus_dati_sa_s3
 	rjmp	qbus_dato_sa_s3
 ;
 ;	Status S4
 ;
-	rjmp	qbus_dati_ip
+	rjmp	qbus_dati_ip_s4
 	rjmp	qbus_dato_ip
 	rjmp	qbus_dati_sa_s4
 	rjmp	qbus_dato_sa_s4
 ;
 ;	Status Wrap Around
 ;
-	rjmp	qbus_dati_ip
+	rjmp	qbus_dati_ip_wr
 	rjmp	qbus_dato_ip
 	rjmp	qbus_dati_sa_wr
 	rjmp	qbus_dato_sa_wr
@@ -394,8 +394,8 @@ qbus_rom2_dati:
         ldi     yl, low(05007)		; 1
         ldi     yh, high(05007)         ; 1 "CLR  PC" instruction
 	DATI				; 13|15
-        sbic	FLAGS_COMMON, auto__boot    ; 2/1 Auto Boot Requested
-        cbi     b_SA                    ; 0/1 Trigger Main RLV12 Programm
+;	sbic	FLAGS_COMMON, auto__boot    ; 2/1 Auto Boot Requested
+;	cbi     b_SA                    ; 0/1 Trigger Main RLV12 Programm
         INTEXIT log_dati|log_boot6	; 23|44
 
 ;=============================================================================
@@ -416,12 +416,42 @@ qbus_dati_ip:
 	DATI
 	INTEXIT	log_dati|log_ip
 
+qbus_dati_ip_s1:
+	lds	yl, ipr+0
+	lds	yh, ipr+1
+	DATI
+	INTEXIT	log_dati|log_ips1
+
+qbus_dati_ip_s2:
+	lds	yl, ipr+0
+	lds	yh, ipr+1
+	DATI
+	INTEXIT	log_dati|log_ips2
+
+qbus_dati_ip_s3:
+	lds	yl, ipr+0
+	lds	yh, ipr+1
+	DATI
+	INTEXIT	log_dati|log_ips3
+
+qbus_dati_ip_s4:
+	lds	yl, ipr+0
+	lds	yh, ipr+1
+	DATI
+	INTEXIT	log_dati|log_ips4
+
+qbus_dati_ip_wr:
+	lds	yl, ipr+0
+	lds	yh, ipr+1
+	DATI
+	INTEXIT	log_dati|log_ipwr
+
 qbus_dati_ip_go:
 	lds	yl, ipr+0
 	lds	yh, ipr+1
 	cbi	b_IP
 	DATI
-	INTEXIT	log_dati|log_ip
+	INTEXIT	log_dati|log_ipgo
 
 ;-----------------------------------------------------------------------------
 ;
@@ -503,7 +533,7 @@ qbus_dati_sa_s1:
 ;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
 ;
 	DATI
-	INTEXIT	log_dati|log_sa
+	INTEXIT	log_dati|log_sas1
 ;
 ;	During state 1 we expect the host to write the following information
 ;
@@ -530,7 +560,7 @@ qbus_dato_sa_s1_080:			; Wrap Around will be handled in the QBUS
 	sts	mscpstatus, zl		; Set New State in QBUS to WRAP
 
 qbus_dato_sa_s1_090:
-	INTEXIT	log_dato|log_sa
+	INTEXIT	log_dato|log_sas1
 
 ;-----------------------------------------------------------------------------
 ;
@@ -547,7 +577,7 @@ qbus_dati_sa_s2:
 	lds	yl, sa_s1+1		; Low byte is just what was previously written
 	ldi	yh, high(step2)
 	DATI
-	INTEXIT	log_dati|log_sa
+	INTEXIT	log_dati|log_sas2
 
 ;
 ;
@@ -561,7 +591,7 @@ qbus_dato_sa_s2:
 	sts	sa_s2+0, yl
 	sts	sa_s2+1, yh
 	cbi	b_SA
-	INTEXIT	log_dato|log_sa
+	INTEXIT	log_dato|log_sas2
 	
 
 ;-----------------------------------------------------------------------------
@@ -576,7 +606,7 @@ qbus_dati_sa_s3:
 	lds	yl, sa_s1+0
 	ldi	yh, high(step3)
 	DATI
-	INTEXIT	log_dati|log_sa
+	INTEXIT	log_dati|log_sas3
 
 ;
 ;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
@@ -589,7 +619,7 @@ qbus_dato_sa_s3:
 	sts	sa_s3+0, yl
 	sts	sa_s3+1, yh
 	cbi	b_SA
-	INTEXIT	log_dato|log_sa
+	INTEXIT	log_dato|log_sas3
 
 ;-----------------------------------------------------------------------------
 ;
@@ -603,10 +633,10 @@ qbus_dato_sa_s3:
 qbus_dati_sa_s4:
 
 	lds	yl, sa_s1+0		;
-	lds	yl, 0x01
+	ldi	yl, low(040327)		; 040327
 	ldi	yh, high(step4)
 	DATI
-	INTEXIT	log_dati|log_sa
+	INTEXIT	log_dati|log_sas4
 ;
 ;
 ;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
@@ -618,9 +648,8 @@ qbus_dato_sa_s4:
 	DATO
 	sts	sa_s4+0, yl
 	sts	sa_s4+1, yh
-	sbrc	yl, 0
 	cbi	b_SA
-	INTEXIT	log_dato|log_sa
+	INTEXIT	log_dato|log_sas4
 
 ;--------------------------------------------------------------------------
 ;
@@ -630,13 +659,13 @@ qbus_dati_sa_wr:
 	lds	yl, sa_wr+0
 	lds	yh, sa_wr+1
 	DATI
-	INTEXIT	log_dati|log_sa
+	INTEXIT	log_dati|log_sawr
 
 qbus_dato_sa_wr:
 	DATO
 	sts	sa_wr+0, yl
 	sts	sa_wr+1, yh
-	INTEXIT	log_dato|log_sa
+	INTEXIT	log_dato|log_sawr
 	
 ;--------------------------------------------------------------------------
 ;
@@ -645,15 +674,15 @@ qbus_dato_sa_wr:
 qbus_dati_sa_go:
 	lds	yl, sa_go+0
 	lds	yh, sa_go+1
-	cbi	b_SA
 	DATI
-	INTEXIT	log_dati|log_sa
+	INTEXIT	log_dati|log_sago
 
 qbus_dato_sa_go:
 	DATO
 	sts	sa_pu+0, yl
 	sts	sa_pu+1, yh
-	INTEXIT	log_dato|log_sa
+	cbi	b_SA
+	INTEXIT	log_dato|log_sago
 
 ;--------------------------------------------------------------------------
 ;
@@ -663,13 +692,13 @@ qbus_dati_sa:
 	lds	yl, sa_na+0
 	lds	yh, sa_na+1
 	DATI
-	INTEXIT	log_dati|log_sa
+	INTEXIT	log_dati|log_saer
 
 qbus_dato_sa:
 	DATO
 	sts	sa_na+0, yl
 	sts	sa_na+1, yh
-	INTEXIT	log_dato|log_sa
+	INTEXIT	log_dato|log_saer
 	
 
 ;--------------------------------------------------------------------------

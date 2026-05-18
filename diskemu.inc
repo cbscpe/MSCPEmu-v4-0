@@ -154,7 +154,7 @@
 #define rlv12job_prio 2
 
 #define polljob_id 0
-#define polljob_prio 6
+#define polljob_prio 2
 
 #define main_id 1
 #define main_prio 4
@@ -165,8 +165,8 @@
 #define seek_id 3
 #define seek_prio 1
 
-#define scan_id 3
-#define scan_prio 1
+#define init_id 3
+#define init_prio 1
 ;--------------------------------------------------------------------------
 ;
 ;	Logging - Buffers, Definitions, Macro's
@@ -191,7 +191,21 @@
 #define log_boot6	0x0e
 
 #define	log_ip		0x00
-#define	log_sa		0x02
+#define	log_ips1	0x01
+#define	log_ips2	0x02
+#define	log_ips3	0x03
+#define	log_ips4	0x04
+#define	log_ipwr	0x05
+#define	log_ipgo	0x06
+#define	log_iper	0x07
+#define	log_sa		0x08
+#define	log_sas1	0x09
+#define	log_sas2	0x0A
+#define	log_sas3	0x0B
+#define	log_sas4	0x0C
+#define	log_sawr	0x0D
+#define	log_sago	0x0E
+#define	log_saer	0x0F
 
 #define log_rom		0x01
 #define	log_command	0x80

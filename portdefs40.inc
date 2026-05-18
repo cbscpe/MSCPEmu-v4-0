@@ -14,7 +14,7 @@
 .equ	DMG	= 2			; DMA Granted	
 .equ	ABO	= 3			; Abort Cycle	
 .equ	ACK	= 4			; Acknowledge Cycle
-;	PA5	unused			; PIN1 Red Kinar Wire
+.equ	DBG	= 5			; PIN1 Red Kinar Wire
 .equ	RTOS	= 6			; RTOS Software Interrupt	
 .equ	CLK	= 7			; CPDL Clock output
 
@@ -23,6 +23,7 @@
 #define d_DMG	VPORTA_DIR, DMG
 #define d_ABO	VPORTA_DIR, ABO
 #define d_ACK	VPORTA_DIR, ACK
+#define d_DBG	VPORTA_DIR, DBG
 #define d_RTOS	VPORTA_DIR, RTOS
 #define d_CLK	VPORTA_DIR, CLK
 
@@ -31,6 +32,7 @@
 #define i_DMG	VPORTA_IN, DMG
 #define b_ABO	VPORTA_OUT, ABO
 #define b_ACK	VPORTA_OUT, ACK
+#define b_DBG	VPORTA_OUT, DBG
 
 #define b_RTOS	VPORTA_OUT, RTOS
 #define	f_RTOS	VPORTA_INTFLAGS, RTOS
@@ -48,8 +50,8 @@
 .equ	RS2	= 2			; Register Select 2
 ;	PB3	unused
 #ifdef mscpemulation
-.equ	SA	= 4
-.equ	IP	= 5			; GO Level1 -> Level0 signalling RLV12
+.equ	IP	= 4			; GO Level1 -> Level0 signalling RLV12
+.equ	SA	= 5
 #endif
 #ifdef rlv12emulation
 .equ	GO	= 5			; GO Level1 -> Level0 signalling RLV12

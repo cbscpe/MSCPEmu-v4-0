@@ -381,6 +381,9 @@ mscp_era020:
 	rjmp	mscp_era020
 
 mscp_era030:
+	ldi	r24, low(dmalock)
+	ldi	r25, high(dmalock)
+	call	release
 	rjmp	rwexit
 
 rwchkparam140:
@@ -445,8 +448,14 @@ mscp_rd020:
 	rjmp	mscp_rd010
 
 mscp_rd030:
+	ldi	r24, low(dmalock)
+	ldi	r25, high(dmalock)
+	call	release
 	rjmp	rwexit
 mscp_rd090:
+	ldi	r24, low(dmalock)
+	ldi	r25, high(dmalock)
+	call	release
 	rjmp	rwdmaerror
 	
 ;
@@ -492,6 +501,9 @@ mscp_rd120:
 	;logtr	0x54, wcntl, wcnth	; We are doing the rest of the block
 	movw	r25:r24, yh:yl		; Get IO control block
 	call	SD_CARD_MULTIPLE
+	ldi	r24, low(dmalock)
+	ldi	r25, high(dmalock)
+	call	release
 	rjmp	rwexit	
 ;
 ;
@@ -534,8 +546,14 @@ mscp_write030:
 	rcall	mscp_rwnextsector	; Calcualte the next sector
 	rjmp	mscp_write010
 mscp_write040:
+	ldi	r24, low(dmalock)
+	ldi	r25, high(dmalock)
+	call	release
 	rjmp	rwexit
 mscp_write090:
+	ldi	r24, low(dmalock)
+	ldi	r25, high(dmalock)
+	call	release
 	rjmp	rwdmaerror
 ;--------------------------------------------------------------------------
 ;
@@ -573,10 +591,19 @@ mscp_cmp030:
 	rjmp	mscp_cmp010
 
 mscp_cmp040:
+	ldi	r24, low(dmalock)
+	ldi	r25, high(dmalock)
+	call	release
 	rjmp	rwexit
 mscp_cmp090:
+	ldi	r24, low(dmalock)
+	ldi	r25, high(dmalock)
+	call	release
 	rjmp	rwdmaerror
 mscp_cmp091:
+	ldi	r24, low(dmalock)
+	ldi	r25, high(dmalock)
+	call	release
 	rjmp	rwerror
 
 
@@ -622,6 +649,9 @@ mscp_setupw:				; WRITE
 	ldd	r21, Y+rwc_buff+1
 	ldd	r22, Y+rwc_buff+2
 	bld	r20, 0			; Copy Direction Bit
+	ldi	r24, low(dmalock)
+	ldi	r25, high(dmalock)
+	call	acquire
 	dmaaddr r20, r21, r22		; Start Address of DMA transfer
 
 mscp_setupe:				; ERASE

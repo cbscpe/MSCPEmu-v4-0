@@ -185,8 +185,8 @@ logprintinit:
 	ret
 logprintdato:
 	lds	r16, pprint+0
-	sbrc	r16, 0		; log_rom
-	rjmp	logprintromo
+;	sbrc	r16, 0		; log_rom
+;	rjmp	logprintromo
 	bst	r16, 3		; Make it "Octal"
 	bld	r16, 4
 	andi	r16, 0x16
@@ -201,8 +201,8 @@ logprintdato:
 
 logprintdati:
 	lds	r16, pprint+0
-	sbrc	r16, 0		; log_rom
-	rjmp	logprintromi
+;	sbrc	r16, 0		; log_rom
+;	rjmp	logprintromi
 	bst	r16, 3		; Make it "Octal"
 	bld	r16, 4
 	andi	r16, 0x16
@@ -266,7 +266,9 @@ logprinttrace:
 
 logaddr2name:
 	ldd	zl, Y+0
-	andi	zl, 0x0E
+	andi	zl, 0x0F
+	lsl	zl
+	lsl	zl
 	lsl	zl
 	clr	zh
 	subi	zl, low(-REGName)
