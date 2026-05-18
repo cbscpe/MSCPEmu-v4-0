@@ -62,7 +62,7 @@ recordend	ucb, size
 ;	
 ;	Again UCB is 16bytes long and there can be up to 16 UCBs
 ;	
-;	Unitnumbers are continguous but my start at a value different from 0
+;	Unitnumbers are contiguous but my start at a value different from 0
 ;
 
 	
