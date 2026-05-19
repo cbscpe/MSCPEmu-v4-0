@@ -518,6 +518,9 @@ init410:
 	sts	_ccb_state, r18
 	ldi	r16, mscp_go
 	sts	mscpstatus, r16
+	ldi	r24, low(mscpinit)	; 
+	ldi	r25, high(mscpinit)	;
+	call	unblock			;
 	cbi	b_CRDY			; Disable SA Read Interrupt
 	rjmp	init010
 ;--------------------------------------------------------------------------

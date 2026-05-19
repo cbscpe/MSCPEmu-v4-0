@@ -6,9 +6,9 @@ rsp:		.byte	ring_sz		; Response Ring Data Structure
 purgeflag:	.byte	4		; Host Memory Address of Purge Flags
 descriptor:	.byte	4		; Last Descriptor used
 descr_addr:	.byte	4		; 
-;packet:	.byte	2		; Packet in get_packet -> evtl. use local regs
 mscpipr:	.byte	2		; Poll Job IP Read Wait Lock
 mscpsaw:	.byte	2		; Init Job SA Write Wait Lock
+mscpinit:	.byte	2
 pkts:		.byte	2		; Free Packets link header
 ha_time:	.byte	1		; Host Adapter Timeout
 ha_flag:	.byte	1		; Host Adapter Flag

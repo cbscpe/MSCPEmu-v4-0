@@ -37,7 +37,9 @@
 ;			and value
 ;		0x75	put_descriptor, address of interrupt flag
 ;		0x76	put_descriptor, new index
-;		0x77	poll: block
+;		0x77	poll: init block
+;		0x78	poll: ipr block
+;		0x79	poll: status check with packet
 ;
 ;		0x7A	put_packet return end-code, flags, status 
 ;		0x7B	put_packet message size, Packet-type, Credits, Connection ID
@@ -164,29 +166,34 @@ poll_010:
 polljob:
 	clr	r8			; will be set to fatal_error in delay loop
 	clr	r9			; and can be displayed with "show jobs".
-	ldi	r24, low(mscpipr)	; In the source code of the RQDX3 controller
-	ldi	r25, high(mscpipr)	; POLL first performs a get_packet, which in
-	;logtr	0x77, r8, r9
-	call	block			; my opinion is not correct.
+	ldi	r24, low(mscpinit)	; make sure initialisation is done
+	ldi	r25, high(mscpinit)	;
+	call	block			;
+	lds	r16, mscpstatus
+	logtr	0x77, r16, zero		;
+	cpi	r16, mscp_go		; We expect that mscpinit is unblocked whenever
+	brne	polljob			; the state goes to mscp_go
 ;
 ;	Main Loop
 ;
 poll100:
-;	lds	r16, mscpstatus
-;	cpi	r16, mscp_go
-;	brne	poll110
 	rcall	get_packet		; Get Packet
-	sbiw	r25:r24, 0
+	logtr	0x78, r25, r24
+	sbiw	r25:r24, 0		; We really got a packet
 	brne	poll120			; No Packet
 
 poll110:
 	ldi	r24, low(mscpipr)
 	ldi	r25, high(mscpipr)
-	;logtr	0x77, r25, r24
 	call	block
 	rjmp	poll100
 
 poll120:
+	lds	r16, mscpstatus		; Now make sure we process packets only in
+	logtr	0x78, r16, zero		; mscp_go state
+	cpi	r16, mscp_go
+	brne	poll110
+
 	movw	yh:yl, r25:r24
 
 	ldd	r16, Y+pkt_size+0

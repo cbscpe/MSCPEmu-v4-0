@@ -471,6 +471,13 @@ qbus_dati_ip_go:
 ;			I don't see any issue with that as b_IP is only cleared
 ;			in GO state.
 ;
+;
+;	2026-05-18 PS	BDS 2.11 makes some problems. First the bootloader of BSD
+;			polls the controller before it is in GO state and second it
+;			restarts the controller (write to IP) before last operation
+;			has finished. 
+;
+;			
 qbus_dato_ip:
 	DATO
 	sts	ipr+0, yl
