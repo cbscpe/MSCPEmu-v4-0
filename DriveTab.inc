@@ -183,16 +183,17 @@
 	.db	34, 11
 	.dw	1507
 	.db	0, 0
+
 ;
-;	RA83	57	15	1423	622Mbyte
+;	RA72	57	15	1423	1092Mbyte
 ;
-	.db	"RA83"
-	.dd	0x25641052		; Media ID
-	.dd	1954001
+	.db	"RA72"
+	.dd	0x25641048		; Media ID
+	.dd	1954001			; Min Size
 	.dd	1954200
-	.dw	4500			; RCT Size
-	.db	87, 15
-	.dw	1498
+	.dw	2040			; RCT Size
+	.db	57, 20			; Sector/Track, Track/Cylinder
+	.dw	1921			; Cylinders
 	.db	0, 0
 ;
 ;	RA82	57	15	1423	622Mbyte

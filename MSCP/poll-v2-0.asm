@@ -178,7 +178,7 @@ polljob:
 ;
 poll100:
 	rcall	get_packet		; Get Packet
-	logtr	0x78, r25, r24
+	logtr	0x79, r24, r25
 	sbiw	r25:r24, 0		; We really got a packet
 	brne	poll120			; No Packet
 
@@ -186,6 +186,9 @@ poll110:
 	ldi	r24, low(mscpipr)
 	ldi	r25, high(mscpipr)
 	call	block
+	cli
+	call	debug_pulse3
+	sei	
 	rjmp	poll100
 
 poll120:
@@ -409,7 +412,14 @@ get_packet120:
 ; this routine will put a packet to the host if a slot is available (one is
 ; available if a valid descriptor is returned)
 ;
+put_packet900:
+	ret
+;
+;
 put_packet:
+	lds	r16, mscpstatus
+	cpi	r16, mscp_go
+	brne	put_packet900
 	push	yl
 	push	yh
 	movw	yh:yl, r25:r24

@@ -272,14 +272,14 @@
 #define	s4go		1
 #define	s4go_bp		0
 
-#define mscp_init	0*4
-#define mscp_s1		1*4
-#define mscp_s2		2*4
-#define mscp_s3		3*4
-#define mscp_s4		4*4
-#define mscp_wr		5*4
-#define mscp_go		6*4
-#define mscp_fatal	7*4
+#define mscp_init	0*4		; 0x00
+#define mscp_s1		1*4		; 0x04
+#define mscp_s2		2*4		; 0x08
+#define mscp_s3		3*4		; 0x0C
+#define mscp_s4		4*4		; 0x00
+#define mscp_wr		5*4		; 0x04
+#define mscp_go		6*4		; 0x18
+#define mscp_fatal	7*4		; 0x0C
 
 /*
  *	device information

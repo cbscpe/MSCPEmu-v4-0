@@ -87,7 +87,6 @@ inittable:
 ;
 ;
 
-init_go:
 init_init:
 init_wrap:
 init_invalid:
@@ -491,6 +490,7 @@ initzapdw:
 ;
 ;
 init_s4:
+init_go:				;;; 
 ;
 ;	Step 4 response
 ;

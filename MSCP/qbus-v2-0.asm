@@ -437,6 +437,7 @@ qbus_dati_ip_s3:
 qbus_dati_ip_s4:
 	lds	yl, ipr+0
 	lds	yh, ipr+1
+	cbi	b_IP
 	DATI
 	INTEXIT	log_dati|log_ips4
 
@@ -482,7 +483,8 @@ qbus_dato_ip:
 	DATO
 	sts	ipr+0, yl
 	sts	ipr+1, yh
-
+	
+	call	debug_pulse1
 	clr	zl			; clear important states
 	sts	sa_s1+0, zl
 	sts	sa_s1+1, zl
@@ -494,6 +496,9 @@ qbus_dato_ip:
 	sts	sa_s4+1, zl
 	sts	mscpstatus, zl
 	sbi	b_CRDY			; Enable SA Read Interrupt
+	clr	yl
+	sbis	b_DBG
+	inc	yl
 	INTEXIT	log_dato|log_ip
 
 ;-----------------------------------------------------------------------------
@@ -655,7 +660,12 @@ qbus_dato_sa_s4:
 	DATO
 	sts	sa_s4+0, yl
 	sts	sa_s4+1, yh
-	cbi	b_SA
+	sbrs	yl, s4go_bp
+	rjmp	qbus_dato_sa_s4_010
+	cbi	b_SA			; If GO is set do some things here
+	ldi	yl, mscp_go
+	sts	mscpstatus, yl
+qbus_dato_sa_s4_010:
 	INTEXIT	log_dato|log_sas4
 
 ;--------------------------------------------------------------------------
@@ -810,3 +820,85 @@ qbus_init_done:
 	out	CPU_SREG, r8		; restore
 	pop	r8			; restore
 	reti				; 4	
+
+
+
+debug_pulse5:
+	sbi	b_DBG
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	cbi	b_DBG
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+debug_pulse4:
+	sbi	b_DBG
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	cbi	b_DBG
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+debug_pulse3:
+	sbi	b_DBG
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	cbi	b_DBG
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+debug_pulse2:
+	sbi	b_DBG
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	cbi	b_DBG
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+debug_pulse1:
+	sbi	b_DBG
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	cbi	b_DBG
+	ret
