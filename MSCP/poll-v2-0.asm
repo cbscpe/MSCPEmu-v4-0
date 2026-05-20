@@ -412,14 +412,7 @@ get_packet120:
 ; this routine will put a packet to the host if a slot is available (one is
 ; available if a valid descriptor is returned)
 ;
-put_packet900:
-	ret
-;
-;
 put_packet:
-	lds	r16, mscpstatus
-	cpi	r16, mscp_go
-	brne	put_packet900
 	push	yl
 	push	yh
 	movw	yh:yl, r25:r24
@@ -732,9 +725,6 @@ put_descriptor100:
 	lds	r25, vector+1
 	sbiw	r25:r24, 0		; is a vector defined
 	breq	put_descriptor110	; no
-;	lds	r24, mscpstatus		; BSD 2.11
-;	cpi	r24, mscp_go		; BSD 2.11
-;	brne	put_descriptor110	; BSD 2.11
 	sbi	b_IRQ			; set interrupt
 put_descriptor110:
 	ldd	r24, Y+ring_index+0	; point to the next slot

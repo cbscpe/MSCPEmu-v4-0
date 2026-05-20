@@ -487,7 +487,9 @@ initzapdw:
 	ret
 ;--------------------------------------------------------------------------
 ;
-;
+;	S4 and GO state are put together to cover the case where the host
+;	sends the GO bit before S4 gets the chance to do it's job. There
+;	
 ;
 init_s4:
 init_go:				;;; 
