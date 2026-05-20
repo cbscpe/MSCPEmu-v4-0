@@ -113,19 +113,6 @@ do_onl030:
 	ldi	r25, 2				; see comparison with simh
 	std	Y+onl_unti+6, r24
 	std	Y+onl_unti+7, r25
-	
-;#define my_media	0x22a4103c	; RA60
-#define my_media	0x25641050	; RD54
-
-	ldi	r20, byte1(my_media)
-	ldi	r21, byte2(my_media)
-	ldi	r22, byte3(my_media)
-	ldi	r23, byte4(my_media)
-	std	Y+onl_medi+0, r20
-	std	Y+onl_medi+1, r21
-	std	Y+onl_medi+2, r22
-	std	Y+onl_medi+3, r23
-	
 	ldd	r18, Z+ucb_imgptr+0
 	ldd	r19, Z+ucb_imgptr+1
 
@@ -135,11 +122,11 @@ do_onl030:
 ;
 ;	Unit is attached to a paritition, so we copy partition size to unit size
 ;
-;	ldd	r20, Z+pcb_sectors+0
-;	ldd	r21, Z+pcb_sectors+1
-;	ldd	r22, Z+pcb_sectors+2
-;	ldd	r23, Z+pcb_sectors+3
-	
+	ldd	r20, Z+pcb_sectors+0
+	ldd	r21, Z+pcb_sectors+1
+	ldd	r22, Z+pcb_sectors+2
+	ldd	r23, Z+pcb_sectors+3
+;	
 ;
 ;	Partitions do not always match the exact disk size therefore here is
 ;	a hack because of a DU: image of 311300. blocks we are using during
@@ -147,13 +134,13 @@ do_onl030:
 ;	if it does not exactly match (perhaps this is the issue here). Instead
 ;	of the partition size we will report the Drv_Capacity from DriveTab
 ;
-	ldd	xl, Z+pcb_drvtab+0
-	ldd	xh, Z+pcb_drvtab+1
-	adiw	xh:xl, Drv_Capacity
-	ld	r20, X+
-	ld	r21, X+
-	ld	r22, X+
-	ld	r23, X+
+;	ldd	xl, Z+pcb_drvtab+0
+;	ldd	xh, Z+pcb_drvtab+1
+;	adiw	xh:xl, Drv_Capacity
+;	ld	r20, X+
+;	ld	r21, X+
+;	ld	r22, X+
+;	ld	r23, X+
 	rjmp	do_onl050
 ;
 ;
@@ -170,6 +157,28 @@ do_onl050:
 	std	Y+onl_unsz+1, r21
 	std	Y+onl_unsz+2, r22
 	std	Y+onl_unsz+3, r23
+
+;	
+;#define my_media	0x22a4103c	; RA60
+;#define my_media	0x25641050	; RD54
+;
+;	ldi	r20, byte1(my_media)
+;	ldi	r21, byte2(my_media)
+;	ldi	r22, byte3(my_media)
+;	ldi	r23, byte4(my_media)
+
+	ldd	xl, Z+pcb_drvtab+0
+	ldd	xh, Z+pcb_drvtab+1
+	adiw	xh:xl, Drv_MediaID
+	ld	r20, X+
+	ld	r21, X+
+	ld	r22, X+
+	ld	r23, X+
+
+	std	Y+onl_medi+0, r20
+	std	Y+onl_medi+1, r21
+	std	Y+onl_medi+2, r22
+	std	Y+onl_medi+3, r23
 
 #define my_serial 0x029c
 	ldi	r24, low(my_serial)

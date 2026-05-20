@@ -126,15 +126,41 @@ attachcmd070:				;
 	.dw	msgattachnsd		; not a standard disk image
 	rjmp	attachcmd085
 attachcmd080:
-	movw	zh:zl, r25:r24
-	ldd	r16, Z+drv_Capacity+0	; if a standard file size then set 
-	ldd	r17, Z+drv_Capacity+1	; the number of blocks to report
-	ldd	r18, Z+drv_Capacity+2	; to the exact value for this drive type
-	ldd	r19, Z+drv_Capacity+3
-	std	Y+fcb_filesize+0, r16	; And save to FCB as number of blocks
-	std	Y+fcb_filesize+1, r17	; to report
-	std	Y+fcb_filesize+2, r18
-	std	Y+fcb_filesize+3, r19
+;;;	movw	zh:zl, r25:r24		; We have a standard image, now we need to 
+;;;
+;;;	We need to come up with a logic what disk size we report. For the moment
+;;;	we just use the file size
+;;;
+;;;	ldd	r16, Z+Drv_Type		; know what size we report
+;;;	sbrs	r16, DT__DRCAP_bp	; Report Drive Capacity from Drive Tab
+;;;	rjmp	attachcmd081
+;;;	ldd	r16, Z+drv_Capacity+0	; if a standard file size then set 
+;;;	ldd	r17, Z+drv_Capacity+1	; the number of blocks to report
+;;;	ldd	r18, Z+drv_Capacity+2	; to the exact value for this drive type
+;;;	ldd	r19, Z+drv_Capacity+3
+;;;	cp	r22, r16
+;;;	cp	r22, r16
+;;;	std	Y+fcb_filesize+0, r16	; And save to FCB as number of blocks
+;;;	std	Y+fcb_filesize+1, r17	; to report
+;;;	std	Y+fcb_filesize+2, r18
+;;;	std	Y+fcb_filesize+3, r19
+;;;	rjmp	attachcmd085
+;;;
+;;;attachcmd081:
+;;;	sbrs	r16, DT__MXCAP_bp	; Report Drive MaxCapacity from Drive Tab
+;;;	rjmp	attachcmd082
+;;;	ldd	r16, Z+drv_MaxCapacity+0; if a standard file size then set 
+;;;	ldd	r17, Z+drv_MaxCapacity+1; the number of blocks to report
+;;;	ldd	r18, Z+drv_MaxCapacity+2; to the exact value for this drive type
+;;;	ldd	r19, Z+drv_MAxCapacity+3
+;;;	std	Y+fcb_filesize+0, r16	; And save to FCB as number of blocks
+;;;	std	Y+fcb_filesize+1, r17	; to report
+;;;	std	Y+fcb_filesize+2, r18
+;;;	std	Y+fcb_filesize+3, r19
+;;;	rjmp	attachcmd085
+;;;
+;;;attachcmd082:				; DT__IMGSZ is the default and already set
+;;;					;
 attachcmd085:
 	ldi	xl, low(Path)
 	ldi	xh, high(Path)
@@ -339,7 +365,7 @@ attachpar010:
 	pop	r18
 	brcs	attachpar030
 	std	Z+ucb_type, r18		; Set drive type
-	std	Z+ucb_flags, r18	; Set drive flags
+	std	Z+ucb_flags, r19	; Set drive flags
 	ldi	r18, (1<<ucb__drdy) | (1<<ucb__part)
 	std	Z+ucb_status, r18	; Set status
 	std	Z+ucb_diskaddr+0, zero	; Set current disk address

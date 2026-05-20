@@ -394,9 +394,9 @@ qbus_dato_csr:				; 45
 	sbr	yh, (1<<ucb__seek)
 	std	Z+ucb_status, yh
 	lds	yh, DARL
-	std	Z+ucb_media+0, yh
+	std	Z+ucb_seek+0, yh
 	lds	yh, DARH
-	std	Z+ucb_media+1, yh
+	std	Z+ucb_seek+1, yh
 	mov	zl, yl			; copy CSRL
 	sbr	zl, (1<<CSR_CRDY)	; Controller stays ready
 	sts	CSRL, zl		; 

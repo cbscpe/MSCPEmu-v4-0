@@ -73,10 +73,17 @@ do_una:
 	ldd	r17, Y+ucb_type+1
 	std	Z+una_unti+6, r16
 	std	Z+una_unti+7, r17
-	ldd	r16, Y+ucb_media+0
-	ldd	r17, Y+ucb_media+1
-	ldd	r18, Y+ucb_media+2
-	ldd	r19, Y+ucb_media+3
+	ldd	xl, Y+ucb_imgptr+0
+	ldd	xh, Y+ucb_imgptr+1
+	adiw	xh:xl, pcb_drvtab
+	ld	r16, X+
+	ld	r17, X+
+	movw	xh:xl, r17:r16
+	adiw	xh:xl, Drv_MediaID
+	ld	r16, X+
+	ld	r17, X+
+	ld	r18, X+
+	ld	r19, X+
 	std	Z+una_medi+0, r16
 	std	Z+una_medi+1, r17
 	std	Z+una_medi+2, r18

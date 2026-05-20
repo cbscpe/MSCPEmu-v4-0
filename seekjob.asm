@@ -3,7 +3,7 @@
 ;	SEEK JOB
 ;
 ;	Seek can be overlapped, i.e. when a seek command is issued the
-;	controller will not be busy. In qbus we just copy DAR to ucb_media
+;	controller will not be busy. In qbus we just copy DAR to ucb_seek
 ;	and set the ucb__seek flag. In case the host does not issue a read
 ;	or write command the seek job will detect the flag and perform the
 ;	calculation of the new disk address and update ucb_diskaddr. However
@@ -45,15 +45,15 @@ seekjobloop:
 	rjmp	seek100
 ;
 ;	When a seek command is executed DATO processing will store DAR to
-;	ucb_media in the UCB.
+;	ucb_seek in the UCB.
 ;
 	sbr	r21, 0x01
 	cbr	r20, (1<<ucb__seek)
 	sts	unittable+ucb_size*0+ucb_status, r20
 	lds	r16, unittable+ucb_size*0+ucb_diskaddr+0
 	lds	r17, unittable+ucb_size*0+ucb_diskaddr+1
-	lds	r18, unittable+ucb_size*0+ucb_media+0
-	lds	r19, unittable+ucb_size*0+ucb_media+1
+	lds	r18, unittable+ucb_size*0+ucb_seek+0
+	lds	r19, unittable+ucb_size*0+ucb_seek+1
 
 	bst	r18, DAR_SEEK_HS	; Get HS from DAR of seek command
 	bld	r16, DAR_RW_HS		; Set head in current disk address
@@ -89,15 +89,15 @@ seek100:
 	rjmp	seek200
 ;
 ;	When a seek command is executed DATO processing will store DAR to
-;	ucb_media in the UCB.
+;	ucb_seek in the UCB.
 ;
 	sbr	r21, 0x02
 	cbr	r20, (1<<ucb__seek)
 	sts	unittable+ucb_size*1+ucb_status, r20
 	lds	r16, unittable+ucb_size*1+ucb_diskaddr+0
 	lds	r17, unittable+ucb_size*1+ucb_diskaddr+1
-	lds	r18, unittable+ucb_size*1+ucb_media+0
-	lds	r19, unittable+ucb_size*1+ucb_media+1
+	lds	r18, unittable+ucb_size*1+ucb_seek+0
+	lds	r19, unittable+ucb_size*1+ucb_seek+1
 
 	bst	r18, DAR_SEEK_HS	; Get HS from DAR of seek command
 	bld	r16, DAR_RW_HS		; Set head in current disk address
@@ -133,15 +133,15 @@ seek200:
 	rjmp	seek300
 ;
 ;	When a seek command is executed DATO processing will store DAR to
-;	ucb_media in the UCB.
+;	ucb_seek in the UCB.
 ;
 	sbr	r21, 0x04
 	cbr	r20, (1<<ucb__seek)
 	sts	unittable+ucb_size*2+ucb_status, r20
 	lds	r16, unittable+ucb_size*2+ucb_diskaddr+0
 	lds	r17, unittable+ucb_size*2+ucb_diskaddr+1
-	lds	r18, unittable+ucb_size*2+ucb_media+0
-	lds	r19, unittable+ucb_size*2+ucb_media+1
+	lds	r18, unittable+ucb_size*2+ucb_seek+0
+	lds	r19, unittable+ucb_size*2+ucb_seek+1
 
 	bst	r18, DAR_SEEK_HS	; Get HS from DAR of seek command
 	bld	r16, DAR_RW_HS		; Set head in current disk address
@@ -177,15 +177,15 @@ seek300:
 	rjmp	seek400
 ;
 ;	When a seek command is executed DATO processing will store DAR to
-;	ucb_media in the UCB.
+;	ucb_seek in the UCB.
 ;
 	sbr	r21, 0x08
 	cbr	r20, (1<<ucb__seek)
 	sts	unittable+ucb_size*3+ucb_status, r20
 	lds	r16, unittable+ucb_size*3+ucb_diskaddr+0
 	lds	r17, unittable+ucb_size*3+ucb_diskaddr+1
-	lds	r18, unittable+ucb_size*3+ucb_media+0
-	lds	r19, unittable+ucb_size*3+ucb_media+1
+	lds	r18, unittable+ucb_size*3+ucb_seek+0
+	lds	r19, unittable+ucb_size*3+ucb_seek+1
 
 	bst	r18, DAR_SEEK_HS	; Get HS from DAR of seek command
 	bld	r16, DAR_RW_HS		; Set head in current disk address

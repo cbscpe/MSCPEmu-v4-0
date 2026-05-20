@@ -171,7 +171,7 @@
 	.dw	7			; RCT Size
 	.db	17, 15
 	.dw	1224
-	.db	0, 0
+	.db	DT__IMGSZ_bm, 0
 ;
 ;	RA70	34	11	1507	280Mbyte
 ;
@@ -182,7 +182,7 @@
 	.dw	198			; RCT Size
 	.db	34, 11
 	.dw	1507
-	.db	0, 0
+	.db	DT__IMGSZ_bm, 0
 
 ;
 ;	RA72	57	15	1423	1092Mbyte
@@ -194,7 +194,7 @@
 	.dw	2040			; RCT Size
 	.db	57, 20			; Sector/Track, Track/Cylinder
 	.dw	1921			; Cylinders
-	.db	0, 0
+	.db	DT__IMGSZ_bm, 0
 ;
 ;	RA82	57	15	1423	622Mbyte
 ;
@@ -205,7 +205,7 @@
 	.dw	3420			; RCT Size
 	.db	57, 15
 	.dw	1423
-	.db	0, 0
+	.db	DT__IMGSZ_bm, 0
 ;
 ;	RA81	52	14	1248	456Mbyte
 ;
@@ -216,7 +216,7 @@
 	.dw	2856			; RCT Size
 	.db	52, 14
 	.dw	1248
-	.db	0, 0
+	.db	DT__IMGSZ_bm, 0
 ;
 ;	RA60	42	4	2382	205Mbyte
 ;
@@ -227,7 +227,7 @@
 	.dw	1008			; RCT Size
 	.db	42, 4
 	.dw	2382
-	.db	0, 0
+	.db	DT__IMGSZ_bm, 0
 ;
 ;	End of table
 ;

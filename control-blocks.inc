@@ -188,18 +188,29 @@ record		ucb, log, 1		; Logging
 	.equ	ucb__log	= 0	; Logging Active for this unit
 	.equ	ucb__pbn	= 1	; Logging Physical Blocks
 record		ucb, imgptr, 2		; Pointer to partition or file control block
-record		ucb, media, 4		; perhaps via drvtyp, it is a constant!
-record		ucb, lock, 2		; Lock word to let the unit job wait
+record		ucb, rsvd, 4		; Lock word to let the unit job wait
 record		ucb, diskaddr, 2	; Unit disk address register
+record		ucb, seek, 2		; 
 record		ucb, seektimer, 2	; 
 recordend	ucb, size
 
 ;
-;	RL01/02 specific definitions
+;	Drive Type bits
 ;
-;	Flag bits
+;	RL01/02 specific definitions, 	bits 0..3
 ;
 	.equ	DL__RL02	= 0	; 
 ;
-;	MSCP specific definitions
+;	MSCP specific definitions, 	bits 4..7
 ;
+
+
+;
+;	Drive Flags
+;
+	.equ	DT__IMGSZ_bp	= 0	; Report size of image, i.e. partition size or file size
+	.equ	DT__IMGSZ_bm	= 0x01	; Report size of image, i.e. partition size or file size
+	.equ	DT__DRCAP_bp	= 1	; Report Drive Capacity
+	.equ	DT__DRCAP_bm	= 0x02	; Report Drive Capacity
+	.equ	DT__MXCAP_bp	= 2	; Report Max Capacity
+	.equ	DT__MXCAP_bm	= 0x04	; Report Max Capacity
