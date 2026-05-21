@@ -41,13 +41,17 @@ commandlist:
 	.dw	kw_sdread,	a_sdinit,	cmd_sdread
 	.dw	kw_set,		0,		cmd_set
 	.dw	kw_turbo,	0,		cmd_turbo
+#ifdef mscpemulation
 	.dw	kw_poll,	0,		cmd_poll
+#endif
 	.dw	kw_eol,		0,		cmd_done
 	.dw	0
 
+#ifdef mscpemulation
 cmd_poll:
 	.dw	kw_eol,		cmdpoll,	cmd_done
 	.dw	0
+#endif
 
 cmd_rlv12init:
 	.dw	kw_eol,		0,		cmd_done
@@ -389,9 +393,11 @@ cmd_show:
 	.dw	kw_showlog,	cmd_showlog,	cmd_done
 	.dw	kw_showvers,	cmd_showvers,	cmd_done
 	.dw	kw_jobs,	cmd_showjobs,	cmd_done
+#ifdef mscpemulation
 	.dw	kw_rings,	cmd_showrings,	cmd_done
-	.dw	kw_message, 	cmd_showmessage,cmd_done
 	.dw	kw_opcodes,	cmd_showfncstats,cmd_done
+#endif
+	.dw	kw_message, 	cmd_showmessage,cmd_done
 	.dw	kw_status,	0,		cmd_status
 	.dw	0
 
@@ -420,6 +426,7 @@ cmd_dumpblock1:
 	.dw	0
 
 kw_rlv12init:	P_KEYWORD	"[RLV12]"
+kw_mscpinit:	P_KEYWORD	"[MSCP]"
 kw_no:		P_KEYWORD	"NO"
 kw_register:	P_KEYWORD	"REGister"
 kw_interrupt:	P_KEYWORD	"INTerrupt"

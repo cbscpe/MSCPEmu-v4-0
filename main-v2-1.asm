@@ -238,15 +238,15 @@ loginit010:
 	sbi	d_CLK			; CPU Clock Output
 	
 #ifdef mscpemulation
-	ldi	r18, low(0154)
-	ldi	r19, high(0154)
-	sts	vector+0, r18
-	sts	vector+1, r19
+	ldi	r18, low(0154)		; Setting the default vector does
+	ldi	r19, high(0154)		; not really make sense, as with
+	sts	vector+0, r18		; each initialisation the vector is 
+	sts	vector+1, r19		; set.
 	sbi	b_MSCP
 #endif
 #ifdef rlv12emulation
-	ldi	r18, low(0160)
-	ldi	r19, high(0160)
+	ldi	r18, low(0160)		; Default Vector
+	ldi	r19, high(0160)		;
 	sts	vector+0, r18
 	sts	vector+1, r19
 	cbi	b_MSCP
@@ -635,7 +635,6 @@ pitwait:
 ;
 ;	Crash
 ;
-;crash:	rjmp	start
 .include "crash.asm"
 ;=============================================================================
 ;
@@ -960,8 +959,10 @@ prtcreate:
 ;
 ;	
 ;
+#ifdef rlv12emulation
 .include	"seekjob.asm"		; Our seek job
-;.include	"scanjob.asm"		; MSCP scan job
+.include	"scanjob.asm"		; MSCP scan job
+#endif
 .include	"sdcardjob.asm"		; SD-Card Insert/Remove and LED routine
 .include	"SD-Card-Print-v1-0.asm"; Print SD-Card messages
 .include	"SD-Card-v1-0.asm"	; Main SD-Card routines

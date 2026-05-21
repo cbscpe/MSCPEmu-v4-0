@@ -1003,19 +1003,11 @@ showfree090:
 	pop	r24
 	ret
 	
+#ifdef mscpemulation
 ;--------------------------------------------------------------------------
 ;
 ;	Show Rings
 ;
-
-;recordstart	ring
-;record		ring, base, 4		; 000
-;record		ring, flag, 4		; 004
-;record		ring, size, 2		; 010
-;record		ring, mask, 2		; 012
-;record		ring, index, 2		; 014
-;recordend	ring, sz
-
 cmd_showrings:
 
 	lds	r16, cmd+0
@@ -1093,7 +1085,7 @@ cmd_showrings:
 	.db	TAB, "Mask         0x", 0x8A, 0x8B, CR, LF
 	.db	TAB, "Index        0x", 0x8C, 0x8D, CR, LF, NULL, NULL
 	ret
-
+#endif
 ;--------------------------------------------------------------------------
 ;
 ;	Show Message
