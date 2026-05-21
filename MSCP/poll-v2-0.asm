@@ -51,14 +51,6 @@
 ;		0x7F	follows any trace in case more then 16-bits need to be
 ;			logged.
 ;
-.macro	hickup		; Create visible gap in LA output
-	push	r24
-	ldi	r24, @0
-h1:
-	dec	r24
-	brne	h1
-	pop	r24
-.endmacro
 ;--------------------------------------------------------------------------
 ;
 ;
@@ -509,9 +501,6 @@ put_packet145:
 	brcs	put_packet160
 	sbiw	r25:r24, 2		; two bytes done
 	brne	put_packet145
-	
-	hickup	14
-
 	ldi	r24, low(rsp)
 	ldi	r25, high(rsp)
 	rcall	put_descriptor
