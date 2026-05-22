@@ -27,7 +27,7 @@ prtnbr:
 
 ;--------------------------------------------------------------------------
 ;
-;	load	- load binary to PDP-11 Memory (currently only bootROM)
+;	load	- load boot ROM to PDP-11 memory
 ;
 loadboot:
 	ldi	r24, low(dmalock)
@@ -67,8 +67,9 @@ loadboot010:
 
 loadbooterror:
 	rjmp	loaderror
-
-
+;
+;	load	- small program to load 4 blocks from RL02
+;
 loadtest:
 	ldi	r24, low(dmalock)
 	ldi	r25, high(dmalock)
@@ -122,7 +123,7 @@ loaderror:
 
 ;--------------------------------------------------------------------------
 ;
-;	load	- load listing via terminal
+;	load	- load find vector test program
 ;
 loadiotest:
 	ldi	r24, low(dmalock)
