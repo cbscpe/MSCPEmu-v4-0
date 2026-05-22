@@ -11,22 +11,6 @@
 	.macro	INTEXIT			; 23/44 cycles
 	sbis	FLAGS_LOG, log__reg	; 1/2 
 	rjmp	nolog			; 2/0
-;
-;	Experimental suppress multiple identical entries
-;
-;	lds	zl, log_previous+0
-;	cpi	zl, @0
-;	brne	log
-;	lds	zl, log_previous+2	; Is it the same value
-;	cp	zl, yl
-;	brne	log
-;	lds	zh, log_previous+3
-;	cp	zh, yh
-;	breq	nolog			; same action and same vlue
-;
-;
-;
-log:
 	lds	zl, log_pointer+0	; 3 Logging is done only if log__reg is set
 	lds	zh, log_pointer+1	; 3
 	std	Z+2, yl			; 1
@@ -472,13 +456,6 @@ qbus_dati_ip_go:
 ;			I don't see any issue with that as b_IP is only cleared
 ;			in GO state.
 ;
-;
-;	2026-05-18 PS	BDS 2.11 makes some problems. First the bootloader of BSD
-;			polls the controller before it is in GO state and second it
-;			restarts the controller (write to IP) before last operation
-;			has finished. 
-;
-;			
 qbus_dato_ip:
 	DATO
 	sts	ipr+0, yl
@@ -650,21 +627,28 @@ qbus_dati_sa_s4:
 	DATI
 	INTEXIT	log_dati|log_sas4
 ;
+;	NOTE: When the controller transitions to S4, the host can immediately
+;	set the GO bit. Initially the idea was to handle the GO bit in the INIT
+;	job, but this might be much too late, so the state machine could still
+;	be in S4 state and the INIT job did not yet process the GO bit written.
+;	Therefore we need to check the GO bit in the interrupt service routine
+;	and immediately switch to the GO state. The INIT job will eventually 
+;	catch up and process the data written by the host. I.e. the LF and
+;	DMA burst size.
 ;
 ;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
 ;	|           reserved            ||   dma burst size      |LF |GO |
 ;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
 ;
-
 qbus_dato_sa_s4:
 	DATO
 	sts	sa_s4+0, yl
 	sts	sa_s4+1, yh
-	sbrs	yl, s4go_bp
+	sbrs	zl, s4go_bp
 	rjmp	qbus_dato_sa_s4_010
-	cbi	b_SA			; If GO is set do some things here
-	ldi	yl, mscp_go
-	sts	mscpstatus, yl
+	cbi	b_SA			; If GO is set transition to the GO
+	ldi	zl, mscp_go		; state
+	sts	mscpstatus, zl
 qbus_dato_sa_s4_010:
 	INTEXIT	log_dato|log_sas4
 
@@ -689,13 +673,13 @@ qbus_dato_sa_wr:
 ;	Status GO
 ;
 qbus_dati_sa_go:
-	lds	yl, sa_go+0
-	lds	yh, sa_go+1
-	DATI
+	lds	yl, sa_go+0		; Normally read to the SA in GO state
+	lds	yh, sa_go+1		; Just returns zero, only in case of
+	DATI				; errors an error code will be placed here
 	INTEXIT	log_dati|log_sago
 
-qbus_dato_sa_go:
-	DATO
+qbus_dato_sa_go:			; Writing to the SA in GO state only
+	DATO				; is required for purge requests
 	sts	sa_pu+0, yl
 	sts	sa_pu+1, yh
 	cbi	b_SA

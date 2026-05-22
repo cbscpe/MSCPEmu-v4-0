@@ -45,12 +45,13 @@
 ;		0x7B	put_packet message size, Packet-type, Credits, Connection ID
 ;		0x7C	put_packet response status
 ;		0x7D	IP-Read or SA-Write interrupt
-;		0x7E	poll: unit, opcode, packet type and connection ID of received
-;			packet
 ;
 ;		0x7F	follows any trace in case more then 16-bits need to be
 ;			logged.
 ;
+;		0x1E	poll: unit, opcode, packet type and connection ID of received
+;			packet, we use the ID code of the INIT module to avoid
+;			confusion with 0x7x codes from the POLL module
 ;--------------------------------------------------------------------------
 ;
 ;
@@ -77,7 +78,7 @@ poll_:
 	lds	zh, log_pointer+1	; 3
 	ldi	yl, log_trace
 	st	Z+, yl
-	ldi	yl, 0x7D
+	ldi	yl, 0x1E
 	st	Z+, yl
 	ldi	yl, (1<<IP)
 	st	Z+, yl
@@ -115,7 +116,7 @@ poll_010:
 	lds	zh, log_pointer+1	; 3
 	ldi	yl, log_trace
 	st	Z+, yl
-	ldi	yl, 0x7D
+	ldi	yl, 0x1E
 	st	Z+, yl
 	ldi	yl, (1<<SA)
 	st	Z+, yl
@@ -214,13 +215,15 @@ poll120:
 	brne	poll140			; This is not a sequential message -> fatal
 	tst	r19
 	brne	poll130
-
+	tst	r22
+	breq	poll125
 	mov	zl, r22			; Get Opcode
 	andi	zl, 0x3F		; 
 	clr	zh
 	subi	zl, low(-do_mscp_table)	; Index to jump table
 	sbci	zh, high(-do_mscp_table)
 	icall				; Execute function
+poll125:
 	rjmp	poll100			; loop
 
 poll130:

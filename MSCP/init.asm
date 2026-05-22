@@ -490,8 +490,25 @@ initzapdw:
 ;	S4 and GO state are put together to cover the case where the host
 ;	sends the GO bit before S4 gets the chance to do it's job. There
 ;	
+;	INIT has entered the S4 state, in this state the INIT job does
+;	nothing. This is an intermediate state where the MSCP controller
+;	waits for the host to set the GO bit and send further information
+;	about last fail packet and dma burst size. The transition form S4
+;	to GO will be handled in the Q-BUS ISR
 ;
 init_s4:
+	cli				;;;
+	lds	r20, sa_s4+0		;;;
+	lds	r21, sa_s4+1		;;;
+	sei				;;;
+	sbrs	r20, s4go_bp		;;; check if host was faster than the MCU.
+	rjmp	init010			;;; No we have been first
+	rjmp	init400			;;; Yes then proceed with GO state
+;
+;	When in S4 state the host sets the GO bit the ISR will perform the
+;	state transition from S4 to GO and only then will the INIT job 
+;	do it's last duties.
+;
 init_go:				;;; 
 ;
 ;	Step 4 response
@@ -506,12 +523,14 @@ init_go:				;;;
 	sei				;;;
 	sbrs	r20, s4go_bp
 	rjmp	init010
+init400:
 	sbrs	r20, s4lf_bp
 	rjmp	init410
 	lds	r24, porterror
 	tst	r24
 	breq	init410
 	call	do_plf
+	logtr	0x19, r24, zero
 	sts	porterror, zero
 init410:
 	lds	r18, _ccb_state
