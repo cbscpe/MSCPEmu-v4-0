@@ -867,21 +867,21 @@ main:
 ;
 readcmd:
 	sts	InputBuffer, zero
-	sbi	FLAGS_COMMON, sddetect__en		; Enable SD detect
+	sbi	FLAGS_COMMON, sddetect__en	; Enable SD detect
 readcmd010:
-	ldi	r22, ']'		; Prompt
+	ldi	r22, ']'			; Prompt
 	ldi	r24, low(InputBuffer)
 	ldi	r25, high(InputBuffer)
 	call	readcmdline
 
-	cpi	r24, 0;cmdok		; 
+	cpi	r24, 0;cmdok			; 
 	brne	readcmd040
 	lds	r18, InputBuffer
 	cpi	r18, 0
 	breq	readcmd010
 	cpi	r18, CR
-	breq	readcmd010		; do not save empty command
-	ldi	xl, low(InputBuffer)	; Command
+	breq	readcmd010			; do not save empty command
+	ldi	xl, low(InputBuffer)		; Command
 	ldi	xh, high(InputBuffer)
 	ldi	zl, low(HistoryBuffer)
 	ldi	zh, high(HistoryBuffer)
@@ -897,21 +897,21 @@ readcmd030:
 ;
 ;	Use legacy Calling Convention to TPARSE
 ;
-	ldi	xl, low(InputBuffer)	; Command
+	ldi	xl, low(InputBuffer)		; Command
 	ldi	xh, high(InputBuffer)
-	ldi	zl, low(2*commandlist)	; Parser table
+	ldi	zl, low(2*commandlist)		; Parser table
 	ldi	zh, high(2*commandlist)
 	sts	tpflags, zero
-	call	scancommand		; call TParse
+	call	scancommand			; call TParse
 	sts	InputBuffer, zero
 	rjmp	readcmd010
 
 readcmd040:
-	cpi	r24, 1;cmdup		; 
+	cpi	r24, 1;cmdup			; 
 	brne	readcmd060
 	ldi	xl, low(HistoryBuffer)
 	ldi	xh, high(HistoryBuffer)
-	ldi	zl, low(InputBuffer)	; Command
+	ldi	zl, low(InputBuffer)		; Command
 	ldi	zh, high(InputBuffer)
 readcmd050:
 	ld	r18, X+
@@ -1002,7 +1002,7 @@ prtcreate:
 .include "FAT/CreatePath.asm"
 .include "FAT/FreeList.asm"
 .include "FAT/LinkedCluster.asm"
-.include "FAT/Logical2PhysicalB.asm"
+.include "FAT/Logical2Physical.asm"
 .include "FAT/MatchFileName.asm"
 .include "FAT/Name2DirEntry.asm"
 .include "FAT/OpenDir.asm"
