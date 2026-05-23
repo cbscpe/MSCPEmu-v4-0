@@ -100,7 +100,7 @@ poll_010:
 ;
 ;	In the RQDX3 code a SA write increments the saw.flag and the INIT process
 ;	waits for this flag in a loop in the "init" sub-routine. Here we have a
-;	INIT job.
+;	INIT job and use block and unblocki.
 ;
 	sbi	b_SA
 	push	r8			; save minimal context

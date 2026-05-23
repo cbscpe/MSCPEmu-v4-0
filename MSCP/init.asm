@@ -21,6 +21,7 @@
 ;	0x16	response ring size
 ;	0x17	command ring size
 ;	0x18	zap communication area
+;	0x19	calling do_plf
 ;
 initjob:
 	cli

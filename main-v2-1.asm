@@ -89,12 +89,7 @@ start:
 	cbi	FLAGS_COMMON, sddetect__en
 	rjmp	start100
 ;
-;	Software Reset, this is equivalent to a write to the IP 
-;	register and restarts everything. However we assume that
-;	an already inserted SD-Card is already initialised and
-;	we just create the partion blocks again and read the
-;	init file. We assume that "sd_status" has been saved
-;	before doing a software reset
+;
 ;
 start010:
 	cbi	FLAGS_COMMON, auto__boot

@@ -185,14 +185,14 @@
 	.db	DT__IMGSZ_bm, 0
 
 ;
-;	RA72	57	15	1423	1092Mbyte
+;	RA72	51	20	1929	1092Mbyte
 ;
 	.db	"RA72"
 	.dd	0x25641048		; Media ID
 	.dd	1954001			; Min Size
 	.dd	1954200
 	.dw	2040			; RCT Size
-	.db	57, 20			; Sector/Track, Track/Cylinder
+	.db	57, 19			; Sector/Track, Track/Cylinder
 	.dw	1921			; Cylinders
 	.db	DT__IMGSZ_bm, 0
 ;
