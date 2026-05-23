@@ -163,7 +163,7 @@ polljob:
 	ldi	r25, high(mscpinit)	;
 	call	block			;
 	lds	r16, mscpstatus
-	logtr	0x77, r16, zero		;
+	;logtr	0x77, r16, zero		;
 	cpi	r16, mscp_go		; We expect that mscpinit is unblocked whenever
 	brne	polljob			; the state goes to mscp_go
 ;
@@ -171,7 +171,7 @@ polljob:
 ;
 poll100:
 	rcall	get_packet		; Get Packet
-	logtr	0x79, r24, r25
+	;logtr	0x79, r24, r25
 	sbiw	r25:r24, 0		; We really got a packet
 	brne	poll120			; No Packet
 
@@ -186,7 +186,7 @@ poll110:
 
 poll120:
 	lds	r16, mscpstatus		; Now make sure we process packets only in
-	logtr	0x78, r16, zero		; mscp_go state
+	;logtr	0x78, r16, zero		; mscp_go state
 	cpi	r16, mscp_go
 	brne	poll110
 
@@ -209,7 +209,7 @@ poll120:
 	inc	r23
 	cpse	r23, zero		; Don't save overflow
 	st	X, r23
-	logtr	0x7E, r20, r22		; Unit / Opcode
+	;logtr	0x7E, r20, r22		; Unit / Opcode
 	;logtr	0x7F, r18, r19		; Packet Type / Connection ID
 	andi	r18, 0xF0		; Mask credit fields to get message type
 	brne	poll140			; This is not a sequential message -> fatal
@@ -480,7 +480,7 @@ put_packet140:
 	ldd	r24, Y+rsp_sts+0
 	ldd	r25, Y+rsp_sts+1
 
-	logtr	0x7C, r24, r25
+	;logtr	0x7C, r24, r25
 
 	movw	xh:xl, yh:yl		; Get Packet Address
 	adiw	xh:xl, 2		; Skip Link Header
