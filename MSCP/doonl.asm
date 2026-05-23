@@ -55,9 +55,9 @@ do_onl:					; Online
 	ldd	r25, Y+onl_unit+1
 	std	Y+onl_shun+0, r24
 	std	Y+onl_shun+1, r25
-	logtr	0x60, r24, r25
+	;logtr	0x60, r24, r25
 	call	getucb			;
-	logtr	0x61, r24, r25
+	;logtr	0x61, r24, r25
 	adiw	r25:r24, 0
 	breq	do_onl010		; Set Offline
 ;
@@ -94,7 +94,7 @@ do_onl030:
 	std	Y+onl_sts+0, r24
 	std	Y+onl_sts+1, r25	; 
 
-	logtr	0x62, r24, r25
+	;logtr	0x62, r24, r25
 
 	ldd	r24, Y+onl_unit+0
 	ldd	r25, Y+onl_unit+1
@@ -126,24 +126,9 @@ do_onl030:
 	ldd	r21, Z+pcb_sectors+1
 	ldd	r22, Z+pcb_sectors+2
 	ldd	r23, Z+pcb_sectors+3
-;	
-;
-;	Partitions do not always match the exact disk size therefore here is
-;	a hack because of a DU: image of 311300. blocks we are using during
-;	tests with RSX-11M+ and it seems SAV will not bring the volume online
-;	if it does not exactly match (perhaps this is the issue here). Instead
-;	of the partition size we will report the Drv_Capacity from DriveTab
-;
-;	ldd	xl, Z+pcb_drvtab+0
-;	ldd	xh, Z+pcb_drvtab+1
-;	adiw	xh:xl, Drv_Capacity
-;	ld	r20, X+
-;	ld	r21, X+
-;	ld	r22, X+
-;	ld	r23, X+
 	rjmp	do_onl050
 ;
-;
+;	Unit is attached to a file, so we copy the file size to unit size
 ;
 do_onl040:
 	ldd	r20, Z+fcb_filesize+0
@@ -266,14 +251,14 @@ do_onl900:
 	adiw	xh:xl, 2		; no need to logg the link word
 	ld	r16, X+
 	ld	r17, X+
-	logtr	0x80, r16, r17
+	;logtr	0x63, r16, r17
 	ld	r16, X+
 	ld	r17, X+
-	logtr	0x8F, r16, r17
+	;logtr	0x6F, r16, r17
 do_onl910:
 	ld	r16, X+
 	ld	r17, X+
-	logtr	0x8F, r16, r17
+	;logtr	0x6F, r16, r17
 	sbiw	r25:r24, 2
 	brne	do_onl910
 	movw	r25:r24, yh:yl
