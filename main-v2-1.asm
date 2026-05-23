@@ -1032,9 +1032,9 @@ prtcreate:
 .include	"MSCP/doplf.asm"
 .include	"MSCP/doscc.asm"	; work in progress
 .include	"MSCP/doonl.asm"	; work in progress
-.include	"MSCP/dorw.asm"
 .include	"MSCP/douna.asm"
 .include	"MSCP/doother.asm"
 .include	"MSCP/poll-v2-0.asm"
+.include	"MSCP/dorw.asm"
 .include	"MSCP/dup.asm"
 #endif
