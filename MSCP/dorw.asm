@@ -33,14 +33,16 @@
 ;
 ;	Logging
 ;
-;	0x50	ucb
+;	0x50	word count, block count
 ;	0x51	lbn
-;	0x52	byte count
-;	0x53	count of 64k blocks
-;	0x54	2's complement of word count in last 64k block
-;	0x55	DMA Address, word-count in block, block count
-;	0x5F	multi-word output
-
+;	0x52	pbn
+;	0x53	P_Maxsector
+;	0x54	block count in mscp_rd040 loop
+;	0x55	Wordcount of partial block
+;	0x56	first sector (partition)
+;	0x57	remaining block count mscp_rd110
+;	0x58	2's complement of word count in last 64k block
+;	0x59	ucb, fcb
 
 .def	count	= r3			; Local Counter 
 .def	datal	= r4			; DMA data
@@ -119,7 +121,6 @@ do_wr:
 	ldd	r24, Y+rwc_unit+0
 	ldd	r25, Y+rwc_unit+1
 	call	getucb
-	;logtr	0x50, r24, r25
 	sbiw	r25:r24, 0
 	breq	rwchkparam010
 
@@ -185,8 +186,6 @@ rwchkparam020:
 	ldd	r17, Y+rwc_lbn+1
 	ldd	r18, Y+rwc_lbn+2
 	ldd	r19, Y+rwc_lbn+3
-	;logtr	0x51, r16, r17		; 
-	;logtr	0x5F, r18, r19
 	cp	r16, r20
 	cpc	r17, r21
 	cpc	r18, r22
@@ -236,9 +235,6 @@ rwchkparam040:
 	ldd	r22, Y+rwc_bcnt+2	; request does not go beyond the
 	ldd	r23, Y+rwc_bcnt+3	; disk size
 
-	;logtr	0x52, r20, r21		; Byte Count Low
-	;logtr	0x5F, r22, r23
-	
 	lsr	r23
 	ror	r22
 	ror	r21
@@ -406,104 +402,310 @@ rwchkparam150:				; Invalid Command
 ;
 ;	READ
 ;
+;	This version of READ does not make use of any of the support routines
+;	as they are mostly sector based. For READ we want maximum performance
+;	and make use of the SD-Card command "read multiple sectors", therefore
+;	the new READ routine is completely selfcontained
+;
+;	when we get here the following registers are set
+;
+;	yh:yl & pkth:pktl	MSCP Packet
+;	ucbh:ucbl		UCB
+;
 mscp_rd:
-	rcall	mscp_setupw		; Write Host Memory
+	ldd	r20, Y+rwc_buff+0	; Bit0 of the DMA address is used as R/W
+	ldd	r21, Y+rwc_buff+1	; bit for DMA, so as the buffer address is
+	ldd	r22, Y+rwc_buff+2	; even it already is suitable for DMA write
+	dmaaddr r20, r21, r22		; Start Address of DMA transfer
 ;
-;	DMA Address has been set and the IO control block has been
-;	filled with all the necessary information to read a block
-;	from the SD-Card. The IO control block address is in yh:yl
-;	the number of blocks we need to read is in bkch:bkcl including
-;	a potential partail last block and the number of words to 
-;	transfer in the last block is in wcntl.
+	ldd	wcntl, Y+rwc_bcnt+0	; Get Byte Count, which is at this moment
+	ldd	wcnth, Y+rwc_bcnt+1	; verified to be valid
+	ldd	bkcl, Y+rwc_bcnt+2
+	ldd	bkch, Y+rwc_bcnt+3
 ;
-	movw	zh:zl, ucbh:ucbl
-	ldd	r16, Z+ucb_status
-	sbrc	r16, ucb__part
-	rjmp	mscp_rd100
+;	The byte count is now translated into a 32-bit word count, the maximum
+;	size SD_CARD_MULTIPLE can handle is 2^16 words. The high 16-bit of the
+;	word count are named block count and the low 16-bit of the word count
+;	are named word count. The block count has the number of junks of 2^16
+;	words to read and the word count has the number of words we need to read
+;	after we have read all junks. 
+;
+	lsr	bkch			; Make word count
+	ror	bkcl
+	ror	wcnth
+	ror	wcntl
+	
+	logtr	0x50, wcntl, wcnth
+	logtr	0x5F, bkcl, bkch
+;
+;	Get first logical block number
+;
+	ldd	r16, Y+rwc_lbn+0	
+	ldd	r17, Y+rwc_lbn+1
+	ldd	r18, Y+rwc_lbn+2
+	ldd	r19, Y+rwc_lbn+3
+;
+;	Get Image Pointer from the UCB and then the IO control block from
+;	the image control block
+;	
+	movw	yh:yl, ucbh:ucbl 	; Get UCB
+	ldd	zl, Y+ucb_imgptr+0	; Get pointer to disk image control block
+	ldd	zh, Y+ucb_imgptr+1
+	movw	r25:r24, zh:zl
 
-mscp_rd010:
-	movw	r25:r24, yh:yl		; get IO control block
-	call	SD_CARD_READ
-	movw	xh:xl, addrh:addrl	; Get Buffer Address
-	clr	count			; Assume we need to transfer the whole block
-	movw	r25:r24, bkch:bkcl	; Get Blocks to Read
-	sbiw	r25:r24, 1		; Is this the last block
-	brne	mscp_rd020		; no
-	tst	wcntl			; is the last block a partial block
-	breq	mscp_rd020		; no	
-	mov	count, wcntl		; partial block size
+	logtr	0x59, ucbl, ucbh
+	logtr	0x5F, r24, r25
+
+	ldd	r20, Y+ucb_status	; Get the status
+	sbrs	r20, ucb__file		; Is unit attached to a file?
+	rjmp	mscp_rd100		; No it is attached to a partition
+;
+;	In case of a disk image file Z points now to the file control block.
+;	Retrieve the IO control block and prepare to translate the LBN to PBN
+;
+	ldd	yl, Z+fcb_iob+0		; Get pointer to IO control block
+	ldd	yh, Z+fcb_iob+1
+	std	Y+P_Cluster+0, r16	; Set start LBN for read or write
+	std	Y+P_Cluster+1, r17
+	std	Y+P_Cluster+2, r18
+	std	Y+P_Cluster+3, r19
+	
+	logtr	0x51, r16, r17
+	logtr	0x5F, r18, r19
+	
+	movw	r25:r24, zh:zl		; File Control Block
+	call	Logical2Physical	; Convert to PBN (pyhsical block number)
+	ldi	r16, (1<<P__Nocheck)	; don't check CRC
+	std	Y+P_Flag, r16		; 
+;
+;	The Unit is attached to a file. The IO control block has now the following
+;	values
+;
+;	P_Cluster	The first LBN we need to read
+;	P_Sector	The physcial block on the SD-Card that corresponds to the LBN
+;	P_Maxsector	The maximum consecutive sectors available for IO starting
+;			with P_Sector
+;	bkch:bkcl	The number of entire 64kW blocks to read	
+;	wcnth:wcntl	The words in last 64kW block to read
+;
+	ldd	r16, Y+P_Sector+0	; 
+	ldd	r17, Y+P_Sector+1	; 
+	ldd	r18, Y+P_Sector+2	; 
+	ldd	r19, Y+P_Sector+3	; 
+
+	logtr	0x52, r16, r17
+	logtr	0x5F, r18, r19
 
 mscp_rd020:
-	ld	datal, X+
-	ld	datah, X+
-	dmawrt	datal, datah
-	brcs	mscp_rd090
-	dec	count
-	brne	mscp_rd020		; Transfer to host memory
-	movw	r25:r24, bkch:bkcl	; Get Blocks to read
-	sbiw	r25:r24, 1		; More blocks to read
-	breq	mscp_rd030		; No - All done
-	movw	bkch:bkcl, r25:r24	; 
-	rcall	mscp_rwnextsector	; Calculate the next sector
-	rjmp	mscp_rd010
-
-mscp_rd030:
-	ldi	r24, low(dmalock)
-	ldi	r25, high(dmalock)
-	call	release
-	rjmp	rwexit
-mscp_rd090:
-	ldi	r24, low(dmalock)
-	ldi	r25, high(dmalock)
-	call	release
-	rjmp	rwdmaerror
+	ldd	r16, Y+P_Maxsector+0	; Get the size of the rest of the fragment
+	ldd	r17, Y+P_Maxsector+1	; that can be read as a contiguous part
+	ldd	r18, Y+P_Maxsector+2	;
+	ldd	r19, Y+P_Maxsector+3
 	
+	logtr	0x53, r16, r17
+	logtr	0x5F, r18, r19
 ;
-;	Experimental code for SD_CARD_MULTIPE
+;	bkch:bkcl:wcnth as a 24-bit integer is the total number of entire blocks
+;	we need to read. If this is lower than the 32-bit value in P_Maxsector
+;	then the current fragment holds the complete read from the starting
+;	physical block number in P_Sectors returned by Logical2Physical.
+;
+	cp	wcnth, r16
+	cpc	bkcl, r17
+	cpc	bkch, r18
+	cpc	zero, r19
+	brlo	mscp_rd030
+;
+;	If the 24-bit value is .ne. to the value in P_Maxsector then the number
+;	of complete sectors is larger than the number in P_Maxsector, the read
+;	will not fit into the current segment and we will need the next fragment
+;	once we have read P_Maxsector sectors.
+;
+
+	brne	mscp_rd040		; Request does not fit
+;
+;	If the number of sectors to read is equal to Maxsector then we need to check
+;	for an additional partial sector. If we don't need a partial sector then
+;	the complete read fits exactly into the current fragment
+;
+	tst	wcntl		
+	brne	mscp_rd040		; Fragment too small need one more sector
+mscp_rd030:
+	rjmp	mscp_rd110		; Rest of fragment is big enough for one go
+;
+;	The IO request does not fit into the rest of the fragment. Therefore we
+;	first read Maxsector and then need to find the next fragment. Note that
+;	in this situation we only read entire sectors as the last and potential
+;	partial sector does not fit into the fragment
+;
+mscp_rd040:
+;
+;	The SD-Card IO routine supports transfers of up to2^16 words. Therefore 
+;	we can read up to 256. sectors per call to the SD-Card IO routine.
+;
+	ldd	r17, Y+P_Maxsector+1	;
+	ldd	r18, Y+P_Maxsector+2	;
+	ldd	r19, Y+P_Maxsector+3	;
+	
+	subi	r17, byte1(1)
+	sbci	r18, byte2(1)
+	sbci	r19, byte3(1)
+	brmi	mscp_rd060		; less than 256 sectors, resp 2^16 words
+	std	Y+P_Maxsector+1, r17	; Update maxsector
+	std	Y+P_Maxsector+2, r18
+	std	Y+P_Maxsector+3, r19
+	std	Y+P_Wordcount+0, zero	; Read 65536 words
+	std	Y+P_Wordcount+1, zero
+	movw	r25:r24, yh:yl		; Get IO control block
+	call	SD_CARD_MULTIPLE
+;
+;	After each IO we need to update the corresponding values
+;
+	movw	r25:r24, bkch:bkcl	; Update the block count.
+	sbiw	r25:r24, 1		; 
+	movw	bkch:bkcl, r25:r24	; 
+	
+	logtr	0x54, bkcl, bkch
+;
+	ldd	r17, Y+P_Sector+1	; Update start physical sector for next transfer
+	ldd	r18, Y+P_Sector+2	; required for further calls to the IO routine
+	ldd	r19, Y+P_Sector+3	; Note SD-Cards may have more than 2^24 sectors
+
+	subi	r17, byte1(-256)	; Start Sector of next read
+	sbci	r18, byte2(-256)	;
+	sbci	r19, byte3(-256)	;
+
+	std	Y+P_Sector+1, r17
+	std	Y+P_Sector+2, r18	;
+	std	Y+P_Sector+2, r19	;
+;
+	ldd	r17, Y+P_Cluster+1	; Update LBN of next read we need to keep
+	ldd	r18, Y+P_Cluster+2	; track of the LBN as this will be the base
+	ldd	r19, Y+P_Cluster+3	; for the next call to Logical2Physical
+
+	subi	r17, byte1(-256)
+	sbci	r18, byte2(-256)
+	sbci	r19, byte3(-256)
+
+	std	Y+P_Cluster+1, r17	; 
+	std	Y+P_Cluster+2, r18	; 
+	std	Y+P_Cluster+3, r19	; 
+
+	rjmp	mscp_rd040		; 
+;
+;	We have less than 256 sectors to transfer.
+;
+mscp_rd060:
+	ldd	r25, Y+P_Maxsector+0	; Need only lower byte of 32-bit integer
+	tst	r25			; if zero nothing to do, ie Maxsector was
+	breq	mscp_rd070		; a multiple of 256
+	clr	r24			; r25:r24 = 2's complement of word count
+	neg	r25			;  of last transfer
+	
+	logtr	0x55, r24, r25
+	
+	std	Y+P_Wordcount+0, r24
+	std	Y+P_Wordcount+1, r25
+	movw	r25:r24, yh:yl		; Get IO control block
+	call	SD_CARD_MULTIPLE
+;
+;	After that last IO with this fragment we need to update the corresponding values
+;
+	ldd	r25, Y+P_Maxsector+0	; Get sectors transferred
+	
+	ldd	r16, Y+P_Cluster+0	; Update LNB of next read this will be used
+	ldd	r17, Y+P_Cluster+1	; by Logical2Physical to find the next fragment
+	ldd	r18, Y+P_Cluster+2
+	ldd	r19, Y+P_Cluster+3
+
+	add	r16, r25
+	adc	r17, zero
+	adc	r18, zero
+	adc	r19, zero
+
+	std	Y+P_Cluster+0, r16
+	std	Y+P_Cluster+1, r17
+	std	Y+P_Cluster+2, r18
+	std	Y+P_Cluster+3, r19
+
+	sub	wcnth, r25
+	sbc	bkcl, zero
+	sbc	bkch, zero
+
+mscp_rd070:
+	movw	yh:yl, ucbh:ucbl 	; Get UCB
+	ldd	r24, Y+ucb_imgptr+0	; Get pointer to file control block
+	ldd	r25, Y+ucb_imgptr+1
+	call	Logical2Physical	; Translate LBN to PBN, i.e. find next fragment
+	rjmp	mscp_rd020		; and check if the remainder fits the fragment
+;
+;	A partition is attached, Z points to the pcb which holds the
+;	start sector number of the partition, translating LBN to PBN
+;	results in just adding the start sector number. 
 ;
 mscp_rd100:
-	movw	zh:zl, pkth:pktl	; Get Packet
-	ldd	r22, Z+rwc_bcnt+0	; Get Byte Count, which is at this moment
-	ldd	r23, Z+rwc_bcnt+1	; verified to be valid
-	ldd	r24, Z+rwc_bcnt+2
-	ldd	r25, Z+rwc_bcnt+3
-	lsr	r25			; Make word count
-	ror	r24
-	ror	r23
-	ror	r22
-	com	r23
-	neg	r22
-	sbci	r23, -1			; Make 2's complement and save word count
-	movw	wcnth:wcntl, r23:r22	; of last block of 65536 words
-
-	;logtr	0x53, r24, r25	; Show how many blocks we are going to do
-
-	rjmp	mscp_rd120
-;------------------------------
+	ldd	r20, Z+pcb_start+0	; Add start of partition
+	ldd	r21, Z+pcb_start+1
+	ldd	r22, Z+pcb_start+2
+	ldd	r23, Z+pcb_start+3
+	add	r16, r20
+	adc	r17, r21
+	adc	r18, r22
+	adc	r19, r23
+	
+	logtr	0x56, r16, r17
+	logtr	0x5F, r18, r19
+	
+	ldi	yl, low(sdio)		; Partition IO makes use of the common
+	ldi	yh, high(sdio)		; SD-CARD IO control block
+	std	Y+P_Sector+0, r16	; Set start sector for read or write
+	std	Y+P_Sector+1, r17
+	std	Y+P_Sector+2, r18
+	std	Y+P_Sector+3, r19
+	ldi	r16, (1<<P__Nocheck)	; don't check CRC
+	std	Y+P_Flag, r16		; 
 ;
-;
+;	Either we have a partition, i.e. all sectors are contiguous, or the left-over
+;	of the fragment is large enough to cover the number of bytes requested, in
+;	which case the sectors we need to read are as well continguous starting
+;	with the PBN in P_Sector.
 ;
 mscp_rd110:
-	movw	bkch:bkcl, r25:r24	; Save remaining block count
-	movw	r25:r24, yh:yl		; Get IO control block
-	call	SD_CARD_MULTIPLE
 	movw	r25:r24, bkch:bkcl
-;
-;
-;
-mscp_rd120:
+	sbiw	r25:r24, 1		; 
+	brmi	mscp_rd120
+	movw	bkch:bkcl, r25:r24	; Save remaining block count
+	
+	logtr	0x57, r24, r25
+	
 	std	Y+P_Wordcount+0, zero	; Assume 65536 words
 	std	Y+P_Wordcount+1, zero
-	sbiw	r25:r24, 1		; 
-	brpl	mscp_rd110		; do full block
-	std	Y+P_Wordcount+0, wcntl	; Remaining Words
-	std	Y+P_Wordcount+1, wcnth
-	;logtr	0x54, wcntl, wcnth	; We are doing the rest of the block
 	movw	r25:r24, yh:yl		; Get IO control block
 	call	SD_CARD_MULTIPLE
-	ldi	r24, low(dmalock)
-	ldi	r25, high(dmalock)
-	call	release
+
+	ldd	r17, Y+P_Sector+1	; Update start physical sector for next transfer
+	ldd	r18, Y+P_Sector+2	; required for further calls to the IO routine
+	ldd	r19, Y+P_Sector+3	; Note SD-Cards may have more than 2^24 sectors
+
+	subi	r17, byte1(-256)	; Start Sector of next read
+	sbci	r18, byte2(-256)	;
+	sbci	r19, byte3(-256)	;
+
+	std	Y+P_Sector+1, r17
+	std	Y+P_Sector+2, r18	;
+	std	Y+P_Sector+2, r19	;
+
+	rjmp	mscp_rd110
+mscp_rd120:
+	movw	r25:r24, wcnth:wcntl
+	com	r25			; 2's complement of remaining word count
+	neg	r24
+	sbci	r25,0xff
+	logtr	0x58, r24, r25
+	std	Y+P_Wordcount+0, r24	; Set Words
+	std	Y+P_Wordcount+1, r25
+	movw	r25:r24, yh:yl		; Get IO control block
+	call	SD_CARD_MULTIPLE
 	rjmp	rwexit	
 ;
 ;
