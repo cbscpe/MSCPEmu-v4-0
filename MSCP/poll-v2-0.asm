@@ -179,9 +179,6 @@ poll110:
 	ldi	r24, low(mscpipr)
 	ldi	r25, high(mscpipr)
 	call	block
-	cli
-	call	debug_pulse3
-	sei	
 	rjmp	poll100
 
 poll120:

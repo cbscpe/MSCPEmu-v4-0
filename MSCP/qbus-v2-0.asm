@@ -460,8 +460,6 @@ qbus_dato_ip:
 	DATO
 	sts	ipr+0, yl
 	sts	ipr+1, yh
-	
-	call	debug_pulse1
 	clr	zl			; clear important states
 	sts	sa_s1+0, zl
 	sts	sa_s1+1, zl
@@ -804,85 +802,3 @@ qbus_init_done:
 	out	CPU_SREG, r8		; restore
 	pop	r8			; restore
 	reti				; 4	
-
-
-
-debug_pulse5:
-	sbi	b_DBG
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	cbi	b_DBG
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-debug_pulse4:
-	sbi	b_DBG
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	cbi	b_DBG
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-debug_pulse3:
-	sbi	b_DBG
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	cbi	b_DBG
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-debug_pulse2:
-	sbi	b_DBG
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	cbi	b_DBG
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-debug_pulse1:
-	sbi	b_DBG
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	nop
-	cbi	b_DBG
-	ret
