@@ -41,6 +41,7 @@ commandlist:
 	.dw	kw_sdread,	a_sdinit,	cmd_sdread
 	.dw	kw_set,		0,		cmd_set
 	.dw	kw_turbo,	0,		cmd_turbo
+	.dw	kw_pbn,		0,		cmd_l2p
 #ifdef mscpemulation
 	.dw	kw_poll,	0,		cmd_poll
 #endif
@@ -52,6 +53,15 @@ cmd_poll:
 	.dw	kw_eol,		cmdpoll,	cmd_done
 	.dw	0
 #endif
+;
+;	pbn <nnn>
+;
+cmd_l2p:
+	.dw	kw_number,	a_nbr,		cmd_l2p1
+	.dw	0
+cmd_l2p1:
+	.dw	kw_eol,		cmdl2p,		cmd_done
+	.dw	0
 
 cmd_rlv12init:
 	.dw	kw_eol,		0,		cmd_done

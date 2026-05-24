@@ -24,7 +24,75 @@ prtnbr:
 	.db	CR, LF, 0, 0
 	clc
 	ret
+;--------------------------------------------------------------------------
+;
+;	pbn <nnn>	- translate lbn to pbn and show maxsector
+;
+cmdl2p:
+;
+;	Get Image Pointer of Unit 0
+;
+	lds	r16, unittable+ucb_status
+	sbrs	r16, ucb__file
+	rjmp	cmdl2p900		; not attached to a file
+	lds	zl, unittable+ucb_imgptr+0
+	lds	zh, unittable+ucb_imgptr+1
+	ldd	yl, Z+fcb_iob+0		; Get pointer to IO control block
+	ldd	yh, Z+fcb_iob+1
+	lds	r16, nbr+0
+	lds	r17, nbr+1
+	lds	r18, nbr+2
+	lds	r19, nbr+3
+	std	Y+P_Cluster+0, r16
+	std	Y+P_Cluster+1, r17
+	std	Y+P_Cluster+2, r18
+	std	Y+P_Cluster+3, r19
+	sts	pprint+0, r16
+	sts	pprint+1, r17
+	sts	pprint+2, r18
+	sts	pprint+3, r19
+	movw	r25:r24, zh:zl
+	call	logical2physical
+	cpse	r24, zero
+	rjmp	cmdl2p910
+	
+	ldd	r16, Y+P_Sector+0
+	ldd	r17, Y+P_Sector+1
+	ldd	r18, Y+P_Sector+2
+	ldd	r19, Y+P_Sector+3
+	sts	pprint+4, r16
+	sts	pprint+5, r17
+	sts	pprint+6, r18
+	sts	pprint+7, r19
 
+	ldd	r16, Y+P_Maxsector+0
+	ldd	r17, Y+P_Maxsector+1
+	ldd	r18, Y+P_Maxsector+2
+	ldd	r19, Y+P_Maxsector+3
+	sts	pprint+8, r16
+	sts	pprint+9, r17
+	sts	pprint+10, r18
+	sts	pprint+11, r19
+
+	call	print
+	.db	CR, LF
+	.db	"LBN 0x", 0x83, 0x82, 0x81, 0x80, " translates to PBN 0x", 0x87, 0x86, 0x85, 0x84, " Maxsector is 0x", 0x8b, 0x8a, 0x89, 0x88, CR, LF, 0
+	clc
+	ret
+
+cmdl2p900:
+	call	print
+	.db	CR, LF
+	.db	"Unit 0 is not attached to a file!", CR, LF, 0
+	clc
+	ret
+
+cmdl2p910:
+	call	print
+	.db	CR, LF
+	.db	"LBN is beyond file!", CR, LF, 0
+	clc
+	ret
 ;--------------------------------------------------------------------------
 ;
 ;	load	- load boot ROM to PDP-11 memory
