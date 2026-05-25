@@ -1012,7 +1012,6 @@ prtcreate:
 .include	"rlv12-v2-0.asm"	; RLV12 Disk Emulation
 .include	"qbus-v2-0.asm"		; RLV12 Q-Bus Interface
 #endif
-.include	"readonlydata.asm"	; Read Only Memory mapped to data space
 
 ;--------------------------------------------------------------------------
 ;
@@ -1038,3 +1037,25 @@ prtcreate:
 .include	"MSCP/dorw.asm"
 .include	"MSCP/dup.asm"
 #endif
+
+;--------------------------------------------------------------------------
+;
+;	The 3rd quarter of the flash will be mapped to the normal address
+;	space. The new AVR family AVR128 allows to map a section of the
+;	flash to the data address space so we can directly read from the
+;	flash without using LPM. Note that the avrasm2 uses word addresses
+;	for the flash but the data space uses byte addresses. Therefore 
+;	when you put RO data into the mapped section you need to "translate"
+;	the addresses into a byte address. This translation of course 
+;	depends on the section you map. Here we use section 2 which starts
+;	at the flash word address 0x8000. Eventually we will move all
+;	RO data sections into the mapped section.
+;
+	.org	0x8000
+
+
+
+.include "strings.inc"	
+.include "DriveTab.inc"
+.include "help.inc"
+.include "Messages.inc"

@@ -19,15 +19,6 @@
 ;		state
 ;
 ;	2026-05-06 Peter Schranz
-;		After the first Milestone, creating a new image under RT-11
-;		and be able to boot RT-11 from the MSCP emulator, was achieved
-;		the next step was to boot RSX-11M+, there was a RD54 image 
-;		available on the internet with V4.6 BL87. Unfortunately this
-;		image stops after loading with the message:
-;			SAV -- Booted device cannot be brought online
-;		RT-11 uses a ring size of one and RSX-11M1 a ring size of four
-;		and this might be the problem. So I decided completely redefine
-;		trace logging output for POLL. 
 ;
 ;		0x71	get_descriptor DMA address as the ring area is fixed
 ;			we only show the lower 16-bit of the address

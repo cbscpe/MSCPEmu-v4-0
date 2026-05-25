@@ -245,35 +245,8 @@ init150:
 
 	logtr	0x13, r16, r17
 
-;
-;	After we receive the step 1 response and processed the content we
-;	now need to initialise the MSCP controller. The basic initialisation
-;	of the MCU inkluding all IO has already done by the startup section
-;	here we need to setup all packet queues, initialise the controller
-;	status und mount the SD-Card. Up to here there are no dynamic data
-;	structures
-;
-;
-;	ldi	r16, max_packets
-;	mov	r15, r16
-init160:
-;	ldi	r24, low(pkt_length)
-;	ldi	r25, high(pkt_length)
-;	call	malloc
-;	sbiw	r25:r24, 0
-;	brne	init170
-;	ldi	r24, low(pe_nsr)	; no such resource
-;	ldi	r25, high(pe_nsr)	; no such resource
-;	jmp	fatal_error
-init170:
-;	ldi	r22, low(pkts)
-;	ldi	r23, high(pkts)
-;	call	enqhead
-;	dec	r15
-;	brne	init160
 	ldi	r16, mscp_s2		; Switch to S2 which will activate the
-					; appropriate routine in the QBUS IRS
-	sts	mscpstatus, r16		;
+	sts	mscpstatus, r16		; appropriate routine in the QBUS IRS
 	rcall	pokehost		; Possibly create a Host interrrupt 
 	rjmp	init010			; And here we go
 ;--------------------------------------------------------------------------
@@ -440,6 +413,7 @@ init330:
 
 	logtr	0x14, r20, r21	
 	logtr	0x15, r22, r19
+
 	clr	r16			; We will write r16, r16, r16, r17
 	clr	r17			;
 	tst	r19			; Zap purge interrupt field
@@ -450,7 +424,9 @@ init340:
 	rcall	initzapdw		; Zap response and command ring transition flags
 	ldi	r17, 0x80		; RSP ring needs O-flag set
 	lds	r19, rsp+ring_size+0	; we only need the low byte
+
 	logtr	0x16, r19, zero
+
 init350:
 	rcall	initzapdw
 	dec	r19
@@ -458,7 +434,9 @@ init350:
 
 	clr	r17
 	lds	r19, cmd+ring_size+0	; we only need the low byte
+
 	logtr	0x17, r19, zero
+
 init360:
 	rcall	initzapdw
 	dec	r19
@@ -531,7 +509,9 @@ init400:
 	tst	r24
 	breq	init410
 	call	do_plf
+
 	logtr	0x19, r24, zero
+
 	sts	porterror, zero
 init410:
 	lds	r18, _ccb_state

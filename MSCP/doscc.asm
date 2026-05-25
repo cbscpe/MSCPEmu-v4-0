@@ -96,33 +96,6 @@ do_scc020:
 	std	Y+scc_cnti+7, r25
 	std	Y+scc_mcnt+0, zero
 	std	Y+scc_mcnt+1, zero
-;
-;	Comparison of response sent by simh to our solution * marks differences
-;
-/*
-
-                                           Emulator	simh		offset	description
-0x721C Trace ID 0x90, Bytes 0x20 0x00 Word 000040	0x0020		 2.	Message Length
-0x7220 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0x0000		 4.	Credits / Message Type / Connection ID
-0x7224 Trace ID 0x9F, Bytes 0x01 0x00 Word 000001	0x0001		 6.	CRF Low
-0x7228 Trace ID 0x9F, Bytes 0xD0 0x26 Word 023320	0x26d0		 8.	CRF High
-0x722C Trace ID 0x9F, Bytes 0x03 0x00 Word 000003	0x0003		10.	reserved
-0x7230 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0x0000		12.	reserved
-0x7234 Trace ID 0x9F, Bytes 0x84 0x00 Word 000204	0x0084		14.	opcode
-0x7238 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0x0000		16.	status
-0x723C Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0x0000		18.	mscp version
-0x7240 Trace ID 0x9F, Bytes 0xD0 0x00 Word 000320	0x80d0*!	20.	controller flags
-0x7244 Trace ID 0x9F, Bytes 0x78 0x00 Word 000170	0x0078		22.	host time-out / controller time-out
-0x7248 Trace ID 0x9F, Bytes 0x02 0x00 Word 000002	0x0103*!	24.	Controller Software Version
-0x724C Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0x0000		26.	controller ID A
-0x7250 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0x0000		28.	controller ID B
-0x7254 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0x0000		30.	controller ID C
-0x7258 Trace ID 0x9F, Bytes 0x02 0x01 Word 000402	0x0113*!	32.	controller ID D
-0x725C Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0x0000		34.	max byte count
-0x7260 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0x0000
-
-
-*/
 	ldi	r24, low(cf_rpl | cf_atn | cf_msc | cf_ths)
 	ldi	r25, high(cf_rpl | cf_atn | cf_msc | cf_ths)
 	std	Y+scc_cntf+0, r24

@@ -165,12 +165,10 @@ qbus_intq:
 	in	zl, dataportin		; 1
 ;
 ;	+---+---+---+---+---+---+---+---+
-;	| UB| LB|ROM|BA4|BA3|BA2|BA1| WT|
+;	|ROM| 0 | 0 | 0 | 0 | 0 |BA1| WT|
 ;	+---+---+---+---+---+---+---+---+
 ;
-.equ	UB	= 7			; Don't Write Upper Byte
-.equ	LB	= 6			; Don't Write Lower Byte
-.equ	ROM	= 5			; Boot ROM
+.equ	ROM	= 7			; Boot ROM
 .equ	WTBT	= 0			; Write i.e. DATO
 ;
 ;	Check if this as access to the boot ROM

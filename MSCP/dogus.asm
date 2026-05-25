@@ -176,57 +176,6 @@ do_gus050:
 	std	Y+gus_shst+0, zero
 	std	Y+gus_shst+1, zero
 
-/*
-A.	-------------------------------------------------------------------
-
-DBG(9546817)> RQ REQ: cmd=0003(GUS), mod=0000, unit=0, bc=00000200, ma=0003A236, lbn=00000000
-DBG(9546817)> RQ TRACE: rq_mscp - Queue
-DBG(9546817)> RQ TRACE: rq_gus
-DBG(9546817)> RQ TRACE: rq_putr_unit
-DBG(9546817)> RQ REQ: rsp=0083, sts=0000
-DBG(9546817)> RQ TRACE: txt=0030, 0000, 0003, 26D0, 0000, 0000, 0083, 0000
-DBG(9546817)> RQ TRACE: txt=0000, 8080, 0000, 0000, 0000, 0000, 0000, 0204
-DBG(9546817)> RQ TRACE: txt=103C, 22A4, 0000, 0000, 002A, 0006, 0001, 0000
-DBG(9546817)> RQ TRACE: rq_setint
-DBG(9546817)> RQ TRACE: rq_clrint
-DBG(9547017)> RQ TRACE: rq_quesvc
-DBG(9548131)> RQ REQ: poll started, PC=C6A6
-DBG(9548331)> RQ TRACE: rq_quesvc
-
-B.	-------------------------------------------------------------------
-
-DBG(9548331)> RQ REQ: cmd=0003(GUS), mod=0000, unit=0, bc=00000200, ma=00036404, lbn=00005012
-DBG(9548331)> RQ TRACE: rq_mscp - Queue
-DBG(9548331)> RQ TRACE: rq_gus
-DBG(9548331)> RQ TRACE: rq_putr_unit
-DBG(9548331)> RQ REQ: rsp=0083, sts=0000
-DBG(9548331)> RQ TRACE: txt=0030, 0000, 0004, 26D0, 0000, 0000, 0083, 0000
-DBG(9548331)> RQ TRACE: txt=0000, 8080, 0000, 0000, 0000, 0000, 0000, 0204
-DBG(9548331)> RQ TRACE: txt=103C, 22A4, 0000, 0000, 002A, 0006, 0001, 0000
-DBG(9548331)> RQ TRACE: rq_setint
-DBG(9548331)> RQ TRACE: rq_clrint
-DBG(9548531)> RQ TRACE: rq_quesvc
-DBG(9565522)> RQ REQ: poll started, PC=C6A6
-DBG(9565722)> RQ TRACE: rq_quesvc
-
-C.	-------------------------------------------------------------------
-
-DBG(488665951)> RQ REQ: cmd=0003(GUS), mod=0000, unit=0, bc=000031C0, ma=0003D0C0, lbn=0000531C
-DBG(488665951)> RQ TRACE: rq_mscp - Queue
-DBG(488665951)> RQ TRACE: rq_gus
-DBG(488665951)> RQ TRACE: rq_putr_unit
-DBG(488665951)> RQ REQ: rsp=0083, sts=0000
-DBG(488665951)> RQ TRACE: txt=0030, 0000, 0003, 26D0, 0000, 0000, 0083, 0000
-DBG(488665951)> RQ TRACE: txt=0000, 8080, 0000, 0000, 0000, 0000, 0000, 0204
-DBG(488665951)> RQ TRACE: txt=103C, 22A4, 0000, 0000, 002A, 0006, 0001, 0000
-DBG(488665951)> RQ TRACE: rq_setint
-DBG(488665958)> RQ TRACE: rq_clrint
-DBG(488666151)> RQ TRACE: rq_quesvc
-DBG(488667397)> RQ REQ: poll started, PC=C6A6
-DBG(488667597)> RQ TRACE: rq_quesvc
-
- */
-
 	ldd	r18, Y+cmd_opcd
 	ori	r18, op_end
 	std	Y+gus_opcd, r18
