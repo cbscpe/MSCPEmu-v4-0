@@ -466,8 +466,8 @@ SD_PRINT_CSD_CRC:
 	ld	r17, X+			; Get Next Command byte
 	eor	r18, r17		; xor
 	mov	zl, r18			; make index
-	ldi	zh, high(2*crc7table)	; translate
-	lpm	r18, Z			; new CRC
+	ldi	zh, high(crc7table)	; translate
+	ld	r18, Z			; new CRC
 	dec	r16
 	brne	SD_PRINT_CSD_CRC
 

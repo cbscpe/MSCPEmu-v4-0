@@ -188,8 +188,8 @@ SD_commandCRC010:
 	ld	r19, X+			; Get Next Command byte
 	eor	r24, r19		; xor
 	mov	zl, r24			; make index
-	ldi	zh, high(2*crc7table)	; translate
-	lpm	r24, Z			; new CRC
+	ldi	zh, high(crc7table)	; translate
+	ld	r24, Z			; new CRC
 	dec	r18
 	brne	SD_commandCRC010
 	ret				; r24 contains CRC7 left-adjusted
@@ -710,7 +710,7 @@ SD_sendRead080:
 	lds	r18, SPI1_DATA
 	sts	SPI1_DATA, r19		; Next dummy byte
 	st	X+, r18
-	crc	r18, r4, r5
+	crcro	r18, r4, r5
 	sbiw	r25:r24, 1
 	brne	SD_sendRead080
 	
@@ -842,7 +842,7 @@ SD_sendWrite023:
 ;
 ;		ld	r18, X+
 ;		sts	SPI1_DATA, r18		; Start filling buffer with 1st byte
-;		crc	r18, r4, r5
+;		crcro	r18, r4, r5
 ;		sbiw	r25:r24, 1		; one byte done
 ;		rjmp	SD_sendWrite021
 ;
@@ -855,7 +855,7 @@ SD_sendWrite023:
 ;	SD_sendWrite021:
 ;		ld	r18, X+
 ;		sts	SPI1_DATA, r18		; Send byte
-;		crc	r18, r4, r5
+;		crcro	r18, r4, r5
 ;		sbiw	r25:r24, 1
 ;		brne	SD_sendWrite020		; until all bytes done
 ;

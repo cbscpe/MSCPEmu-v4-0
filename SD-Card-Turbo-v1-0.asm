@@ -103,8 +103,8 @@ SD_CARD_TURBO070:
 	sbrs	r18, SPI_RXCIF_bp
 	rjmp	SD_CARD_TURBO070	; Wait for second byte received
 	lds	r21, SPI1_DATA
-	crc	r20, r4, r5		;
-	crc	r21, r4, r5		;
+	crcro	r20, r4, r5		;
+	crcro	r21, r4, r5		;
 	inc	r19			; And skip 128 words
 	brpl	SD_CARD_TURBO050	;
 SD_CARD_TURBO080:			; Start transferring a full block
@@ -156,8 +156,8 @@ SD_CARD_TURBO110:
 	#endif
 	sbi	b_DMR			; In the meantime we start the DMA
 	ldi	r18, dmatmo		;
-	crc	r20, r4, r5		; During DMA we first calculate the CRC
-	crc	r21, r4, r5		;
+	crcro	r20, r4, r5		; During DMA we first calculate the CRC
+	crcro	r21, r4, r5		;
 SD_CARD_TURBO120:			;
 	dec	r18			; Then we wait for the DMA to finish or
 	sbis	i_DMG			; time-out

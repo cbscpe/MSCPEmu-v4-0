@@ -2,7 +2,7 @@
 ;
 ;
 .include "monitor-chartbl-v2-0.inc"
-	.db	0, "K"		; crc
+	.db	0, "K"		; crcro
 	.db	0, "S"		; SD
 	.db	0, "R"
 	.db	0, "W"
@@ -233,9 +233,9 @@ monsdreadsector:
 	clr	r5
 monsdread010:
 	ld	r18, X+
-	crc	r18, r4, r5
+	crcro	r18, r4, r5
 	ld	r18, X+
-	crc	r18, r4, r5
+	crcro	r18, r4, r5
 	dec	r16
 	brne	monsdread010
 	sts	pprint+0, r4
@@ -314,9 +314,9 @@ monsdwritesector:
 	clr	r5
 monsdwrite010:
 	ld	r18, X+
-	crc	r18, r4, r5
+	crcro	r18, r4, r5
 	ld	r18, X+
-	crc	r18, r4, r5
+	crcro	r18, r4, r5
 	dec	r16
 	brne	monsdwrite010
 	sts	pprint+0, r4
