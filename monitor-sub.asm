@@ -84,40 +84,40 @@ moncrc7sub:
 	clr	r16
 	sts	pprint+3, r16
 	mov	zl, r4
-	ldi	zh, high(2*crc7table)	
-	lpm	r4, Z
+	ldi	zh, high(crc7table)	
+	ld	r4, Z
 	
 	movw	Z, Y
 	lpm	r16, Z+
 	movw	Y, Z
 	eor	r4, r16
 	mov	zl, r4
-	ldi	zh, high(2*crc7table)	
-	lpm	r4, Z
+	ldi	zh, high(crc7table)	
+	ld	r4, Z
 
 	movw	Z, Y
 	lpm	r16, Z+
 	movw	Y, Z
 	eor	r4, r16
 	mov	zl, r4
-	ldi	zh, high(2*crc7table)	
-	lpm	r4, Z
+	ldi	zh, high(crc7table)	
+	ld	r4, Z
 
 	movw	Z, Y
 	lpm	r16, Z+
 	movw	Y, Z
 	eor	r4, r16
 	mov	zl, r4
-	ldi	zh, high(2*crc7table)	
-	lpm	r4, Z
+	ldi	zh, high(crc7table)	
+	ld	r4, Z
 
 	movw	Z, Y
 	lpm	r16, Z+
 	movw	Y, Z
 	eor	r4, r16
 	mov	zl, r4
-	ldi	zh, high(2*crc7table)	
-	lpm	r4, Z
+	ldi	zh, high(crc7table)	
+	ld	r4, Z
 
 	ldi	r18, 0x01
 	or	r4, r18
