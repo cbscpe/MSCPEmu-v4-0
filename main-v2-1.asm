@@ -1062,11 +1062,8 @@ prtcreate:
 ;	RO data sections into the mapped section.
 ;
 	.org	0x8000
-
-
-
+.include "CRC-Tables.inc"
 .include "strings.inc"	
 .include "DriveTab.inc"
 .include "help.inc"
 .include "Messages.inc"
-.include "CRC-Tables.inc"
