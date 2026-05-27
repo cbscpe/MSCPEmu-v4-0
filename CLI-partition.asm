@@ -65,6 +65,7 @@ activpar:
 	ldd	r18, Z+pcb_mbrsector+3
 	std	Y+P_Sector+3, r18	
 	movw	r25:r24, yh:yl
+	LEDON
 	call	SD_CARD_READ
 	brcc	activpar010
 
@@ -108,6 +109,7 @@ activpar030:
 	ldi	r18, 0x83
 	st	X, r18
 	movw	r25:r24, yh:yl
+	LEDON
 	call	SD_CARD_WRITE
 	brcc	activpar040
 	call	print
@@ -252,12 +254,14 @@ initpar010:					; Initialize the block buffer with all ones
 
 initpar020:
 	rcall	initparbsfa			; Part A : Serial Number
+	LEDON
 	call	SD_CARD_WRITE
 	call	print
 	.db	"Init Par: Write A Sector 0x", 0x83, 0x82, 0x81, 0x80, 0x0d, 0x0a, 0x00
 	call	initparinc
 
 	rcall	initparbsfb			; Part B : All Ones
+	LEDON
 	call	SD_CARD_WRITE
 	call	print
 	.db	"Init Par: Write B Sector 0x", 0x83, 0x82, 0x81, 0x80, 0x0d, 0x0a, 0x00

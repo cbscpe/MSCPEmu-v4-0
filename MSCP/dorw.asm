@@ -366,6 +366,7 @@ mscp_era010:
 	dec	count
 	brne	mscp_era010
 mscp_era020:
+	LEDON
 	call	SD_CARD_WRITE
 	
 	movw	xh:xl, bkch:bkcl
@@ -557,6 +558,7 @@ mscp_rd040:
 	std	Y+P_Wordcount+0, zero	; Read 65536 words
 	std	Y+P_Wordcount+1, zero
 	movw	r25:r24, yh:yl		; Get IO control block
+	LEDON
 	call	SD_CARD_MULTIPLE
 ;
 ;	After each IO we need to update the corresponding values
@@ -607,6 +609,7 @@ mscp_rd060:
 	std	Y+P_Wordcount+0, r24
 	std	Y+P_Wordcount+1, r25
 	movw	r25:r24, yh:yl		; Get IO control block
+	LEDON
 	call	SD_CARD_MULTIPLE
 ;
 ;	After that last IO with this fragment we need to update the corresponding values
@@ -681,6 +684,7 @@ mscp_rd110:
 	std	Y+P_Wordcount+0, zero	; Assume 65536 words
 	std	Y+P_Wordcount+1, zero
 	movw	r25:r24, yh:yl		; Get IO control block
+	LEDON
 	call	SD_CARD_MULTIPLE
 
 	ldd	r17, Y+P_Sector+1	; Update start physical sector for next transfer
@@ -705,6 +709,7 @@ mscp_rd120:
 	std	Y+P_Wordcount+0, r24	; Set Words
 	std	Y+P_Wordcount+1, r25
 	movw	r25:r24, yh:yl		; Get IO control block
+	LEDON
 	call	SD_CARD_MULTIPLE
 	rjmp	rwexit	
 ;
@@ -740,6 +745,7 @@ mscp_write030:
 	dec	count			; More to go?
 	brne	mscp_write030
 	movw	r25:r24, yh:yl		; get IO control block
+	LEDON
 	call	SD_CARD_WRITE		; Write the block
 	movw	r25:r24, bkch:bkcl	; Get Blocks to Write
 	sbiw	r25:r24, 1		; More Blocks to Write
@@ -770,6 +776,7 @@ mscp_cmp010:
 	breq	mscp_cmp020
 	mov	count, wcntl
 mscp_cmp020:
+	LEDON
 	call	SD_CARD_READ	
 	movw	xh:xl, addrh:addrl
 mscp_cmp030:

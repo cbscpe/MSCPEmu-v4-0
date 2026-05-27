@@ -20,6 +20,7 @@
 	ld	@1, Z			;  3
 .endmacro
 
+
 ;=============================================================================
 ;
 ;	Definitions
@@ -35,6 +36,16 @@
 ;	Data Segment
 ;	
 .include "main-v2-1.inc"		; Disk Emulator Data section
+
+	.macro	LEDON
+	ldi	r18, led_time
+	sts	led_oneshot, r18
+	cbi	b_LED
+	.endmacro
+	
+	.macro	LEDOFF
+	sbi	b_LED	
+	.endmacro
 
 ;=============================================================================
 ;
@@ -275,7 +286,7 @@ loginit010:
 	cbi	b_ALEW
 #endif
 	sbi	d_LED			; Activity LED
-	cbi	b_LED
+	LEDOFF
 	sbi	d_CRDY			; Enable SA Read Interrupt
 	sbi	d_IRQ			; Q-Bus Interrupt Request
 	sbi	d_RD			; Read Register in CPLD
@@ -310,13 +321,88 @@ loginit010:
 ;
 ;	Alternate PINs for SPI1
 ;
-	ldi	r18, PORTMUX_SPI1_ALT1_gc; SPI1 on PC4..7
-	sts	PORTMUX_SPIROUTEA, r18
+;	ldi	r18, PORTMUX_SPI1_ALT1_gc; SPI1 on PC4..7
+;	sts	PORTMUX_SPIROUTEA, r18
+;
+;	Alternate PINs for USART1
+;
+	ldi	r18, PORTMUX_USART1_ALT1_gc; USART1 on PC4..7
+	sts	PORTMUX_USARTROUTEA, r18
 ;
 ;	The data port 
 ;
 	ldi	r18, 0xFF
 	out	dataportdir, r18	; default data port direction is output !!!
+;=============================================================================
+;
+;	Map Flash section 2 to Data address space
+;
+	ldi	r18, CPU_CCP_IOREG_gc
+	sts	CPU_CCP, r18
+	ldi     r18, NVMCTRL_FLMAP_SECTION2_gc
+	sts     NVMCTRL_CTRLB, r18
+
+;=============================================================================
+;
+;	SPI 1
+;
+	ldi	r18, SPI_SSD_bm;  | SPI_BUFEN_bm
+	sts	SPI1_CTRLB, r18
+;
+;	Various Clock rates: CPUCLK/2, CPUCLK/4, CPUCLK/8
+;
+;	ldi	r18, SPI_CLK2X_bm | SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
+;	ldi	r18,                SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
+;	ldi	r18, SPI_CLK2X_bm | SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV16_gc
+	ldi	r18, spispeed
+	sts	SPI1_CTRLA, r18		
+;=============================================================================
+;
+;	USART 1
+;
+	ldi	r18, low(BAUD1)
+	sts	USART1_BAUDL, r18
+	ldi	r18, high(BAUD1)
+	sts	USART1_BAUDH, r18
+
+	ldi	r18, USART_NORMAL_CHSIZE_8BIT_gc
+	sts	USART1_CTRLC, r18
+	sbi	VPORTB_OUT, TXD		; TXD1
+	sbi	VPORTB_DIR, TXD		; TXD1
+
+	ldi	r18, USART_RXEN_bm | USART_TXEN_bm | USART_SFDEN_bm
+	sts	USART1_CTRLB, r18
+
+	ldi	r18, 0x00
+	sts	USART1_CTRLA, r18
+;
+;	Driver usage is controlled by FLAGS_COMMON
+;
+	cbi	FLAGS_COMMON, serin__drv	; Polled 
+	cbi	FLAGS_COMMON, serout__drv
+
+;=============================================================================
+
+;	clr	xl
+;	clr	xh
+;	clr	r25
+;testloop010:
+;	ldi	r24, 'a'
+;testloop015:
+;	call	serout
+;testloop020:	
+;	sbiw	xh:xl, 1
+;	brne	testloop020
+;	inc	r24
+;	cpi	r24, 'z'+1
+;	brlo	testloop015
+;	sbrs	r25, 0
+;	cbi	b_LED
+;	sbrc	r25, 0
+;	sbi	b_LED
+;	inc	r25
+;	rjmp	testloop010
+	
 ;=============================================================================
 ;
 ;	RTC / PIT
@@ -422,54 +508,6 @@ pitwait:
 
 	ldi	r18, v_QBUS/2		; Vector Number is Vector Address/2
 	sts	CPUINT_LVL1VEC, r18
-
-;=============================================================================
-;
-;	Map Flash section 2 to Data address space
-;
-	ldi	r18, CPU_CCP_IOREG_gc
-	sts	CPU_CCP, r18
-	ldi     r18, NVMCTRL_FLMAP_SECTION2_gc
-	sts     NVMCTRL_CTRLB, r18
-
-;=============================================================================
-;
-;	SPI 1
-;
-	ldi	r18, SPI_SSD_bm;  | SPI_BUFEN_bm
-	sts	SPI1_CTRLB, r18
-;
-;	Various Clock rates: CPUCLK/2, CPUCLK/4, CPUCLK/8
-;
-;	ldi	r18, SPI_CLK2X_bm | SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
-;	ldi	r18,                SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
-;	ldi	r18, SPI_CLK2X_bm | SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV16_gc
-	ldi	r18, spispeed
-	sts	SPI1_CTRLA, r18		
-;=============================================================================
-;
-;	USART 1
-;
-	ldi	r18, low(BAUD1)
-	sts	USART1_BAUDL, r18
-	ldi	r18, high(BAUD1)
-	sts	USART1_BAUDH, r18
-
-	ldi	r18, USART_NORMAL_CHSIZE_8BIT_gc
-	sts	USART1_CTRLC, r18
-	sbi	VPORTB_OUT, TXD		; TXD1
-	sbi	VPORTB_DIR, TXD		; TXD1
-
-	ldi	r18, USART_RXEN_bm | USART_TXEN_bm | USART_SFDEN_bm
-	sts	USART1_CTRLB, r18
-
-	ldi	r18, 0x00
-	sts	USART1_CTRLA, r18
-;
-;	Driver usage is controlled by FLAGS_COMMON
-;
-	cbi	FLAGS_COMMON, serin__drv	; Polled 
-	cbi	FLAGS_COMMON, serout__drv
 
 ;=============================================================================
 ;

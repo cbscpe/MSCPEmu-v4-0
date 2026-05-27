@@ -40,6 +40,7 @@ fdisknext:
 	ldd	r18, Y+P_Sector+3
 	sts	pprint+5, r18
 	movw	r25:r24, yh:yl
+	LEDON
 	call	SD_CARD_READ
 	brcs	fdiskerr81
 

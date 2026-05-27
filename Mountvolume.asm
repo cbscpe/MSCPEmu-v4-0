@@ -65,6 +65,8 @@ MountAnalyzeTable:
 ;
 ;	Read the MBR / EBR and analyze the partition table
 ;
+	ldi	r18, led_time
+	LEDON
 	movw	r25:r24, yh:yl
 	call	SD_CARD_READ			
 	tst	r24
@@ -556,6 +558,7 @@ MountScanFAT32:
 	std	Y+P_Sector+2, r18
 	std	Y+P_Sector+3, r19
 	movw	r25:r24, yh:yl		;
+	LEDON
 	call	SD_CARD_READ		; Read Volume Boot Record
 	tst	r24
 	breq	MountScanSetup010

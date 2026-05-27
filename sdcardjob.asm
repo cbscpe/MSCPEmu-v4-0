@@ -43,7 +43,7 @@ carddetect100:
 	dec	r16
 	brpl	carddetect110
 	clr	r16
-	cbi	b_LED
+	LEDOFF
 carddetect110:
 	sts	led_oneshot, r16
 

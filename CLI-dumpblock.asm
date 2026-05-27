@@ -69,9 +69,7 @@ cmddumpblock:
 	ldi	xh, high(sdbuffer)	; 
 	std	Y+P_Address+0, xl	; Set buffer address for SD-Card block
 	std	Y+P_Address+1, xh	; 
-	ldi	r18, led_time
-	sts	led_oneshot, r18
-	sbi	b_LED
+	LEDON
 	movw	r25:r24, yh:yl
 	call	SD_CARD_READ		; 
 	clr	zl

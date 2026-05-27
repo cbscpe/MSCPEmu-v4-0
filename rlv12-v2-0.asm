@@ -214,9 +214,7 @@ rlv12_autoboot010:
 	ldi	r17, high(sdbuffer)
 	std	Y+P_Address+0, r16	; set IO buffer address
 	std	Y+P_Address+1, r17
-	sbi	b_LED			; blinken lights
-	ldi	r18, led_time
-	sts	led_oneshot, r18
+	LEDON
 	movw	r25:r24, yh:yl		; IO Parameter Block
 	call	SD_CARD_READ		; read sector
 	cpse	r24, zero		; test return code 
@@ -262,9 +260,7 @@ rlv12_maintenance:
 rlv12_writecheck:
 	ldi	r24, 1			; DMA Read
 	rcall	rlv12_rwsetup
-	sbi	b_LED
-	ldi	r18, led_time
-	sts	led_oneshot, r18
+	LEDON
 	call	SD_CARD_READ		; 
 	tst	r24
 	breq	rlv12_writecheck010
@@ -298,9 +294,7 @@ rlv12_writechkdmaloop:
 	brne	rlv12_writechkdmaloop	; Yes
 	movw	wdch:wdcl, r25:r24	; Update wordcount
 	rcall	rlv12_rwnextsector
-	sbi	b_LED
-	ldi	r18, led_time
-	sts	led_oneshot, r18
+	LEDON
 	movw	r25:r24, yh:yl		; 
 	call	SD_CARD_READ
 	tst	r24
@@ -651,9 +645,7 @@ rlv12_write010:
 ;	the SD-Card block to the buffer before we transfer the data
 ;
 rlv12_write020:
-	sbi	b_LED
-	ldi	r18, led_time
-	sts	led_oneshot, r18
+	LEDON
 	movw	r25:r24, yh:yl		; IO Parameter block in r25:r24 as per ABI
 	call	SD_CARD_READ		; 
 	tst	r24
@@ -679,9 +671,7 @@ rlv12_write030:
 ;	We have reached the end of the SD-Card buffer, therefore we need to write
 ;	the data to the SD-Card and prepare for the next SD-Card block
 ;
-	sbi	b_LED
-	ldi	r18, led_time
-	sts	led_oneshot, r18
+	LEDON
 	movw	r25:r24, yh:yl
 	call	SD_CARD_WRITE
 	tst	r24
@@ -722,9 +712,7 @@ rlv12_write050:
 ;	block of this write request is ready to be written to the SD-Card
 ;
 rlv12_write060:
-	sbi	b_LED			
-	ldi	r18, led_time
-	sts	led_oneshot, r18
+	LEDON
 	movw	r25:r24, yh:yl		; no need to save word count it is zero now
 	call	SD_CARD_WRITE	
 	tst	r24
@@ -792,9 +780,7 @@ rlv12_readdata010:
 	ldd	r16, Y+P_Flag
 	sbrs	r16, P__Contig		; Do we have a contiguous area to read?
 	rjmp	rlv12_readdata020	; no so read individual blocks
-	sbi	b_LED			; turn on the activity LED
-	ldi	r18, led_time		; initiate the turn off count donw
-	sts	led_oneshot, r18
+	LEDON
 	logtr	0x8C, wdcl, wdch
 	movw	r25:r24, yh:yl		; IO Parameter Block
 	call	SD_CARD_MULTIPLE	; Read in one go with SD-Card read and
@@ -806,9 +792,7 @@ rlv12_readdata010:
 rlv12_readdata020:
 	logtr	0x88, wdcl, wdch
 rlv12_readdata030:
-	sbi	b_LED
-	ldi	r18, led_time
-	sts	led_oneshot, r18
+	LEDON
 	movw	r25:r24, yh:yl		; IO Parameter Block
 	call	SD_CARD_TURBO
 	ldd	r16, Y+P_Flag		; Skipping the first 256 bytes is only
@@ -829,9 +813,7 @@ rlv12_readdata040:
 ;	Read does not satisfy the conditions for direct transfer
 ;
 rlv12_readdata060:
-	sbi	b_LED
-	ldi	r18, led_time
-	sts	led_oneshot, r18
+	LEDON
 	movw	r25:r24, yh:yl		; IO Parameter Block
 	call	SD_CARD_READ		; First read first sector
 	tst	r24
@@ -862,9 +844,7 @@ rlv12_readdmaloop:
 	brne	rlv12_readdmaloop	; Yes
 	movw	wdch:wdcl, r25:r24	; Save Word Count
 	rcall	rlv12_rwnextsector	; 
-	sbi	b_LED
-	ldi	r18, led_time
-	sts	led_oneshot, r18
+	LEDON
 	movw	r25:r24, yh:yl
 	call	SD_CARD_READ
 	tst	r24
