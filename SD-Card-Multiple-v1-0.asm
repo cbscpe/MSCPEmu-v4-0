@@ -32,19 +32,6 @@
 ;	Wrap writing dummy bytes into a macro as it seems we need to make 
 ;	sure we check DRE
 ;
-
-;SPI_transfer_dummy:
-;	ldi	r24, 0xff
-;SPI_transfer:
-;	sts	SPI1_DATA, r24
-;SPI_transfer010:
-;	lds	r24, SPI1_INTFLAGS
-;	sbrs	r24, SPI_IF_bp
-;	rjmp	SPI_transfer010
-;	lds	r24, SPI1_DATA
-;	ret								; Done
-
-
 .macro	stspi
 l1:
 	lds	r18, SPI1_INTFLAGS
