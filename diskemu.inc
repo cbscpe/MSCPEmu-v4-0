@@ -42,8 +42,11 @@
 ;
 ;	Q-Bridge CPLD Version
 ;
+#ifdef qbus50
 .include	"portdefs40qbus.inc"	; CPLD Interface 4.0 QBUS 
-;.include	"portdefs40.inc"	; CPLD Interface 4.0 PDP-11/Hack
+#else
+.include	"portdefs40.inc"	; CPLD Interface 4.0 PDP-11/Hack
+#endif
 ;.include	"portdefs22b.inc"	; CPLD Interface 2.2 RLV12 Emu 2.0 Adapter B
 ;.include	"portdefs22c.inc"	; CPLD Interface 2.2 RLV12 Emu 2.0 Adapter C
 ;

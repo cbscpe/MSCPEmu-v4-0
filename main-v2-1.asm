@@ -318,16 +318,19 @@ loginit010:
 	ldi	r18, PORT_PULLUPEN_bm
 	sts	c_CD, r18
 	sts	c_WP, r18
-;
-;	Alternate PINs for SPI1
-;
-;	ldi	r18, PORTMUX_SPI1_ALT1_gc; SPI1 on PC4..7
-;	sts	PORTMUX_SPIROUTEA, r18
+#ifdef qbus50
 ;
 ;	Alternate PINs for USART1
 ;
 	ldi	r18, PORTMUX_USART1_ALT1_gc; USART1 on PC4..7
 	sts	PORTMUX_USARTROUTEA, r18
+#else
+;
+;	Alternate PINs for SPI1
+;
+	ldi	r18, PORTMUX_SPI1_ALT1_gc; SPI1 on PC4..7
+	sts	PORTMUX_SPIROUTEA, r18
+#endif
 ;
 ;	The data port 
 ;
