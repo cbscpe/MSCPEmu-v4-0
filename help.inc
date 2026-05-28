@@ -299,7 +299,7 @@
 	.dw	012737		; mov	#14, @#csr	; read
 	.dw	014
 	.dw	0174400
-;	loop:
+;			loop:
 	.dw	013700		; mov	@#csr, r0
 	.dw	0174400
 	.dw	032700		; bit	#200, r0
