@@ -42,6 +42,7 @@ commandlist:
 	.dw	kw_set,		0,		cmd_set
 	.dw	kw_turbo,	0,		cmd_turbo
 	.dw	kw_pbn,		0,		cmd_l2p
+	.dw	kw_dmareg,	0,		cmd_dmareg
 #ifdef mscpemulation
 	.dw	kw_poll,	0,		cmd_poll
 #endif
@@ -62,7 +63,18 @@ cmd_l2p:
 cmd_l2p1:
 	.dw	kw_eol,		cmdl2p,		cmd_done
 	.dw	0
-
+;
+;	dmareg <nnn>	- write DMA data register and read it back
+;
+cmd_dmareg:
+	.dw	kw_number,	a_nbr,		cmd_dmareg1
+	.dw	0
+cmd_dmareg1:
+	.dw	kw_eol,		cmddmareg,	cmd_done
+	.dw	0
+;
+;	Match INI Keyword
+;
 cmd_rlv12init:
 	.dw	kw_eol,		0,		cmd_done
 	.dw	0
@@ -489,6 +501,7 @@ kw_dmaread:	P_KEYWORD	"DMARead"
 kw_dmawrite:	P_KEYWORD	"DMAWrite"
 kw_dmaaddr:	P_KEYWORD	"DMAAddress"
 kw_dmatest:	P_KEYWORD	"DMATest"
+kw_dmareg:	P_KEYWORD	"DMAData"
 kw_free:	P_KEYWORD	"FREE"
 kw_set:		P_KEYWORD	"SET"
 kw_reset:	P_KEYWORD	"RESET"

@@ -436,6 +436,46 @@ cmddmatest020:
 ;
 ;	
 ;	
+cmddmareg:
+	ldi	r18, 0xFF
+	out	dataportdir, r18
+	cbi	b_RS0
+	sbi	b_RS1
+	cbi	b_RS2			; Register selected is 2		
+	lds	r18, nbr+0
+	out	dataportout, r18 
+	sbi	b_WR
+	cbi	b_WR
+	sbi	b_RS0			; Register selected is 3
+	lds	r18, nbr+1
+	out	dataportout, r18
+	sbi	b_WR
+	cbi	b_WR
+	clr	r18
+	out	dataportdir, r18
+	sbi	b_RD
+	nop
+	nop
+	nop
+	in	r18, dataportin
+	sts	pprint+1, r18
+	cbi	b_RS0
+	nop
+	nop
+	nop
+	in	r18, dataportin
+	cbi	b_RD
+	sts	pprint+0, r18
+	call	print
+	.db	CR, LF
+	.db	"DMA Register read back 0x", 0x81, 0x80, CR, LF, 0
+	clc
+	ret
+
+;--------------------------------------------------------------------------
+;
+;	
+;	
 cmdmemtest:
 	lds	r22, nbr+0
 	lds	r23, nbr+1
