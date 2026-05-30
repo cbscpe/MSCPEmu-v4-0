@@ -42,6 +42,9 @@
 	cbi	b_ABO			; Abort any pending DMA
 	#if cpldif==40
 	cli				;
+	dec	zero
+	out	dataportdir, zero
+	clr	zero
 	cbi	b_RS0			;;; 1
 	cbi	b_RS1			;;; 1
 	sbi	b_RS2			;;; 1
