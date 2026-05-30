@@ -436,6 +436,18 @@ cmddmatest020:
 ;
 ;	
 ;	
+cmdinterrupt:
+	lds	r18, nbr+0
+	lds	r19, nbr+1
+	sts	vector+0, r18
+	sts	vector+1, r19
+	sbi	b_IRQ
+	clc
+	ret
+;--------------------------------------------------------------------------
+;
+;	
+;	
 cmddmareg:
 	ldi	r18, 0xFF
 	out	dataportdir, r18

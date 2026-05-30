@@ -43,6 +43,7 @@ commandlist:
 	.dw	kw_turbo,	0,		cmd_turbo
 	.dw	kw_pbn,		0,		cmd_l2p
 	.dw	kw_dmareg,	0,		cmd_dmareg
+	.dw	kw_interrupt,	0,		cmd_interrupt
 #ifdef mscpemulation
 	.dw	kw_poll,	0,		cmd_poll
 #endif
@@ -54,6 +55,15 @@ cmd_poll:
 	.dw	kw_eol,		cmdpoll,	cmd_done
 	.dw	0
 #endif
+;
+;	interrupt <nnn>
+;
+cmd_interrupt:
+	.dw	kw_number,	a_nbr,		cmd_interrupt1
+	.dw	0
+cmd_interrupt1:
+	.dw	kw_eol,		cmdinterrupt,	cmd_done
+	.dw	0
 ;
 ;	pbn <nnn>
 ;
