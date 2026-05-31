@@ -42,6 +42,7 @@ recordend	onl, next		; 50.
 
 .equ	rs_onl	= onl_next - pkt_data
 
+
 do_onl:					; Online
 
 	push	yl
@@ -171,9 +172,8 @@ do_onl050:
 	std	Y+onl_unfl+0, r24
 	std	Y+onl_unfl+1, r25
 ;
-;	hard code 
+;	Fill in default values and do packet logging	
 ;
-	
 do_onl900:
 	ldd	r16, Y+onl_opcd
 	ori	r16, op_end
