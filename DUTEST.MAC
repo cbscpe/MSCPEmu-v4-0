@@ -1,0 +1,50 @@
+	.asect
+main	= 10000			; Main Program start
+isr	= 1000			; ISR Area
+mcsr	= 172150		; MSCP CSR
+vts	= 200			; Vector Table Size
+;
+;	Setup Vectors
+;
+	.=main
+	mov	#vts, r0
+	mov	#isr, r1	; Interrupt Routine Area
+10$:	mov	r1, -isr(r1)	; Fill vector table with valid vectors and
+	clr	(r1)+		; the interrupt routine area with all 0
+	mov	#340, -isr(r1)	;
+	clr	(r1)+		;
+	sob	r0, 10$		; Do it for vectors 0..177
+	nop
+	mov	#main, sp	; We need to have a valid stack
+	mov	#misr, @#154	; Set Vector for MSCP ISR
+	clr	r4		; This will be updated by ISR
+;
+;	Initialise Controller
+;
+init:	mov	#4000, r5	; State Bit Mask
+	mov	#mcsr, r1
+	mov	pc, r3
+	br	10$
+	.word	100233		; RSP and CMD Ring Size =1, IE, Vector=154
+	.word	2000		; 
+	.word	0		;
+	.word	1		;
+
+10$:	mov	(r3)+, (r1)+	; INIT Controller and bump both addresses
+
+
+20$:	tst	(r1)		; Any error?
+	bmi	90$		; Test failed
+	bit	(r1), r5	; Controller ready for next word
+	beq	20$		; not yet, wait loop
+	mov	(r3)+,(r1)	; yes, send next init data
+	asl	r5		; next mask
+	bpl	20$		; s4 done? br if not yet
+	clr	r0		; Success
+	halt
+
+90$:	mov	#-1, r0		; Error
+	halt
+
+misr:	bis	r5, r4		; Set state bit
+	rti			; Exit interrupt

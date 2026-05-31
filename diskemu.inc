@@ -179,12 +179,26 @@
 ;	For debugging purposes a logging buffer is implemented. Each
 ;	log entry occupies 4-bytes. 
 ;
+;
+;	0x1x - Interrupts
+;
 #define	log_iack	0x10
 #define	log_init	0x11
+;
+;	0x2x - ROM
+;
+#define log_romwr	0x20
+#define log_romrd	0x21
+;
+;	0x3x - DATO
+;
 #define	log_dato	0x30
+;
+;	0x4x -DATI
+;
 #define	log_dati	0x40
 ;
-;	DATI/DATO modifiers
+;	DATI/DATO modifiers RLV12 Emulation
 ;
 #define	log_csr		0x00
 #define	log_bar		0x02
@@ -194,7 +208,9 @@
 #define	log_boot2	0x0a
 #define log_boot4	0x0c
 #define log_boot6	0x0e
-
+;
+;	DATI/DATO modifiers MSCP Emulation
+;
 #define	log_ip		0x00
 #define	log_ips1	0x01
 #define	log_ips2	0x02
@@ -211,17 +227,43 @@
 #define	log_sawr	0x0D
 #define	log_sago	0x0E
 #define	log_saer	0x0F
-
-#define log_rom		0x01
-#define	log_command	0x80
-;				Bits0..1 = Unit
-;				Bits2..4 = Function Code
-#define	log_address	0xa0
-#define	log_seek	0xb0
-#define	log_pbn		0xc0
-#define	log_diskaddr	0xd0
 ;
-; General Purpose Trace
+;	0x5x - reserved
+;
+
+;
+;	0x6x - reserved
+;
+
+;
+;	0x7x - reserved
+;
+
+;
+;	0x8x, 0x9x - RLV12 commands
+;		Bits0..1 = Unit
+;		Bits2..4 = Function Code
+;
+#define	log_command	0x80
+;
+;	0xax -reserved
+;
+
+;
+;	0xbx -reserved
+;
+
+;
+;	0xcx - 27-bit Disk Address i.e. up to 64GB
+;
+#define log_pbn		0xc0
+#define	log_lbn		0xc8
+;
+;	0xdx -reserved
+;
+
+;
+;	0xex - General Purpose Trace
 ;
 #define log_trace	0xe0	; general trace
 #define log_traceh	0xe1	; hex word
@@ -229,22 +271,8 @@
 #define log_tracebh	0xe3	; hex bytes
 #define log_tracebo	0xe4	; octal bytes
 ;
-#define	log_mscp	0x50
-#define	log_bcnt	0x51
-#define	log_buff	0x52
-#define	log_lbn		0x53
-#define log_pkt		0x54
-#define	log_ring	0x55
-#define	log_dup		0x60
-
-#define	command_maint	0x00
-#define	command_wrtchk	0x01
-#define	command_getstat	0x02
-#define	command_seek	0x03
-#define	command_readhdr	0x04
-#define	command_write	0x05
-#define	command_read	0x06
-#define	command_readnc	0x07
+;	0xfx -reserved
+;
 
 ;
 ;	Logging Buffer Definitions
@@ -266,7 +294,7 @@
 ;
 .equ	log_buffer	= 0x7000
 .equ	log_buffersize	= 0x1000
-.equ	log_begin	= 0x0000
+.equ	log_begin	= 0x0c00
 .equ	log_size	= log_buffersize - log_begin
 .equ	log_overflow	= 7		; the 7th bit of the high byte address
 ;

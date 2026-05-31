@@ -9,24 +9,25 @@
 ;	log_ext		.byte	1
 ;	log_val		.byte	2
 ;
-;	log_id		name	extension	value
+;	log_id		name		extension	value
 ;	bit4..7	bit0..3
 ;	0		filler
-;	1	0000	iack	timestamp	vector
-;	1	0001	init	timestamp	int_port, int_flags
-;	2		unused
-;	3	addr	dato	timestamp	data
-;	4	addr	dati	timestamp	data
-;	5	subcode	mscp	<--depends on sub code-->
-;	6		dev	timestamp	
+;	1	0000	iack		timestamp	vector
+;	1	0001	init		timestamp	int_port, int_flags
+;	2	0000	romwr		address??	value
+;	2	0001	romrd		address??	value
+;	3	addr	dato		timestamp	data
+;	4	addr	dati		timestamp	data
+;	5		unused
+;	6		unused
 ;	7		unused
-;	8	unit & command	timestamp	data	
-;	9	unit & command	timestamp	data	
-;	A	0000	address	BARL		BARH, BAEL
-;	B	unit	seek	timestamp	DAR
-;	C	24..27	pbn	bits16..23	bits0..15
-;	D	unit	disk	ucb_status	ucb_diskaddr	
-;	E		trace	id		value
+;	8	RLV12 unit & command	timestamp	data	
+;	9	RLV12 unit & command	timestamp	data	
+;	A	code	DMA address	BARL		BARH, BAEL
+;	B	unit	seek		timestamp	DAR
+;	C		diskaddress
+;	D	unit	disk		ucb_status	ucb_diskaddr	
+;	E		trace		id		value
 ;	F		unused
 ;
 ;--------------------------------------------------------------------------
@@ -36,9 +37,13 @@
 ;	The buffer is split in one half reserved for initial logging
 ;	and the second half is used for circular buffer
 ;
-	ldi	r24, low((log_size)/8)
-	ldi	r25, high((log_size)/8)
-	ldi	yl, low(log_buffer)
+
+logprint:
+	ldi	r24, low(log_begin/4)	; Number of initial/permanent entries
+	ldi	r25, high(log_begin/4)
+	sbiw	r25:r24, 0
+	breq	logprint100
+	ldi	yl, low(log_buffer)	; They always start here
 	ldi	yh, high(log_buffer)
 	sts	pprint+8, r24
 	sts	pprint+9, r25
@@ -48,19 +53,19 @@
 	.db	CR, LF
 	.db	"Logging ", 0xc8, " start entries starting at 0x", 0x8b, 0x8a, CR, LF, 0, 0
 logprint010:
+	ldd	r16, Y+0
+	tst	r16
+	breq 	logprint020
+	sts	pprint+0, yl
+	sts	pprint+1, yh
+	call	print
+	.db	"0x", 0x81, 0x80, " ", 0
+logprint020:
 	rcall	logprintentry
 	sbiw	r25:r24, 1
 	brne	logprint010
 
-	ldi	r24, low((log_size)/8)
-	ldi	r25, high((log_size)/8)
-	lds	yl, log_pointer+0
-	lds	yh, log_pointer+1
-	sbrs	yh, 3
-	rjmp	logprintexit
-
-logprint:
-
+logprint100:
 	ldi	r24, low((log_size)/4)
 	ldi	r25, high((log_size)/4)
 	lds	yl, log_pointer+0
@@ -72,20 +77,20 @@ logprint:
 	call	print
 	.db	CR, LF
 	.db	"Logging ", 0xc8, " circular entries. Logging Pointer 0x", 0x8b, 0x8a, CR, LF, 0, 0
-logprint020:
+logprint110:
 	ldd	r16, Y+0
 	tst	r16
-	breq 	logprint030
+	breq 	logprint120
 	sts	pprint+0, yl
 	sts	pprint+1, yh
 	call	print
 	.db	"0x", 0x81, 0x80, " ", 0
-logprint030:
+logprint120:
 	rcall	logprintentry
 	sbrc	yh, log_overflow
 	subi	yh, high(log_size)
 	sbiw	r25:r24, 1
-	brne	logprint020
+	brne	logprint110
 
 logprintexit:
 	ldi	yl, low(log_buffer)
@@ -115,7 +120,8 @@ logentry010:
 	
 ;--------------------------------------------------------------------------
 ;
-
+;	Prints log entry and then zeroize it
+;
 logprintentry:
 	push	r25
 	push	r24
@@ -123,10 +129,10 @@ logprintentry:
 	ldd	r17, Y+1
 	ldd	r18, Y+2
 	ldd	r19, Y+3
-	sts	pprint+0, r16
+	sts	pprint+0, r16		; Logging ID
 	sts	pprint+1, r17		; Time stamp is now TCB1_CNTL
-	sts	pprint+2, r18
-	sts	pprint+3, r19
+	sts	pprint+2, r18		; Data Low Byte
+	sts	pprint+3, r19		; Data High Byte
 	mov	zl, r16
 	swap	zl
 	andi	zl, 0x0F
@@ -145,7 +151,7 @@ logprintentry:
 logprinttbl:
 	rjmp	logprintnoop		; 0
 	rjmp	logprintint		; 1
-	rjmp	logprintnoop		; 2
+	rjmp	logprintrom		; 2
 	rjmp	logprintdato		; 3
 	rjmp	logprintdati		; 4
 	rjmp	logprintmscp		; 5
@@ -165,6 +171,23 @@ logprinttbl:
 logprintnoop:
 	ret
 	
+logprintrom:
+	cpi	r16, log_romrd
+	breq	logprintromrd
+	cpi	r16, log_romwr
+	breq	logprintromwr
+	ret
+logprintromrd:
+	call	print
+		;----+----1----+----2----+----3
+	.db	"ROM RD  (", 0x81, ") Value   ", 0xa2, CR, LF, 0
+	ret
+
+logprintromwr:
+	call	print
+		;----+----1----+----2----+----3
+	.db	"ROM WR  (", 0x81, ") Value   ", 0xa2, CR, LF, 0
+	ret
 
 logprintint:
 	cpi	r16, log_iack
@@ -240,10 +263,16 @@ logprintseek:
 	.db	"SEEK:", 0x94, "  (", 0x81, ") DAR        ", 0xa2, CR, LF, 0, 0
 	ret
 logprintpbn:
-	andi	r16, 0x0F
+	bst	r16, 3
+	andi	r16, 0x07
+	brts	logprintlbn	
 	sts	pprint+0, r16
 	call	print
 	.db	TAB, "     PBN  0x", 0x80, 0x81, 0x82, 0x83, CR, LF, 0
+	ret
+logprintlbn:
+	call	print
+	.db	TAB, "     LBN  0x", 0x80, 0x81, 0x82, 0x83, CR, LF, 0
 	ret
 	
 logprintdiskaddr:
