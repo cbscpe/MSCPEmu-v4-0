@@ -105,6 +105,10 @@ nolog:
 	out	dataportdir, zl		; 1 -> 17 cycles
 	#endif
 	.endmacro
+;=============================================================================
+;
+;	QBUS Interrupts: DATI, DATO, IACK, INIT
+;
 ;--------------------------------------------------------------------------
 ;
 ;	Register Convention
@@ -118,12 +122,12 @@ qbus_:					; 4-5
 	push	zl			; 1
 	push	yh			; 1
 	push	yl			; 1
-	sbic	f_INIT			; 2/1	Bus Reset
-	rjmp	qbus_init		; 0/2
-	sbic	f_INTI			; 2/1	Interrupt Acknowledge
-	rjmp	qbus_iack		; 0/2
 	sbic	f_INTQ			; 2/1	Device Registers
 	rjmp	qbus_intq		; 0/2
+	sbic	f_INTI			; 2/1	Interrupt Acknowledge
+	rjmp	qbus_iack		; 0/2
+	sbic	f_INIT			; 2/1	Bus Reset
+	rjmp	qbus_init		; 0/2
 	pop	yl			; 2 restore
 	pop	yh			; 2 restore
 	pop	zl			; 2 restore
@@ -165,7 +169,7 @@ qbus_intq:
 	in	zl, dataportin		; 1
 ;
 ;	+---+---+---+---+---+---+---+---+
-;	|ROM| 0 | 0 | 0 | 0 | 0 |BA1| WT|
+;	|ROM|BA6|BA5|BA4|BA3|BA2|BA1| WT|
 ;	+---+---+---+---+---+---+---+---+
 ;
 .equ	ROM	= 7			; Boot ROM
@@ -188,49 +192,49 @@ qbus_mscp_jmptbl:
 ;	Status INIT
 ;
 	rjmp	qbus_dati_ip
-	rjmp	qbus_dato_ip
+	rjmp	qbus_dato_ip_init
 	rjmp	qbus_dati_sa_init
 	rjmp	qbus_dato_sa_init
 ;
 ;	Status S1
 ;
 	rjmp	qbus_dati_ip_s1
-	rjmp	qbus_dato_ip
+	rjmp	qbus_dato_ip_s1
 	rjmp	qbus_dati_sa_s1
 	rjmp	qbus_dato_sa_s1
 ;
 ;	Status S2
 ;
 	rjmp	qbus_dati_ip_s2
-	rjmp	qbus_dato_ip
+	rjmp	qbus_dato_ip_s2
 	rjmp	qbus_dati_sa_s2
 	rjmp	qbus_dato_sa_s2
 ;
 ;	Status	S3
 ;
 	rjmp	qbus_dati_ip_s3
-	rjmp	qbus_dato_ip
+	rjmp	qbus_dato_ip_s3
 	rjmp	qbus_dati_sa_s3
 	rjmp	qbus_dato_sa_s3
 ;
 ;	Status S4
 ;
 	rjmp	qbus_dati_ip_s4
-	rjmp	qbus_dato_ip
+	rjmp	qbus_dato_ip_s4
 	rjmp	qbus_dati_sa_s4
 	rjmp	qbus_dato_sa_s4
 ;
 ;	Status Wrap Around
 ;
 	rjmp	qbus_dati_ip_wr
-	rjmp	qbus_dato_ip
+	rjmp	qbus_dato_ip_wr
 	rjmp	qbus_dati_sa_wr
 	rjmp	qbus_dato_sa_wr
 ;
 ;	Status GO
 ;
 	rjmp	qbus_dati_ip_go
-	rjmp	qbus_dato_ip
+	rjmp	qbus_dato_ip_go
 	rjmp	qbus_dati_sa_go
 	rjmp	qbus_dato_sa_go
 ;
@@ -240,145 +244,6 @@ qbus_mscp_jmptbl:
 	rjmp	qbus_dato_ip
 	rjmp	qbus_dati_sa
 	rjmp	qbus_dato_sa
-
-;--------------------------------------------------------------------------
-;
-;	Boot ROM
-;
-;	For the PDP-11/Hack we don't have a real boot ROM address register
-;	as there are not enough resources for that. However the boot ROM
-;	emulation on the MSCP emulator does not really emulate a boot ROM
-;	but rather only initiates AUTO-BOOT. Which uses only two words and
-;	effectively just loads the boot sector to the host address zero and
-;	then let's the PDP-11 execute the boot sector just loaded.
-;
-;	173000	Returns 0777 (branch to itself) and initiates a DMA. The
-;		DMA will write 0777 (branch to itself) at address zero.
-;		When the DMA has finished it will return 05001 (CLR R1)
-;		which sets R1 to the unit number we are going to boot from.
-;		In addition we will set the auto__boot flag to signal
-;		that AUTOBOOT has been started.
-;	173002	Returns 05007 (CLR PC), which is equivalent to a jump to the
-;		address zero, where DMA has put a branch to itself instruction.
-;		The PDP-11 wil now execute this instruction until auto-boot has
-;		first loaded the boot block words 1..255 to address 02..0776
-;		and then writes word 0 of the boot block to address 0 which 
-;		then starts execution of the boot block
-;
-qbus_rom:
-	andi	zl, 0x03
-	clr	zh
-	subi	zl, low(-qbus_rom_table)
-	sbci	zh, high(-qbus_rom_table)
-	ijmp
-
-qbus_rom_table:
-	rjmp	qbus_rom0_dati
-	rjmp	qbus_rom_dato
-	rjmp	qbus_rom2_dati
-	rjmp	qbus_rom_dato
-
-qbus_rom_dato:
-	INTEXIT	log_dato|log_rom
-
-qbus_rom0_dati:
-	ldi	yl, low(0777)		; 1 Assume DMA still pending
-	ldi	yh, high(0777)		; 1
-	sbis	b_DMR			; 2/1 did we already request DMA?
-	rjmp	qbus_rom0_dati_dma	; 2 no do it now
-	sbis	i_DMG			; 2/1 did it finish?
-	rjmp	qbus_rom0_dati_cont	; 2 no continue to send BR .
-	cbi	b_DMR			; 1 remove DMA request
-	ldi	yl, low(05001)		; 1 DMA finished return a CLR R1
-	ldi	yh, high(05001)		; 1
-        sbi	FLAGS_COMMON, auto__boot    ; 1 Auto Boot Requested
-qbus_rom0_dati_cont:
-	DATI				; 13|15
-	INTEXIT	log_dati|log_boot4	; 23|44
-;
-;	The first time we read BOOT4 we start a DMA to transfer BR .
-;	instruction to adddress zero and as well return a BR. instruction.
-;	
-qbus_rom0_dati_dma:
-	#if cpldif==40
-	cbi	b_RD
-	ldi	zl, 0xFF
-	out	dataportdir, zl
-	clr	zl
-	out	dataportout, zl
-	sbi	b_WR			; Register selected is 4
-	cbi	b_WR
-	sbi	b_RS0
-	sbi	b_WR			; Register selected is 5
-	cbi	b_WR
-	sbi	b_RS1
-	sbi	b_WR			; Register selected is 7
-	cbi	b_WR
-	cbi	b_RS2
-	out	dataportout, yh
-	sbi	b_WR			; Register selected is 3
-	cbi	b_WR
-	out	dataportout, yl
-	cbi	b_RS0
-	sbi	b_WR			; Register selected is 2
-	cbi	b_WR
-	sbi	b_DMR			; Request DMA
-	cbi	b_RS1			; 
-	out	dataportout, yl		; 
-	sbi	b_WR			; Register selected is 0
-	cbi	b_WR			; 
-	sbi	b_RS0			; 
-	out	dataportout, yh		; 
-	sbi	b_WR			; Register selected is 1
-	cbi	b_WR			; 30 cycles
-	#endif
-	#if cpldif==22
-	cbi	b_RD
-	ldi	zl, 0xFF
-	out	dataportdir, zl
-	ldi	zl, 0x04		; DMA Address Registers
-	out	dataportout, zl
-	sbi	b_ALEW
-	cbi	b_ALEW			; Latch Write Register Address
-	ldi	zl, 0x00
-	out	dataportout, zl		; Set output to zero
-	sbi	b_WR
-	cbi	b_WR			; Latch Address Low
-	sbi	b_WR
-	cbi	b_WR			; Latch Address High
-	sbi	b_WR
-	cbi	b_WR			; Latch Address Extended
-	sbi	b_DMR			; Already Request DMA so it starts asap
-	sbi	dataportout, 1		; DMA Data Registers (set bit1 gives value 0x02)
-	sbi	b_ALEW
-	cbi	b_ALEW			; Latch Write Register Address
-	out	dataportout, yl		; Low-byte of 0777
-	sbi	b_WR
-	cbi	b_WR
-	out	dataportout, yh		; High-byte of 0777
-	sbi	b_WR
-	cbi	b_WR
-	ldi	zl, 0x00
-	out	dataportout, zl		; Q-Bus Data Register
-	sbi	b_ALEW
-	cbi	b_ALEW			; Latch Write Register Address
-	out	dataportout, yl		; Low-byte of 0777
-	sbi	b_WR
-	cbi	b_WR
-	out	dataportout, yh		; High-byte of 0777
-	sbi	b_WR
-	cbi	b_WR			; 35 cycles
-	#endif
-	INTEXIT	log_dati|log_boot4	; 23|44
-;
-
-qbus_rom2_dati:
-        ldi     yl, low(05007)		; 1
-        ldi     yh, high(05007)         ; 1 "CLR  PC" instruction
-	DATI				; 13|15
-;	sbic	FLAGS_COMMON, auto__boot    ; 2/1 Auto Boot Requested
-;	cbi     b_SA                    ; 0/1 Trigger Main RLV12 Programm
-        INTEXIT log_dati|log_boot6	; 23|44
 
 ;=============================================================================
 ;
@@ -455,6 +320,13 @@ qbus_dati_ip_go:
 ;			in GO state.
 ;
 qbus_dato_ip:
+qbus_dato_ip_init:
+qbus_dato_ip_wr:
+qbus_dato_ip_s1:
+qbus_dato_ip_s2:
+qbus_dato_ip_s3:
+qbus_dato_ip_s4:
+qbus_dato_ip_go:
 	DATO
 	sts	ipr+0, yl
 	sts	ipr+1, yh
@@ -469,10 +341,12 @@ qbus_dato_ip:
 	sts	sa_s4+1, zl
 	sts	mscpstatus, zl
 	sbi	b_CRDY			; Enable SA Read Interrupt
-	clr	yl
-	sbis	b_DBG
-	inc	yl
 	INTEXIT	log_dato|log_ip
+
+	sts	ipr+0, yl
+	sts	ipr+1, yh
+	INTEXIT	log_dato|log_ipgo	; Do nothing for the moment
+
 
 ;-----------------------------------------------------------------------------
 ;
@@ -706,7 +580,12 @@ qbus_iack:
 	cbi	b_IRQ			; 1 De-assert IRQ
 	lds	yl, vector+0		; 1
 	lds	yh, vector+1		; 1
+	lds	zl, iackcount
+	inc	zl
+	sts	iackcount, zl
 	#if cpldif==40
+	ldi	zl, 0xFF
+	out	dataportdir, zl
 	cbi	b_RS0			; 1	Q-Bus Register
 	cbi	b_RS1			; 1	Q-Bus Register
 	cbi	b_RS2			; 1	Q-Bus Register
@@ -800,3 +679,161 @@ qbus_init_done:
 	out	CPU_SREG, r8		; restore
 	pop	r8			; restore
 	reti				; 4	
+
+;--------------------------------------------------------------------------
+;
+;	Boot ROM
+;
+;	For the PDP-11/Hack we don't have a real boot ROM address register
+;	as there are not enough resources for that. However the boot ROM
+;	emulation on the MSCP emulator does not really emulate a boot ROM
+;	but rather only initiates AUTO-BOOT. Which uses only two words and
+;	effectively just loads the boot sector to the host address zero and
+;	then let's the PDP-11 execute the boot sector just loaded.
+;
+;	173000	Returns 0777 (branch to itself) and initiates a DMA. The
+;		DMA will write 0777 (branch to itself) at address zero.
+;		When the DMA has finished it will return 05001 (CLR R1)
+;		which sets R1 to the unit number we are going to boot from.
+;		In addition we will set the auto__boot flag to signal
+;		that AUTOBOOT has been started.
+;	173002	Returns 05007 (CLR PC), which is equivalent to a jump to the
+;		address zero, where DMA has put a branch to itself instruction.
+;		The PDP-11 wil now execute this instruction until auto-boot has
+;		first loaded the boot block words 1..255 to address 02..0776
+;		and then writes word 0 of the boot block to address 0 which 
+;		then starts execution of the boot block
+;
+qbus_rom:
+;
+;	Quick fix to add DUBOOT to Emulator
+;
+;
+
+	sbrc	zl, WTBT
+	rjmp	qbus_rom_dato
+	
+	
+	cbr	zl, (1<<ROM) | (1<<WTBT); Isolate Address Bits 1..6
+	clr	zh
+	subi	zl, low(-duboot)
+	sbci	zh, high(-duboot)
+	ld	yl, Z+
+	ld	yh, Z+			; 
+	DATI
+	INTEXIT	log_romrd
+	
+	
+	andi	zl, 0x03
+	clr	zh
+	subi	zl, low(-qbus_rom_table)
+	sbci	zh, high(-qbus_rom_table)
+	ijmp
+
+qbus_rom_table:
+	rjmp	qbus_rom0_dati
+	rjmp	qbus_rom_dato
+	rjmp	qbus_rom2_dati
+	rjmp	qbus_rom_dato
+
+qbus_rom_dato:
+	INTEXIT	log_romwr
+
+qbus_rom0_dati:
+	ldi	yl, low(0777)		; 1 Assume DMA still pending
+	ldi	yh, high(0777)		; 1
+	sbis	b_DMR			; 2/1 did we already request DMA?
+	rjmp	qbus_rom0_dati_dma	; 2 no do it now
+	sbis	i_DMG			; 2/1 did it finish?
+	rjmp	qbus_rom0_dati_cont	; 2 no continue to send BR .
+	cbi	b_DMR			; 1 remove DMA request
+	ldi	yl, low(05001)		; 1 DMA finished return a CLR R1
+	ldi	yh, high(05001)		; 1
+        sbi	FLAGS_COMMON, auto__boot    ; 1 Auto Boot Requested
+qbus_rom0_dati_cont:
+	DATI				; 13|15
+	INTEXIT	log_dati|log_boot4	; 23|44
+;
+;	The first time we read BOOT4 we start a DMA to transfer BR .
+;	instruction to adddress zero and as well return a BR. instruction.
+;	
+qbus_rom0_dati_dma:
+	#if cpldif==40
+	cbi	b_RD
+	ldi	zl, 0xFF
+	out	dataportdir, zl
+	clr	zl
+	out	dataportout, zl
+	sbi	b_WR			; Register selected is 4
+	cbi	b_WR
+	sbi	b_RS0
+	sbi	b_WR			; Register selected is 5
+	cbi	b_WR
+	sbi	b_RS1
+	sbi	b_WR			; Register selected is 7
+	cbi	b_WR
+	cbi	b_RS2
+	out	dataportout, yh
+	sbi	b_WR			; Register selected is 3
+	cbi	b_WR
+	out	dataportout, yl
+	cbi	b_RS0
+	sbi	b_WR			; Register selected is 2
+	cbi	b_WR
+	sbi	b_DMR			; Request DMA
+	cbi	b_RS1			; 
+	out	dataportout, yl		; 
+	sbi	b_WR			; Register selected is 0
+	cbi	b_WR			; 
+	sbi	b_RS0			; 
+	out	dataportout, yh		; 
+	sbi	b_WR			; Register selected is 1
+	cbi	b_WR			; 30 cycles
+	#endif
+	#if cpldif==22
+	cbi	b_RD
+	ldi	zl, 0xFF
+	out	dataportdir, zl
+	ldi	zl, 0x04		; DMA Address Registers
+	out	dataportout, zl
+	sbi	b_ALEW
+	cbi	b_ALEW			; Latch Write Register Address
+	ldi	zl, 0x00
+	out	dataportout, zl		; Set output to zero
+	sbi	b_WR
+	cbi	b_WR			; Latch Address Low
+	sbi	b_WR
+	cbi	b_WR			; Latch Address High
+	sbi	b_WR
+	cbi	b_WR			; Latch Address Extended
+	sbi	b_DMR			; Already Request DMA so it starts asap
+	sbi	dataportout, 1		; DMA Data Registers (set bit1 gives value 0x02)
+	sbi	b_ALEW
+	cbi	b_ALEW			; Latch Write Register Address
+	out	dataportout, yl		; Low-byte of 0777
+	sbi	b_WR
+	cbi	b_WR
+	out	dataportout, yh		; High-byte of 0777
+	sbi	b_WR
+	cbi	b_WR
+	ldi	zl, 0x00
+	out	dataportout, zl		; Q-Bus Data Register
+	sbi	b_ALEW
+	cbi	b_ALEW			; Latch Write Register Address
+	out	dataportout, yl		; Low-byte of 0777
+	sbi	b_WR
+	cbi	b_WR
+	out	dataportout, yh		; High-byte of 0777
+	sbi	b_WR
+	cbi	b_WR			; 35 cycles
+	#endif
+	INTEXIT	log_dati|log_boot4	; 23|44
+;
+
+qbus_rom2_dati:
+        ldi     yl, low(05007)		; 1
+        ldi     yh, high(05007)         ; 1 "CLR  PC" instruction
+	DATI				; 13|15
+;	sbic	FLAGS_COMMON, auto__boot    ; 2/1 Auto Boot Requested
+;	cbi     b_SA                    ; 0/1 Trigger Main RLV12 Programm
+        INTEXIT log_dati|log_boot6	; 23|44
