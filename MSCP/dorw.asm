@@ -445,6 +445,10 @@ mscp_rd:
 	ldd	r17, Y+rwc_lbn+1
 	ldd	r18, Y+rwc_lbn+2
 	ldd	r19, Y+rwc_lbn+3
+	
+	logtr	0x51, r16, r17
+	logtr	0x5F, r18, r19
+	
 ;
 ;	Get Image Pointer from the UCB and then the IO control block from
 ;	the image control block
@@ -454,8 +458,8 @@ mscp_rd:
 	ldd	zh, Y+ucb_imgptr+1
 	movw	r25:r24, zh:zl
 
-	logtr	0x59, ucbl, ucbh
-	logtr	0x5F, r24, r25
+	;logtr	0x59, ucbl, ucbh
+	;logtr	0x5F, r24, r25
 
 	ldd	r20, Y+ucb_status	; Get the status
 	sbrs	r20, ucb__file		; Is unit attached to a file?
@@ -470,10 +474,6 @@ mscp_rd:
 	std	Y+P_Cluster+1, r17
 	std	Y+P_Cluster+2, r18
 	std	Y+P_Cluster+3, r19
-	
-	logtr	0x51, r16, r17
-	logtr	0x5F, r18, r19
-	
 	movw	r25:r24, zh:zl		; File Control Block
 	call	Logical2Physical	; Convert to PBN (pyhsical block number)
 	ldi	r16, (1<<P__Nocheck)	; don't check CRC
@@ -494,8 +494,8 @@ mscp_rd:
 	ldd	r18, Y+P_Sector+2	; 
 	ldd	r19, Y+P_Sector+3	; 
 
-	logtr	0x52, r16, r17
-	logtr	0x5F, r18, r19
+	;logtr	0x52, r16, r17
+	;logtr	0x5F, r18, r19
 
 mscp_rd020:
 	ldd	r16, Y+P_Maxsector+0	; Get the size of the rest of the fragment
@@ -503,8 +503,8 @@ mscp_rd020:
 	ldd	r18, Y+P_Maxsector+2	;
 	ldd	r19, Y+P_Maxsector+3
 	
-	logtr	0x53, r16, r17
-	logtr	0x5F, r18, r19
+	;logtr	0x53, r16, r17
+	;logtr	0x5F, r18, r19
 ;
 ;	bkch:bkcl:wcnth as a 24-bit integer is the total number of entire blocks
 ;	we need to read. If this is lower than the 32-bit value in P_Maxsector
@@ -567,7 +567,7 @@ mscp_rd040:
 	sbiw	r25:r24, 1		; 
 	movw	bkch:bkcl, r25:r24	; 
 	
-	logtr	0x54, bkcl, bkch
+	;logtr	0x54, bkcl, bkch
 ;
 	ldd	r17, Y+P_Sector+1	; Update start physical sector for next transfer
 	ldd	r18, Y+P_Sector+2	; required for further calls to the IO routine
@@ -604,7 +604,7 @@ mscp_rd060:
 	clr	r24			; r25:r24 = 2's complement of word count
 	neg	r25			;  of last transfer
 	
-	logtr	0x55, r24, r25
+	;logtr	0x55, r24, r25
 	
 	std	Y+P_Wordcount+0, r24
 	std	Y+P_Wordcount+1, r25
@@ -656,8 +656,8 @@ mscp_rd100:
 	adc	r18, r22
 	adc	r19, r23
 	
-	logtr	0x56, r16, r17
-	logtr	0x5F, r18, r19
+	;logtr	0x56, r16, r17
+	;logtr	0x5F, r18, r19
 	
 	ldi	yl, low(sdio)		; Partition IO makes use of the common
 	ldi	yh, high(sdio)		; SD-CARD IO control block
@@ -679,7 +679,7 @@ mscp_rd110:
 	brmi	mscp_rd120
 	movw	bkch:bkcl, r25:r24	; Save remaining block count
 	
-	logtr	0x57, r24, r25
+	;logtr	0x57, r24, r25
 	
 	std	Y+P_Wordcount+0, zero	; Assume 65536 words
 	std	Y+P_Wordcount+1, zero
@@ -705,7 +705,7 @@ mscp_rd120:
 	com	r25			; 2's complement of remaining word count
 	neg	r24
 	sbci	r25,0xff
-	logtr	0x58, r24, r25
+	;logtr	0x58, r24, r25
 	std	Y+P_Wordcount+0, r24	; Set Words
 	std	Y+P_Wordcount+1, r25
 	movw	r25:r24, yh:yl		; Get IO control block
