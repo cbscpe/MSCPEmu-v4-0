@@ -35,7 +35,7 @@
 ;		0x7A	put_packet return end-code, flags, status 
 ;		0x7B	put_packet message size, Packet-type, Credits, Connection ID
 ;		0x7C	put_packet response status
-;		0x7D	IP-Read or SA-Write interrupt
+;		0x7D	get_packet start address
 ;
 ;		0x7F	follows any trace in case more then 16-bits need to be
 ;			logged.
@@ -87,7 +87,7 @@ poll_:
 
 poll_010:
 	sbis	f_SA
-	reti
+	rjmp	poll_020
 ;
 ;	In the RQDX3 code a SA write increments the saw.flag and the INIT process
 ;	waits for this flag in a loop in the "init" sub-routine. Here we have a
@@ -122,6 +122,42 @@ poll_010:
 	ldi	zl, low(mscpsaw)
 	ldi	zh, high(mscpsaw)
 	jmp	unblocki
+;
+;	Fatal Error Interrupt without set interrupt bit
+;
+poll_020:
+
+	push	r8			; save minimal context
+	in	r8, CPU_SREG
+	push	zh			; acknowledging the interrupt we need to
+	push	zl			; have at least one additional cpu cycle!
+	push	yh
+	push	yl
+
+	cli
+	lds	zl, log_pointer+0	; 3 Logging is done only if log__reg is set
+	lds	zh, log_pointer+1	; 3
+	ldi	yl, log_trace
+	st	Z+, yl
+	ldi	yl, 0x1E
+	st	Z+, yl
+	ldi	yl, 0xFF		; Fatal
+	st	Z+, yl
+	in	yl, VPORTB_OUT
+	st	Z+, yl
+	sbrc	zh, log_overflow	; 2/1
+	ldi	zh, high(log_buffer+log_begin)
+	sts	log_pointer+0, zl	; 2
+	sts	log_pointer+1, zh	; 2
+	sei	
+
+	pop	yl
+	pop	yh
+	pop	zl
+	pop	zh
+	out	CPU_SREG, r8
+	pop	r8
+	reti
 
 ;----------------------------------------------------------------------------
 ;
@@ -197,7 +233,7 @@ poll120:
 	inc	r23
 	cpse	r23, zero		; Don't save overflow
 	st	X, r23
-	;logtr	0x7E, r20, r22		; Unit / Opcode
+	logtr	0x7E, r20, r22		; Unit / Opcode
 	;logtr	0x7F, r18, r19		; Packet Type / Connection ID
 	andi	r18, 0xF0		; Mask credit fields to get message type
 	brne	poll140			; This is not a sequential message -> fatal
@@ -344,8 +380,13 @@ get_packet100:
 	sbci	r17, byte2(4)
 	sbci	r18, byte3(4)
 	sbci	r19, byte4(4)
+	
+	logtr	0x7D, r16, r17
+	logtr	0x7F, r18, zero	
+	
 	ori	r16, 1
 	dmaaddr r16, r17, r18		; Address can be seen in the descriptor trace
+
 
 	ldi	xl, low(cmd_link)
 	ldi	xh, high(cmd_link)
