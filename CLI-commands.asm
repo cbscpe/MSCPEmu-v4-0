@@ -436,6 +436,24 @@ cmddmatest020:
 ;
 ;	
 ;	
+cmdunbdoonl:
+	ldi	r24, low(doonllock)
+	ldi	r25, high(doonllock)
+	call	unblock
+	clc
+	ret
+;
+cmdunbdorw:
+	ldi	r24, low(dorwlock)
+	ldi	r25, high(dorwlock)
+	call	unblock
+	clc
+	ret
+
+;--------------------------------------------------------------------------
+;
+;	
+;	
 cmdinterrupt:
 	lds	r18, nbr+0
 	lds	r19, nbr+1

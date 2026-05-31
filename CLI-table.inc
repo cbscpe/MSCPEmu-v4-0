@@ -44,6 +44,7 @@ commandlist:
 	.dw	kw_pbn,		0,		cmd_l2p
 	.dw	kw_dmareg,	0,		cmd_dmareg
 	.dw	kw_interrupt,	0,		cmd_interrupt
+	.dw	kw_unblock,	0,		cmd_unblock
 #ifdef mscpemulation
 	.dw	kw_poll,	0,		cmd_poll
 #endif
@@ -55,6 +56,19 @@ cmd_poll:
 	.dw	kw_eol,		cmdpoll,	cmd_done
 	.dw	0
 #endif
+;
+;	release 'lock'
+;
+cmd_unblock:
+	.dw	kw_unbdoonl,	0,		cmd_unbdoonl
+	.dw	kw_unbdorw,	0,		cmd_unbdorw
+	.dw	0
+cmd_unbdoonl:
+	.dw	kw_eol,		cmdunbdoonl,	cmd_done
+	.dw	0
+cmd_unbdorw:
+	.dw	kw_eol,		cmdunbdorw,	cmd_done
+	.dw	0
 ;
 ;	interrupt <nnn>
 ;
@@ -552,9 +566,11 @@ kw_rings:	P_KEYWORD	"RINgs"
 kw_message:	P_KEYWORD	"MESSage"
 kw_opcodes:	P_KEYWORD	"OPCodes"
 kw_poll:	P_KEYWORD	"POLL"
-
 kw_sdclbn:	P_KEYWORD	"Lbn"
 kw_sdcaddr:	P_KEYWORD	"Address"
+kw_unblock:	P_KEYWORD	"UNBlock"
+kw_unbdoonl:	P_KEYWORD	"DOONL"
+kw_unbdorw:	P_KEYWORD	"DORW"
 
 cmd_sdread:
 	.dw	kw_sdclbn,	0,		cmd_sdread010
