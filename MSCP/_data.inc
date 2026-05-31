@@ -6,6 +6,8 @@
 mscpipr:	.byte	2		; Poll Job IP Read Wait Lock
 mscpsaw:	.byte	2		; Init Job SA Write Wait Lock
 mscpinit:	.byte	2
+doonllock:	.byte	2		; Debug Lock for doonl
+dorwlock:	.byte	2		; Debug Lock for dorw
 
 ;
 ;	This is the packet buffer, at the moment we do not implement a queue
@@ -29,7 +31,6 @@ ha_time:	.byte	1		; Host Adapter Timeout
 ha_flag:	.byte	1		; Host Adapter Flag
 credits:	.byte	1		; MSCP Credits
 unit0:		.byte	1		; Unit number of first unit
-sawflag:	.byte	1		; SA Write Flag
 iprflag:	.byte	1		; IP Read Flag
 porterror:	.byte	1		; Last Port Error 
 unitbase:	.byte	2		; Starting Unit Number
