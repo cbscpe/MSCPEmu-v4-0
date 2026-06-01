@@ -134,6 +134,8 @@
 .equ	serout__drv	= 1		; Interrupt Driven Serial Output
 .equ	sdcard__insert	= 2		; SD Card was inserted
 .equ	sdcard__remove	= 3		; SD Card was removed
+;			  4		; reserved
+;			  5		; reserved
 .equ	auto__boot	= 6		; Autoboot Requested
 .equ	sddetect__en	= 7		; SD-Card Detect Enabled
 ;--------------------------------------------------------------------------
@@ -300,16 +302,19 @@
 ;
 ;	FLAGS_LOG definitions for logging
 ;
-.equ	log__turbo	= 3		; Turbo Routine for SD_CARD_READ
+;			  0		; reserved
+;			  1		; reserved
+;			  2		; reserved
+;			  3		; reserved
 .equ	log__trace	= 4		; Log Debug Traces
 .equ	log__iack	= 5		; Log Interrupt Ack and bus INIT
 .equ	log__pbn	= 6		; Log physical block number
 .equ	log__reg	= 7		; Log Device Register IO
 ;
-;#define logging (1<<log__pbn) | (0<<log__trace) | (1<<log__reg) | (1<<log__iack) | (1<<log__turbo)
-;#define logging (0<<log__pbn) | (0<<log__trace) | (0<<log__reg) | (1<<log__iack) | (1<<log__turbo)
-;#define logging (1<<log__pbn) | (1<<log__trace) | (1<<log__reg) | (1<<log__iack) | (1<<log__turbo)
-#define logging (0<<log__pbn) | (1<<log__trace) | (1<<log__reg) | (1<<log__iack) | (0<<log__turbo)
+;#define logging (1<<log__pbn) | (0<<log__trace) | (1<<log__reg) | (1<<log__iack)
+;#define logging (0<<log__pbn) | (0<<log__trace) | (0<<log__reg) | (1<<log__iack)
+;#define logging (1<<log__pbn) | (1<<log__trace) | (1<<log__reg) | (1<<log__iack)
+#define logging (0<<log__pbn) | (1<<log__trace) | (1<<log__reg) | (1<<log__iack)
 .if (log_begin & 0xFF >0)
 	.error " Invalid non-circular buffer size"
 .endif

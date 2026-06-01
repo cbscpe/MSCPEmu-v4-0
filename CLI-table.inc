@@ -40,7 +40,6 @@ commandlist:
 	.dw	kw_dismount,	0,		cmd_dismount
 	.dw	kw_sdread,	a_sdinit,	cmd_sdread
 	.dw	kw_set,		0,		cmd_set
-	.dw	kw_turbo,	0,		cmd_turbo
 	.dw	kw_pbn,		0,		cmd_l2p
 	.dw	kw_dmareg,	0,		cmd_dmareg
 	.dw	kw_interrupt,	0,		cmd_interrupt
@@ -271,11 +270,6 @@ cmd_fdisk:
 
 cmd_no:
 	.dw	kw_showlog, 	set_no,		cmd_logging
-	.dw	kw_turbo,	set_no,		cmd_turbo
-	.dw	0
-
-cmd_turbo:
-	.dw	kw_eol,		setturbo,	cmd_done
 	.dw	0
 
 cmd_set:
@@ -561,7 +555,6 @@ kw_trace:	P_KEYWORD       "TRace"
 kw_iotest:	P_KEYWORD	"IOTest"
 kw_duboot:	P_KEYWORD	"DUBoot"
 kw_status:	P_KEYWORD	"STATus"
-kw_turbo:	P_KEYWORD	"TURBO"
 kw_rings:	P_KEYWORD	"RINgs"
 kw_message:	P_KEYWORD	"MESSage"
 kw_opcodes:	P_KEYWORD	"OPCodes"

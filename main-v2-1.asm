@@ -146,7 +146,13 @@ start100:
 ;	0x4xxx	is copied to 0x5xxx
 ;	RAMINIT	is zeroized
 ;
-;	Memory above RAMINITEND to 0x4FFF is not initialized 
+;	Memory is divided into 4 regions
+;	0x4xxx	variables, buffers, stack, etc.
+;	0x5xxx	debug and scratchpad, not used by the emulator
+;	0x6xxx	heap
+;	0x7xxx	logging buffer
+;
+;	Memory above RAMINITEND to 0x4FFF is not initialized on purpose
 ;
 	ldi	xl, low(0x4000)
 	ldi	xh, high(0x4000)
@@ -222,8 +228,8 @@ initheap010:				; First init range with zero
 	ldi	yh, high(log_buffer)
 	sts	log_pointer+0, yl
 	sts	log_pointer+1, yh
-	ldi	r24, low(log_size)
-	ldi	r25, high(log_size)
+	ldi	r24, low(log_buffersize)
+	ldi	r25, high(log_buffersize)
 loginit010:
 	st	Y+, zero
 	sbiw	r25:r24, 1
@@ -251,7 +257,7 @@ loginit010:
 	sbi	d_DMR			; DMA Request
 	cbi	d_DMG			; DMA Granted
 	sbi	d_ABO			; DMA Abort
-	sbi	d_ACK			; Interrupt Acknowledge
+	sbi	d_ACK			; CPLD Interrupt Acknowledge
 	sbi	d_CLK			; CPU Clock Output
 	
 #ifdef mscpemulation
@@ -287,15 +293,15 @@ loginit010:
 #endif
 	sbi	d_LED			; Activity LED
 	LEDOFF
-	sbi	d_CRDY			; Enable SA Read Interrupt
-	sbi	d_IRQ			; Q-Bus Interrupt Request
+	sbi	d_CRDY			;
+	sbi	d_IRQ			;
 	sbi	d_RD			; Read Register in CPLD
 	sbi	d_WR			; Write Register in CPLD
 	
-	sbi	b_CRDY
-	cbi	b_IRQ
+	sbi	b_CRDY			; Enable RLV12 controller or SA read interrupt
+	cbi	b_IRQ			; No Q-Bus Interrupt Request
 	cbi	b_RD			; Important default is cleared!!!
-	cbi	b_WR
+	cbi	b_WR			;
 ;
 ;	MVIO Port Settings - Port C is used for the SD-Card interface and the UART
 ;
@@ -320,13 +326,13 @@ loginit010:
 	sts	c_WP, r18
 #ifdef qbus50
 ;
-;	Alternate PINs for USART1
+;	Alternate PINs for USART1 on prototype Q-Bus hardware version 5.0
 ;
 	ldi	r18, PORTMUX_USART1_ALT1_gc; USART1 on PC4..7
 	sts	PORTMUX_USARTROUTEA, r18
 #else
 ;
-;	Alternate PINs for SPI1
+;	Alternate PINs for SPI1 in all other cases
 ;
 	ldi	r18, PORTMUX_SPI1_ALT1_gc; SPI1 on PC4..7
 	sts	PORTMUX_SPIROUTEA, r18
@@ -351,12 +357,6 @@ loginit010:
 ;
 	ldi	r18, SPI_SSD_bm;  | SPI_BUFEN_bm
 	sts	SPI1_CTRLB, r18
-;
-;	Various Clock rates: CPUCLK/2, CPUCLK/4, CPUCLK/8
-;
-;	ldi	r18, SPI_CLK2X_bm | SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
-;	ldi	r18,                SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
-;	ldi	r18, SPI_CLK2X_bm | SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV16_gc
 	ldi	r18, spispeed
 	sts	SPI1_CTRLA, r18		
 ;=============================================================================
@@ -673,7 +673,7 @@ pitwait:
 
 	ldi	r18, USART_RXCIE_bm	; Enable RX interrupt for RTOS
 	sts	USART1_CTRLA, r18
-	sbi	FLAGS_COMMON, serin__drv	; Activate Serial Driver
+	sbi	FLAGS_COMMON, serin__drv; Activate Serial Driver
 	sbi	FLAGS_COMMON, serout__drv
 	movw	r25:r24, zh:zl
 	sei
@@ -822,7 +822,7 @@ main:
 #endif
 #ifdef mscpemulation
 ;
-;	Poll
+;	Poll Job
 ;
 	ldi	zl, low(jcb2)
 	ldi	zh, high(jcb2)
@@ -875,6 +875,9 @@ main:
 	call	create
 #endif
 
+;
+;	Watch Dog
+;
 #define wdgactive 0
 #if wdgactive>0
 	ldi	r18, CPU_CCP_IOREG_gc
@@ -1014,13 +1017,12 @@ prtcreate:
 .include	"SD-Card-Print-v1-0.asm"; Print SD-Card messages
 .include	"SD-Card-v1-0.asm"	; Main SD-Card routines
 .include	"SD-Card-Multiple-v1-0.asm"
-.include	"SD-Card-Turbo-v1-0.asm"
 .include	"monitor-sub.asm"	; sub-routines used by Apple II monitor
 .include	"mprint.asm"		; local formatted messages routine
 
 ;--------------------------------------------------------------------------
 ;
-;		RLV12 and other modules
+;	Standard Modules
 ;
 .include	"DMA-Macro.inc"		; CPLD DMA Macroes 
 .include	"print-v2-1.asm"	; Print Inline
@@ -1041,7 +1043,9 @@ prtcreate:
 .include	"CLI-commands.asm"	; Various Other commands
 .include	"CLI-sdcard.asm"	; Read Multiple Block Test
 .include	"CLI-status.asm"	; Show status of variables
-
+;
+;	My FAT library
+;
 .include "FAT/BuildFragList.asm"
 .include "FAT/Cluster2Sector.asm"
 .include "FAT/CopyName.asm"
