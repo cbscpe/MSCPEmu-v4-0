@@ -547,7 +547,7 @@ logtraceno:
 	ret
 
 
-logpbn:
+logblocknbrs:
 	lds	r18, tpflags
 	sbrc	r18, tp__no
 	rjmp	logpbnno

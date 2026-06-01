@@ -310,11 +310,11 @@ cmd_logunit:
 	.dw	0
 
 cmd_logtrace:
-	.dw	kw_eol,		logtrace,		cmd_done
+	.dw	kw_eol,		logtrace,	cmd_done
 	.dw	0	
 
 cmd_logpbn:
-	.dw	kw_eol,		logpbn,		cmd_done
+	.dw	kw_eol,		logblocknbrs,	cmd_done
 	.dw	0	
 
 cmd_activate:
