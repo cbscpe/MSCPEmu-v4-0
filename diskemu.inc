@@ -196,7 +196,7 @@
 ;
 #define	log_dato	0x30
 ;
-;	0x4x -DATI
+;	0x4x - DATI
 ;
 #define	log_dati	0x40
 ;
@@ -354,8 +354,8 @@
 	.macro	logtr; trace-id, regtracevaluelow, regtracevaluehigh
 	sbis	FLAGS_LOG, log__trace
 	rjmp	notrace
-	push	zh			; Save Z first
-	push	zl
+	push	zl			; Save Z first
+	push	zh
 	push	r17			; Save temporary registers
 	push	r16
 	ldi	r16, log_trace
@@ -374,8 +374,62 @@
 	sts	log_pointer+0, zl	;;;  2
 	sts	log_pointer+1, zh	;;;  2
 	sei				;;;  1	-> 23 cycles ~1usec
-	pop	zl			; Restore Z registers
+	pop	zh			; Restore Z registers
+	pop	zl
+notrace:
+	.endmacro
+
+	.macro	logpbn; 4 registers with byte1, byte2, byte3 and byte4 of PBN
+	sbis    FLAGS_LOG, log__pbn
+	rjmp	notrace
+	push	zl
+	push	zh
+	push	r16			;;; need a register
+	mov	r16, @3			;;; even if @3 is r16 this does not matter
+	andi	r16, 0x07		;;; isolate bits 25..27 of pbn
+	ori	r16, log_pbn		;;; logging code
+	cli
+	lds	zl, log_pointer+0	;;; retrieve logging pointer
+	lds	zh, log_pointer+1
+	st	Z+, r16			;;; save code with pbn bits 25..27
+	pop	r16			;;;
+	st	Z+, @0			;;; save bits 0..23
+	st	Z+, @1
+	st	Z+, @2
+	sbrc	zh, log_overflow
+	ldi	zh, high(log_buffer+log_begin)
+	sts	log_pointer+0, zl
+	sts	log_pointer+0, zh
+	sei
 	pop	zh
+	pop	zl
+notrace:
+	.endmacro
+	
+	.macro	loglbn; 4 registers with byte1, byte2, byte3 and byte4 of LBN
+	sbis    FLAGS_LOG, log__pbn
+	rjmp	notrace
+	push	zl
+	push	zh
+	push	r16			;;; need a register
+	mov	r16, @3
+	andi	r16, 0x07		;;; isolate bits 25..27 of lbn
+	ori	r16, log_lbn		;;; logging code
+	cli
+	lds	zl, log_pointer+0	;;; retrieve logging pointer
+	lds	zh, log_pointer+1
+	st	Z+, r16			;;; save code with lbn bits 25..27
+	pop	r16			;;;
+	st	Z+, @0			;;; save bits 0..23
+	st	Z+, @1
+	st	Z+, @2
+	sbrc	zh, log_overflow
+	ldi	zh, high(log_buffer+log_begin)
+	sts	log_pointer+0, zl
+	sts	log_pointer+0, zh
+	sei
+	pop	zh
+	pop	zl
 notrace:
 	.endmacro
 
