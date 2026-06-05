@@ -32,7 +32,6 @@ commandlist:
 	.dw	kw_free,	0,		cmd_free
 	.dw	kw_reset,	0,		cmd_reset
 	.dw	kw_port,	0,		cmd_port
-	.dw	kw_pointer,	0,		cmd_pointer
 	.dw	kw_memtest,	0,		cmd_memtest
 	.dw	kw_controller,	0,		cmd_controller
 	.dw	kw_sdinit,	0,		cmd_sdinit
@@ -142,9 +141,6 @@ cmd_memtest1:
 	.dw	kw_eol,		cmdmemtest,	cmd_done
 	.dw	0
 
-cmd_pointer:
-	.dw	kw_eol,		cmdpointer,	cmd_done
-	.dw	0
 
 cmd_port:
 	.dw	ch_a,		a_port,		cmd_port1
@@ -523,7 +519,6 @@ kw_dmareg:	P_KEYWORD	"DMAData"
 kw_free:	P_KEYWORD	"FREE"
 kw_set:		P_KEYWORD	"SET"
 kw_reset:	P_KEYWORD	"RESET"
-kw_pointer:	P_KEYWORD	"POINTer"
 kw_memtest:	P_KEYWORD	"MEMorytest"
 sw_dumpr:	P_SWITCH	"r"
 sw_dumpc:	P_SWITCH	"c"

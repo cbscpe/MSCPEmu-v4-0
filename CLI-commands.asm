@@ -4,9 +4,12 @@
 ;
 ;--------------------------------------------------------------------------
 ;
-;	Print out the number entred via the number command as 32-bit 
-;	integer. This is to check that the scanning for a number element
-;	is done correctly.
+;	n <nnnn>
+;
+;	Prints given 32-bit integer in decimal, octal and hexadecimal. The
+;	command line parsers accepts as always inputs in decimal, octal
+;	or hexdecimal and thus this command allows to quickly convert numbers
+;	from any base to another base
 ;
 prtnbr:
 	lds	r18, nbr+0
@@ -27,6 +30,11 @@ prtnbr:
 ;--------------------------------------------------------------------------
 ;
 ;	pbn <nnn>	- translate lbn to pbn and show maxsector
+;
+;	To test the MaxSector result of logical2physical. The translation
+;	takes place with the disk image attached to unit 0. The LBN is
+;	translated using logical2physical and the resulting physical block
+;	number and the max sectors remaining is printed
 ;
 cmdl2p:
 ;
@@ -95,7 +103,9 @@ cmdl2p910:
 	ret
 ;--------------------------------------------------------------------------
 ;
-;	load	- load boot ROM to PDP-11 memory
+;	load <nnn> - load boot ROM to PDP-11 memory at address <nnn>
+;
+;	when no image is specified the DL: bootloader is loaded.
 ;
 loadboot:
 	ldi	r24, low(dmalock)
@@ -136,7 +146,7 @@ loadboot010:
 loadbooterror:
 	rjmp	loaderror
 ;
-;	load	- small program to load 4 blocks from RL02
+;	load <nnn> test - small program to load 4 blocks from unit 0
 ;
 loadtest:
 	ldi	r24, low(dmalock)
@@ -191,7 +201,7 @@ loaderror:
 
 ;--------------------------------------------------------------------------
 ;
-;	load	- load find vector test program
+;	load <nnn> iotest - load find vector test program
 ;
 loadiotest:
 	ldi	r24, low(dmalock)
@@ -235,7 +245,14 @@ loadiotest010:
 	
 ;--------------------------------------------------------------------------
 ;
-;	load	- load duboot
+;	load <nnn> duboot - load duboot
+;
+;	This will load the DU: bootstrap loader to the PDP-11 memory. The
+;	bootstrap program taken is from the M9312 boot ROM including the
+;	prefix and suffix used to organize bootstrap loaders in the ROM
+;	therefore the entry point is 4 higher than the load address. Note
+;	as well that this code expects to be loaded above 0100000 as it
+;	assumes that MOV PC, R3 sets the N bit.
 ;
 loadduboot:
 	ldi	r24, low(dmalock)
@@ -283,7 +300,9 @@ loadduboot010:
 
 ;--------------------------------------------------------------------------
 ;
-;	
+;	Manually Initialise, Mount or Dismount the SD-Card, not intended
+;	to be used in normal operation, this is only for debugging the
+;	respective functions.
 ;
 cmdsdinit:
 	call	SD_Main
@@ -300,7 +319,7 @@ cmddismount:
 	ret
 ;--------------------------------------------------------------------------
 ;
-;	self reset processor
+;	reset - Self reset processor
 ;
 cmdreset:
 
@@ -313,14 +332,21 @@ cmdreset:
 
 ;--------------------------------------------------------------------------
 ;
-;	set DMA address
+;	dmaaddr <nnn> - set DMA address
+;
+;	This group of commands is used to perform single word DMAs from
+;	and to the PDP-11 memory. First you need to set the DMA address.
+;	Setting the DMA address sets a flag and will set the DMA address
+;	when a dmaread or dmawrite command is executed afterwards.
 ;
 cmddmaaddr:
 	sts	dmaflag+0, zero
 	clc	
 	ret
 ;
-;	read a word via DMA from PDP-11
+;	dmaread - read a word via DMA from PDP-11, the DMA address is only
+;	updated once after a dmaaddress command, therefore subsequent words
+;	can be read by repeatedly dmaread commands
 ;	
 cmddmaread:
 	lds	r16, dmaflag+0
@@ -351,7 +377,12 @@ cmddmaread010:
 	clc
 	ret
 ;
-;	write a word via DMA to PDP-11
+;	dmawrite <nnn> - write a word via DMA to PDP-11
+;
+;	As with the dmaread command it will set the DMA address if dmaaddress
+;	has been executed previously and then will write to sequential memory
+;	addresses as the DMA controller in the CPLD automatically increments 
+;	the DMA address by two after each DMA cycle
 ;
 cmddmawrite:
 	lds	r16, dmaflag+0
@@ -383,8 +414,12 @@ cmddmawrite010:
 	clc
 	ret
 ;
-;	Write a block from MCU address to DMA address and read it
-;	back after the block of 512bytes in the MCU memory
+;	dmatest <nnn> - Write a block from MCU address <nnn> via DMA to the 
+;	PDP-11 to the DMA address set with the dmaaddress command and read it
+;	back after the block of 512bytes in the MCU memory. Be careful this
+;	can overwrite any address of the MCU and therefore also kill the
+;	MCU. Use the memory block 0x5000 to 0x5FFF, which is kept unused
+;	intentionally for debugging and test purposes.
 ;	
 cmddmatest:
 	lds	r22, dmapdp11+0
@@ -399,7 +434,6 @@ cmddmatest:
 	.db	CR, LF
 	.db	"DMA - Set Address ", 0xb0, 0
 	dmaaddr r22, r23, r24
-
 
 	lds	xl, nbr+0
 	lds	xh, nbr+1	
@@ -434,7 +468,8 @@ cmddmatest020:
 	ret
 ;--------------------------------------------------------------------------
 ;
-;	
+;	unblock OS locks. This is no longer used and is kept just in case
+;	we need again some unblock routines for debugging
 ;	
 cmdunbdoonl:
 	ldi	r24, low(doonllock)
@@ -452,7 +487,11 @@ cmdunbdorw:
 
 ;--------------------------------------------------------------------------
 ;
-;	
+;	interrupt <nnn> - this initiates an interrupt to the PDP-11 using
+;	the vector address <nnn>. This is to test the interrupt code in
+;	the firmware. Note to be effective a program, like the iotest 
+;	needs to be loaded in advance and be active. Interrupts are not
+;	honoured in ODT.
 ;	
 cmdinterrupt:
 	lds	r18, nbr+0
@@ -464,7 +503,9 @@ cmdinterrupt:
 	ret
 ;--------------------------------------------------------------------------
 ;
-;	
+;	dmaregister <nnn> - write <nnn> to the DMA data register in the
+;	CPLD and read it back. This is to test the CPLD manually and
+;	verify that the DMA data path is ok.
 ;	
 cmddmareg:
 	ldi	r18, 0xFF
@@ -504,7 +545,13 @@ cmddmareg:
 
 ;--------------------------------------------------------------------------
 ;
-;	
+;	dmatest <nnn> - this zaps 128kbyte of ram starting at address
+;	<nnn> * 65536 with incrementing values from 0..65535. Then it
+;	reads back the memory via DMA and verifies the content. For
+;	each address that does not verify it will print an error message.
+;	However it will only write 32 error messages and then stop as
+;	there is no reason to print more error messages if something is
+;	wrong.
 ;	
 cmdmemtest:
 	lds	r22, nbr+0
@@ -623,7 +670,7 @@ cmdmemtesterror:
 #ifdef mscpemulation
 ;--------------------------------------------------------------------------
 ;
-;
+;	poll - manually fake a IP read, only to be used during debugging
 ;	
 cmdpoll:
 	ldi	r24, low(mscpipr)
@@ -634,7 +681,19 @@ cmdpoll:
 #endif
 ;--------------------------------------------------------------------------
 ;
-;
+;	controller [ready|busy] - clears or sets the CRDY bit which 
+;	controls how the CPLD responds to device register addresses.
+;	in case of RLV12 emulation the CPLD will not interrupt the
+;	MCU if CRDY busy and DATI will be answered with a zero value.
+;	In case of MSCP emulation only SA reads are affected. This
+;	is a hardware feature of the Disk Emulator to avoid that 
+;	during polled IO the MCU is interrupt continuously. For RLV12
+;	controllers this is the normal behaviour. For MSCP controllers
+;	the firmware sets CRDY to busy in case SA would read as zero
+;	SA is normally polled by bootstrap loaders and boot programs to
+;	check if an error occurred. If an error occurs the CRDY will be
+;	set to ready and the value then read by the PDP-11 is then given
+;	by the MCU (including zero if nothing has to be returned )
 ;	
 cmdcontbsy:
 	cbi	b_CRDY
@@ -643,30 +702,5 @@ cmdcontbsy:
 	
 cmdcontrdy:
 	sbi	b_CRDY
-	clc
-	ret
-;--------------------------------------------------------------------------
-;
-;
-;	
-cmdpointer:
-	ldi	r24, low(1536)
-	ldi	r25, high(1536)
-	ldi	zl, low(log_buffer)
-	ldi	zh, high(log_buffer)
-cmdpointer010:
-	sts	pprint+0, zl
-	sts	pprint+1, zh
-	call	print
-	.db	CR, LF, "Pointer 0x", 0x81, 0x80, 0, 0
-
-	adiw	zh:zl, 4
-;	sbrc	zh,7
-;	ori	zh, 0x08
-	andi	zh, high(log_size) 	; 1
-	ori	zh, high(log_buffer)	; 1
-	
-	sbiw	r25:r24, 1
-	brne	cmdpointer010
 	clc
 	ret
