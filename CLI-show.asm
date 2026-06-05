@@ -41,7 +41,6 @@ cmd_showint010:
 cmd_showint020:
 	rcall	cmd_showintirqs
 	rcall	cmd_showintports
-	rcall	cmd_showintaddr
 
 cmd_showintexit:
 	pop	yh
@@ -317,62 +316,6 @@ cmd_showintports:
 	.db	TAB, "IRQ ...........:", 0x90, CR, LF, 0, 0
 	ret
 	
-cmd_showintaddr:
-	lds	r16, getpkt100+0
-	lds	r17, getpkt100+1
-	lds	r18, getpkt100+2
-	sts	pprint+0, r16
-	sts	pprint+1, r17
-	sts	pprint+2, r18
-	call	print
-	.db	"Various DMA Addresses ", CR, LF
-	.db	TAB, "getpkt100......:", 0xb0, " ", CR, LF, 0
-
-	lds	r16, putpkt140+0
-	lds	r17, putpkt140+1
-	lds	r18, putpkt140+2
-	sts	pprint+0, r16
-	sts	pprint+1, r17
-	sts	pprint+2, r18
-	call	print
-	.db	TAB, "putpkt140......:", 0xb0, " ", CR, LF, 0
-		
-	lds	r16, getdes+0
-	lds	r17, getdes+1
-	lds	r18, getdes+2
-	sts	pprint+0, r16
-	sts	pprint+1, r17
-	sts	pprint+2, r18
-	call	print
-	.db	TAB, "getdes.........:", 0xb0, " ", CR, LF, 0
-
-	lds	r16, putdes+0
-	lds	r17, putdes+1
-	lds	r18, putdes+2
-	sts	pprint+0, r16
-	sts	pprint+1, r17
-	sts	pprint+2, r18
-	call	print
-	.db	TAB, "putdes.........:", 0xb0, " ", CR, LF, 0
-
-	lds	r16, putdes060+0
-	lds	r17, putdes060+1
-	lds	r18, putdes060+2
-	sts	pprint+0, r16
-	sts	pprint+1, r17
-	sts	pprint+2, r18
-	call	print
-	.db	TAB, "putdes060......:", 0xb0, " ", CR, LF, 0
-
-	lds	r16, putdes100+0
-	lds	r17, putdes100+1
-	lds	r18, putdes100+2
-	sts	pprint+0, r16
-	sts	pprint+1, r17
-	sts	pprint+2, r18
-	call	print
-	.db	TAB, "putdes100......:", 0xb0, " ", CR, LF, 0
-	ret		
 ;--------------------------------------------------------------------------
 ;
 ;	show units

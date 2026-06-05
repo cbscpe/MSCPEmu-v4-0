@@ -138,6 +138,10 @@ do_onl040:
 	ldd	r23, Z+fcb_filesize+3
 
 do_onl050:
+;	ldi	r20, byte1(311200)		; Fix size of RD54 RSTS/E Boot??
+;	ldi	r21, byte2(311200)
+;	ldi	r22, byte3(311200)
+;	ldi	r23, byte4(311200)
 
 	std	Y+onl_unsz+0, r20
 	std	Y+onl_unsz+1, r21
@@ -188,14 +192,14 @@ do_onl900:
 	adiw	xh:xl, 2		; no need to logg the link word
 	ld	r16, X+
 	ld	r17, X+
-	;logtr	0x63, r16, r17
+;-	logtr	0x63, r16, r17
 	ld	r16, X+
 	ld	r17, X+
-	;logtr	0x6F, r16, r17
+;-	logtr	0x6F, r16, r17
 do_onl910:
 	ld	r16, X+
 	ld	r17, X+
-	;logtr	0x6F, r16, r17
+;-	logtr	0x6F, r16, r17
 	sbiw	r25:r24, 2
 	brne	do_onl910
 	movw	r25:r24, yh:yl

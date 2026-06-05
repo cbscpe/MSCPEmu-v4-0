@@ -195,9 +195,9 @@ do_gus055:
 	std	Y+gus_cyl+0, r16
 	std	Y+gus_cyl+1, r17
 	ldi	r16, mscp_softv
-	std	Y+gus_usvr, r16		; Software Version
+	std	Y+gus_usvr, zero;r16		; Software Version
 	ldi	r16, mscp_hardv
-	std	Y+gus_uhvr, r16		; Hardware Version
+	std	Y+gus_uhvr, zero;r16		; Hardware Version
 	ldd	r16, Z+Drv_RCTSize+0	; RCT Size
 	ldd	r17, Z+Drv_RCTSize+1
 	std	Y+gus_rcts+0, r16	; RCT Size
@@ -236,14 +236,14 @@ do_gus070:
 	adiw	xh:xl, 2		; no need to logg the link word
 	ld	r16, X+
 	ld	r17, X+
-	logtr	0x40, r16, r17
+;-	logtr	0x40, r16, r17
 	ld	r16, X+
 	ld	r17, X+
-	logtr	0x4F, r16, r17
+;-	logtr	0x4F, r16, r17
 do_gus910:
 	ld	r16, X+
 	ld	r17, X+
-	logtr	0x4F, r16, r17
+;-	logtr	0x4F, r16, r17
 	sbiw	r25:r24, 2
 	brne	do_gus910
 	movw	r25:r24, yh:yl

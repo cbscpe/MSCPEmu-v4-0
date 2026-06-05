@@ -1,8 +1,6 @@
 ;--------------------------------------------------------------------------
 ;
-;	Pin Change Interrupt for POLL
-;
-;	
+;	Pin Change Interrupt for POLL and SA write
 ;
 ;	2022-02-18 Peter Schranz
 ;
@@ -12,11 +10,9 @@
 ;		have the POLL job.
 ;		
 ;		We are now using multiple IOs on Port B for interrupts. The
-;		GO flag is now exclusively used for IP writes, it will most
-;		likely be renamed to IP, and the SA flag is used for writes
-;		to the SA register during writes and for reads to the SA
-;		register when the initialisation state has reached the GO 
-;		state
+;		GO flag from the RLV12 emulator has been renamed to IP for
+;		the MSCP emulation and the SA flag is used for writes
+;		to the SA register mainly used during initialisation
 ;
 ;	2026-05-06 Peter Schranz
 ;
@@ -177,9 +173,6 @@ poll_020:
 ;	The action routine will then process the command and return the
 ;	response to the host
 ;
-
-
-
 ;
 ;	Main Entry Point
 ;
@@ -387,9 +380,6 @@ get_packet100:
 	logtr	0x7D, r16, r17
 	logtr	0x7F, r18, zero	
 	
-	sts	getpkt100+0, r16
-	sts	getpkt100+1, r17
-	sts	getpkt100+2, r18
 	ori	r16, 1
 	dmaaddr r16, r17, r18		; Address can be seen in the descriptor trace
 
@@ -511,9 +501,6 @@ put_packet140:
 	sbci	r18, byte3(4)
 	sbci	r19, byte4(4)
 
-	sts	putpkt140+0, r16
-	sts	putpkt140+1, r17
-	sts	putpkt140+2, r18
 	dmaaddr r16, r17, r18
 
 	ldd	r24, Y+rsp_sts+0
@@ -611,9 +598,6 @@ get_descriptor:
 	sts	descr_addr+2, r18
 	sts	descr_addr+3, r19
 
-	sts	getdes+0, r16
-	sts	getdes+1, r17
-	sts	getdes+2, r18
 	ori	r16, 1			; DMA Read
 	;logtr	0x71, r16, r17		; 
 	dmaaddr r16, r17, r18
@@ -677,9 +661,6 @@ put_descriptor:
 	;logtr	0x73, r16, r17
 	;logtr	0x7F, r22, r23
 
-	sts	putdes+0, r16
-	sts	putdes+1, r17
-	sts	putdes+2, r18
 	dmaaddr r16, r17, r18
 	dmawrt	r22, r23	
 	brcc	put_descriptor050
@@ -714,9 +695,6 @@ put_descriptor060:
 	adc	r22, zero
 	adc	r23, zero
 	ori	r20, 1			; DMA read
-	sts	putdes060+0, r20
-	sts	putdes060+1, r21
-	sts	putdes060+2, r22
 	dmaaddr r20, r21, r22		; set DMA address
 	dmaread	r24, r25		; read the 2nd word of the descrption
 	brcc	put_descriptor070
@@ -758,9 +736,6 @@ put_descriptor100:
 
 	;logtr	0x75, r16, r17		
 
-	sts	putdes100+0, r16
-	sts	putdes100+1, r17
-	sts	putdes100+2, r18
 	dmaaddr	r16, r17, r18
 	dmawrt	r24, r25
 	brcs	put_descriptor120
@@ -802,6 +777,22 @@ put_descriptor120:
 ; Of course, we save the SA error code for the next initialization attempt.
 ;
 fatal_error:
+
+	cli
+	lds	zl, log_pointer+0	; 3 Logging is done only if log__reg is set
+	lds	zh, log_pointer+1	; 3
+	ldi	r16, log_trace
+	st	Z+, r16
+	ldi	r16, 0xFF
+	st	Z+, r16
+	st	Z+, r24
+	st	Z+, r25
+	sbrc	zh, log_overflow	; 2/1
+	ldi	zh, high(log_buffer+log_begin)
+	sts	log_pointer+0, zl	; 2
+	sts	log_pointer+1, zh	; 2
+	sei	
+
 	sts	sa_go+0, r24
 	sts	sa_go+1, r25
 	sbi	b_CRDY

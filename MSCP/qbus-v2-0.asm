@@ -344,11 +344,6 @@ qbus_dato_ip_go:
 	sbi	b_CRDY			; Enable SA Read Interrupt
 	INTEXIT	log_dato|log_ip
 
-	sts	ipr+0, yl
-	sts	ipr+1, yh
-	INTEXIT	log_dato|log_ipgo	; Do nothing for the moment
-
-
 ;-----------------------------------------------------------------------------
 ;
 ;	State: INIT
