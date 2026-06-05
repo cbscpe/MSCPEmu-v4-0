@@ -30,7 +30,7 @@
 ;	wait for input, normally for CPU clocks of 20MHz and less three
 ;	cycles are sufficient. For 24 and 28MHz 4 cycles are required
 ;	and for 32MHz we still need to find the reason why it is not
-;	reliable.
+;	reliable. Note the officially maximum clock is 24MHz.
 ;
 	.macro	waitin
 	rjmp	PC+1		; 2 This is a single word instruction 2 cycle nop
@@ -40,17 +40,21 @@
 
 ;--------------------------------------------------------------------------
 ;
-;
+;	In theory the emulator supports up to 16 units. But for RLV12 this
+;	is useless as the interface only can address 4 units. For MSCP I
+;	doubt that there is any reason why to have more then 4 units. As
+;	we are not limited to the disks supported by the RQDX3 controller
+;	we will probably never run out of space with 4 units. So keep it
+;	set to 4.
 ;
 .equ	units	=	4
-
 
 ;--------------------------------------------------------------------------
 ;
 ;	Q-Bridge CPLD Version
 ;
 #ifdef qbus50
-.include	"portdefs40qbus.inc"	; CPLD Interface 4.0 QBUS 
+.include	"portdefs40qbus.inc"	; CPLD Interface 4.0 QBUS PCB Version 5.0
 #else
 .include	"portdefs40.inc"	; CPLD Interface 4.0 PDP-11/Hack
 #endif
@@ -66,12 +70,6 @@
 ;#define spispeed SPI_CLK2X_bm | SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
 #define spispeed                SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
 ;#define spispeed SPI_CLK2X_bm | SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV16_gc
-;
-;	Conditional assembly
-;
-#define includemscp 1
-;#define mscpemulation 1
-;#define rlv12emulation 1
 ;
 ;--------------------------------------------------------------------------
 ;
@@ -96,7 +94,7 @@
 .equ    ESC     = 033
 .equ	SPACE	= 040
 .equ    DEL     = 0177
-.equ	DELIM	= 0x2f			; Directory Delimiter 0x2f = / and 0x5c = \
+.equ	DELIM	= 0x2f			; Directory Delimiter 0x2f = / or 0x5c = \
 
 ;
 ; ABI excerpt, for more information see ABI Register Convention Text File
@@ -443,6 +441,8 @@ notrace:
 ;=============================================================================
 ;
 ;	RT-OS Flag Definitions
+;
+;	See RT-OS documentation
 ;
 .equ	tesout_bp	= 0
 .equ	tesoutblock_bp	= 1

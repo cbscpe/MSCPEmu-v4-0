@@ -1,5 +1,7 @@
 ;
-;
+;	help - initially only for help files and then being abused for additional
+;	information. Urgently needs clean up as well as more help screens for the
+;	command line
 ;
 
 

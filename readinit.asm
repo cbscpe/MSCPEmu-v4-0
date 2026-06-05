@@ -2,6 +2,9 @@
 ;
 ;	Read INIT file
 ;
+;	A quick and dirty hack to implement the read and execute the
+;	startup configuration file RLV12.INI, of course for a MSCP
+;	emulation it should be the MSCP.INI. This is work in progress
 ;
 readinit:;(uint_t8 action)
 	push	r4
