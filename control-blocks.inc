@@ -15,8 +15,8 @@ record		P, Duration, 2
 
 record		P, Cluster, 4		; Current Cluster
 record		P, MaxSector, 0		; Maximum Sectors that can be read 
-record		P, Extended, 4		; During Mount Volume
-					;
+record		P, Extended, 4		; Used to keep extended partition sector 
+					; during Mount Volume
 record		P, Flag, 1
 ;
 ;	28-05-2022	New IO paramter block flags. With TURBO and MULTIPLE
@@ -170,7 +170,26 @@ recordend	Drv, Size
 ;	there is a flags and a type flag copied from the drive table, which is only
 ;	available for disk image sizes within valid limits
 ;	
-
+;	Unit control block (05-JUN-2026)
+;
+;	This is still work in progress. Initially this was the place where all
+;	the information about a unit of the RLV12 controller was kept. Many things
+;	have changed during the evolution of the RLV12 emulator and even more has
+;	changed when the MSCP emulation was added. Gradually things settle and
+;	the usage gets more and more stable. 
+;
+;	What has been kept is that each UCB is exactly 16 bytes and is directly
+;	mapped to the unit number. This makes translating the unit number to
+;	UCB pointer fast and simple. Therefore all bits and bytes that may be
+;	used in the interrupt service routines go here.
+;
+;	Also things that should not go into the drive entry or the image control
+;	block are typically kept in the UCB. When I was starting with the RLV12
+;	emulation I kept a lot of unnecessary stuff in the UCB, but with the time
+;	many things have been removed from the UCB, like the drive table entry
+;	pointer, or the disk size or the job lock word to support individual 
+;	job's per unit. 
+;
 recordstart	ucb
 record		ucb, status, 1
 	.equ	ucb__drdy	= 0	; Report Drive is Ready
@@ -186,10 +205,10 @@ record		ucb, log, 1		; Logging
 	.equ	ucb__log	= 0	; Logging Active for this unit
 	.equ	ucb__pbn	= 1	; Logging Physical Blocks
 record		ucb, imgptr, 2		; Pointer to partition or file control block
-record		ucb, rsvd, 4		; Lock word to let the unit job wait
+record		ucb, rsvd, 4		; 
 record		ucb, diskaddr, 2	; Unit disk address register
 record		ucb, seek, 2		; 
-record		ucb, seektimer, 2	; 
+record		ucb, rsvd2, 2		; 
 recordend	ucb, size
 
 ;
@@ -201,8 +220,15 @@ recordend	ucb, size
 ;
 ;	MSCP specific definitions, 	bits 4..7
 ;
-
-
+;	We still have the issue that the file size of disk images and partitions
+;	may or may not be exactly the size of the real disks they intend to be
+;	emulated, e.g. RD54 has 311200. blocks but sometimes they have the RCTs
+;	included or sometimes simh adds some blocks, depending on the version you
+;	use (simh 4.0 beeing very annoying). Therefore I plan to have various
+;	flags and a "manual" size field. Currently the real size of the partition
+;	or the file is reported and the drive table has an lower and an upper
+;	block count that is used to map the drive to it and report a Media 
+;	Identifier to the OS to let him display a nice drive name as well.
 ;
 ;	Drive Flags
 ;
