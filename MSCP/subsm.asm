@@ -9,7 +9,7 @@
 ;
 ;	globaldef byte		*ucbs[4];
 ;
-; with an arry of pointers to UCBs. getucb will convert a unit number to a UCB
+; with an array of pointers to UCBs. getucb will convert a unit number to a UCB
 ; address. It will do so by subtracting unitbase from the unitnumber and then
 ; check if there is an entry at the index. 
 ;
@@ -22,16 +22,18 @@
 ; like in the RLV12 emulator and each UCB is exactly 16 bytes.
 ;
 ;
-getucb:
-
-;	r25:r24		unitnumber
+getucb:;(int16 unitnumber:r25:r24)
+	lds	zl, unitbase+0
+	lds	zh, unitbase+1
+	sub	r24, zl
+	sbc	r25, zh
 	clr	zl
 	clr	zh
 	tst	r25
 	brne	getucb000
 	cpi	r24, units
 	brsh	getucb000		; not a valid unit number
-	movw	zh:zl, r25:r24
+	mov	zl, r24
 	swap	zl
 	subi	zl, low(-unittable)	; then add base address of 
 	sbci	zh, high(-unittable)
@@ -39,67 +41,3 @@ getucb000:
 	movw	r25:r24, zh:zl
 	ret
 
-; given the address of a list and a list element, add the list element to the
-; head of the list
-;
-;	Input:
-;	r25:r24		head (list)
-;	r23:r22		packet (list element)
-;
-enqhead:
-	push	yl
-	push	yh
-	movw	yh:yl, r25:r24		; Head
-	cli
-	ldd	r16, Y+0		;;;  2 Get Current Head
-	ldd	r17, Y+1		;;;  2
-	std	Y+0, r22		;;;  1 Put Packet Address to Head
-	std	Y+1, r23		;;;  1
-	movw	yh:yl, r23:r22		;;;  1 Copy Packet Address
-	std	Y+0, r16		;;;  1 Put previous Head to Packet
-	std	Y+1, r17		;;;  1
-	sei
-	pop	yh
-	pop	yl
-	ret
-;
-; given the address of a list, remove a list element and return it or
-;
-; second entry point -> if null that's a fatal error
-;
-;	Input:
-;	r25:r24		head
-;
-;	Output:
-;	r25:r24		packet
-;
-deqhead:
-	clt				; Don't die if no list element
-	cpse	r0,r0			; skip next instruction
-deqfhead:
-	set				; Die if no list element
-	push	yl
-	push	yh
-	movw	yh:yl, r25:r24
-	cli
-	ldd	r24, Y+0		;;;  2 Get Packet from Head
-	ldd	r25, Y+1		;;;  2
-	sbiw	r25:r24, 0		;;;  2
-	breq	deqfhead090		;;;  1
-	movw	zh:zl, r25:r24		;;;  1 Copy Packet Address
-	ldd	r16, Z+0		;;;  2 Copy packet.link
-	ldd	r17, Z+1		;;;  2
-	std	Y+0, r16		;;;  1 to Head
-	std	Y+1, r17		;;;  1
-deqfhead080:
-	sei
-	pop	yh
-	pop	yl
-	ret
-
-deqfhead090:
-	brtc	deqfhead080		; No list element and don't die
-	sei
-	ldi	r24, low(pe_nsr)	; No Such Resource
-	ldi	r25, high(pe_nsr)
-	call	fatal_error		; and die
