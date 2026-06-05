@@ -39,39 +39,6 @@ getucb000:
 	movw	r25:r24, zh:zl
 	ret
 
-;	lds	r16, unitbase+0
-;	lds	r17, unitbase+1
-;	sub	r24, r16
-;	sbc	r25, r17
-;	brlt	getucb090		; not a valid unit number
-;	cpi	r24, units+1
-;	cpc	r25, zero
-	brsh	getucb090		; not a valid unit number
-	movw	zh:zl, r25:r24		; each ucb is exactly 16 bytes so translate
-	swap	zl			; unitnumber to offset and
-	subi	zl, low(-unittable)	; then add base address of 
-	sbci	zh, high(-unittable)
-	ldd	r18, Z+ucb_status	;
-	andi	r18, (1<<ucb__part) | (1<<ucb__file)
-	breq	getucb090		; there is no disk attached to the unit
-	ldd	r18, Z+ucb_status	;
-	sbrs	r18, ucb__ofl		; Is it offline
-	rjmp	getucb100		; Has already been reported online
-	cbr	r18, (1<<ucb__ofl)
-	std	Z+ucb_status, r18
-	movw	r25:r24, zh:zl
-	push	r25
-	push	r24
-	call	do_una			; report unit available
-	pop	r24
-	pop	r25
-	ret
-getucb090:
-	clr	r24
-	clr	r25
-getucb100:
-	ret
-;
 ; given the address of a list and a list element, add the list element to the
 ; head of the list
 ;

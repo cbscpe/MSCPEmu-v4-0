@@ -29,6 +29,11 @@ recordend	scc, next		; 38.
 
 .equ	rs_scc	= scc_next - pkt_data
 
+/*
+DBG(136791432)> RQ TRACE: txt=0020, 0000, 0000, 0000, 0000, 0000, 0084, 0000
+DBG(136791432)> RQ TRACE: txt=0000, 8000, 0078, 0103, 0000, 0000, 0000, 0113
+DBG(136791432)> RQ TRACE: txt=0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000
+ */
 
 do_scc:					; Set Controller Characteristics
 	push	yl

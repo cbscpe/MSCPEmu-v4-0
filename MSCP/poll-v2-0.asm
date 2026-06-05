@@ -206,7 +206,10 @@ poll110:
 	ldi	r24, low(mscpipr)
 	ldi	r25, high(mscpipr)
 	call	block
-	rjmp	poll100
+	lds	r16, mscpstatus		; 
+	cpi	r16, mscp_go		; Make sure we are in GO state
+	breq	poll100
+	rjmp	poll110
 
 poll120:
 	lds	r16, mscpstatus		; Now make sure we process packets only in
@@ -234,7 +237,7 @@ poll120:
 	cpse	r23, zero		; Don't save overflow
 	st	X, r23
 	logtr	0x7E, r20, r22		; Unit / Opcode
-	;logtr	0x7F, r18, r19		; Packet Type / Connection ID
+	logtr	0x7F, r18, r19		; Packet Type / Connection ID
 	andi	r18, 0xF0		; Mask credit fields to get message type
 	brne	poll140			; This is not a sequential message -> fatal
 	tst	r19
@@ -384,6 +387,9 @@ get_packet100:
 	logtr	0x7D, r16, r17
 	logtr	0x7F, r18, zero	
 	
+	sts	getpkt100+0, r16
+	sts	getpkt100+1, r17
+	sts	getpkt100+2, r18
 	ori	r16, 1
 	dmaaddr r16, r17, r18		; Address can be seen in the descriptor trace
 
@@ -504,6 +510,10 @@ put_packet140:
 	sbci	r17, byte2(4)
 	sbci	r18, byte3(4)
 	sbci	r19, byte4(4)
+
+	sts	putpkt140+0, r16
+	sts	putpkt140+1, r17
+	sts	putpkt140+2, r18
 	dmaaddr r16, r17, r18
 
 	ldd	r24, Y+rsp_sts+0
@@ -601,6 +611,9 @@ get_descriptor:
 	sts	descr_addr+2, r18
 	sts	descr_addr+3, r19
 
+	sts	getdes+0, r16
+	sts	getdes+1, r17
+	sts	getdes+2, r18
 	ori	r16, 1			; DMA Read
 	;logtr	0x71, r16, r17		; 
 	dmaaddr r16, r17, r18
@@ -664,6 +677,9 @@ put_descriptor:
 	;logtr	0x73, r16, r17
 	;logtr	0x7F, r22, r23
 
+	sts	putdes+0, r16
+	sts	putdes+1, r17
+	sts	putdes+2, r18
 	dmaaddr r16, r17, r18
 	dmawrt	r22, r23	
 	brcc	put_descriptor050
@@ -698,6 +714,9 @@ put_descriptor060:
 	adc	r22, zero
 	adc	r23, zero
 	ori	r20, 1			; DMA read
+	sts	putdes060+0, r20
+	sts	putdes060+1, r21
+	sts	putdes060+2, r22
 	dmaaddr r20, r21, r22		; set DMA address
 	dmaread	r24, r25		; read the 2nd word of the descrption
 	brcc	put_descriptor070
@@ -739,6 +758,9 @@ put_descriptor100:
 
 	;logtr	0x75, r16, r17		
 
+	sts	putdes100+0, r16
+	sts	putdes100+1, r17
+	sts	putdes100+2, r18
 	dmaaddr	r16, r17, r18
 	dmawrt	r24, r25
 	brcs	put_descriptor120

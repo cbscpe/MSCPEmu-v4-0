@@ -121,7 +121,7 @@ recordend	Fr, Size		; Size of fragment list entry
 ;
 recordstart	pcb
 record		pcb, queue, 2		; Queue Head
-record		pcb, drvtab, 2		; Drive Tabel Entry
+record		pcb, drvtab, 2		; Drive Table Entry
 record		pcb, status, 1		; Partition Status
 	.equ	pcb__fat	= 0	; is FAT
 	.equ	pcb__attach	= 1	; is attached to unit
@@ -170,8 +170,6 @@ recordend	Drv, Size
 ;	there is a flags and a type flag copied from the drive table, which is only
 ;	available for disk image sizes within valid limits
 ;	
-
-.equ	units	=	4
 
 recordstart	ucb
 record		ucb, status, 1

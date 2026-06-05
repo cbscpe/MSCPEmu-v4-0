@@ -330,6 +330,7 @@ qbus_dato_ip_go:
 	DATO
 	sts	ipr+0, yl
 	sts	ipr+1, yh
+	cbi	b_IRQ			; De-assert IRQ
 	clr	zl			; clear important states
 	sts	sa_s1+0, zl
 	sts	sa_s1+1, zl

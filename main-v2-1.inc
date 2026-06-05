@@ -108,6 +108,13 @@ initcount:	.byte	1
 .include	"MSCP/_pkt.inc"
 .include	"MSCP/_data.inc"
 op_stats:	.byte	64
+getpkt100:	.byte	3
+putpkt140:	.byte	3
+getdes:		.byte	3
+putdes:		.byte	3
+putdes060:	.byte	3
+putdes100:	.byte	3
+
 #endif
 RAMINITEND:
 ;--------------------------------------------------------------------------
@@ -117,7 +124,6 @@ RAMINITEND:
 ;	The Re-Init Data Area is not initialised when a software reset
 ;	has been issued. Else it will be zeroized
 ;	
-	align	4
 sd_status:	.byte	1
 reset_status:	.byte	1
 put_packet_wait:.byte	1

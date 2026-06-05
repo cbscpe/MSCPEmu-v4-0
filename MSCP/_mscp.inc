@@ -69,19 +69,20 @@
 /*
  *  modifiers
  */
-#define 	md_cse		bit13
-#define 	md_cmp		bit14
-#define 	md_exp		bit15
-#define 	md_err		bit12
-#define 	md_sch		bit11
-#define 	md_scl		bit10
-#define 	md_sec		bit9
-#define 	md_ser		bit8
+#define 	md_cse		0x2000	;bit13
+#define 	md_cmp		0x4000	;bit14
+#define 	md_exp		0x8000	;bit15
+#define 	md_err		0x1000	;bit12
+#define 	md_sch		0x0800	;bit11
+#define 	md_scl		0x0400	;bit10
+#define 	md_sec		0x0200	;bit9
+#define 	md_ser		0x0100	;bit8
 
-#define 	md_nxu		bit0
+#define 	md_nxu		0x0001	;bit0
+#define		md_nxu_bp	0
 
-#define 	md_rip		bit0
-#define 	md_imf		bit1
+#define 	md_rip		0x0001	;bit0
+#define 	md_imf		0x0002	;bit1
 
 #define 	md_swp		bit2
 #define 	md_shd		bit4
@@ -89,17 +90,17 @@
 /*
  *  end flags
  */
-#define 	ef_log		bit5
-#define 	ef_sex		bit4
+#define 	ef_log		0x0020	;bit5
+#define 	ef_sex		0x0010	;bit4
 
 /*
  *  controller flags
  */
-#define 	cf_atn		bit7
-#define 	cf_msc		bit6
-#define 	cf_oth		bit5
-#define 	cf_ths		bit4
-#define 	cf_rpl		bit15
+#define 	cf_atn		0x0080	;bit7
+#define 	cf_msc		0x0040	;bit6
+#define 	cf_oth		0x0020	;bit5
+#define 	cf_ths		0x0010	;bit4
+#define 	cf_rpl		0x8000	;bit15
 #define		cf_msk		(cf_atn|cf_msc|cf_oth|cf_ths)
 
 /*
@@ -171,6 +172,8 @@
 #define		st_drv		11
 #define		st_bbr		20
 #define		st_dia		31
+
+#define		sb_ofl_nv	1
 
 /*
  *  check for consistent definitions

@@ -156,7 +156,7 @@
 	.db	"RD53"
 	.dd	0x25644035		; Media ID
 	.dd	138672
-	.dd	138672
+	.dd	138679			; 138673
 	.dw	5			; RCT Size
 	.db	17, 8
 	.dw	1024
@@ -166,11 +166,11 @@
 ;
 	.db	"RD54"
 	.dd	0x25644036		; Media ID
-	.dd	311300
-	.dd	312377;/311200
+	.dd	311200
+	.dd	312377
 	.dw	7			; RCT Size
-	.db	17, 15
-	.dw	1224
+	.db	17, 15			; 
+	.dw	1
 	.db	DT__IMGSZ_bm, 0
 ;
 ;	RA70	34	11	1507	280Mbyte
