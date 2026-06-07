@@ -109,4 +109,14 @@
 	.db	" 52 "," 53 "," 54 "," 55 "	;/* 52-55 */
 	.db	" 56 "," 57 "," 58 "," 59 "	;/* 56-59 */
 	.db	" 60 "," 61 "," 62 "," 63 "	;/* 60-63 */
+.equ poll_dma_text = (PC - 0x8000) * 2 + 0x8000
+		;----+----1----+----2----+----3--
+	.db	"Poll DMA Put Descriptor ......: "
+	.db	"Poll DMA Get Descriptor ......: "
+	.db	"Poll DMA Put Packet ..........: "
+	.db	"Poll DMA Get Packet ..........: "
+	.db	"Poll DMA Write Flag ..........: "
+	.db	"Poll DMA Read Prev. Descr. ...: "
+	.db	"Poll DMA undefined ...........: "
+	.db	"Poll DMA undefined ...........: "
 #endif

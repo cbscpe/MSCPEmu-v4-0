@@ -39,6 +39,14 @@
 ;		0x1E	poll: unit, opcode, packet type and connection ID of received
 ;			packet, we use the ID code of the INIT module to avoid
 ;			confusion with 0x7x codes from the POLL module
+;	2026-06-06 Peter Schranz
+;
+;	New traces and added DMAPOLL option to enable and disable logging of
+;	of DMA addresses used in poll job
+;
+;		0x71	Info about packet
+;		0x72	MSCP STATUS violations
+;		0x7E	Response Status
 ;--------------------------------------------------------------------------
 ;
 ;
@@ -183,35 +191,36 @@ polljob:
 	ldi	r25, high(mscpinit)	;
 	call	block			;
 	lds	r16, mscpstatus
-	;logtr	0x77, r16, zero		;
 	cpi	r16, mscp_go		; We expect that mscpinit is unblocked whenever
-	brne	polljob			; the state goes to mscp_go
+	breq	poll100
+	logtr	0x72, r16, zero		;
+	rjmp	polljob			; the state goes to mscp_go
 ;
 ;	Main Loop
 ;
 poll100:
 	rcall	get_packet		; Get Packet
-	;logtr	0x79, r24, r25
 	sbiw	r25:r24, 0		; We really got a packet
-	brne	poll120			; No Packet
+	brne	poll120			; yes
 
-poll110:
+poll110:				; wait for block
+	cli
+	lds	r16, mscpipr+0
+	lds	r17, mscpipr+1
+	sei
+	logtr	0x73, r16, r17
 	ldi	r24, low(mscpipr)
 	ldi	r25, high(mscpipr)
 	call	block
 	lds	r16, mscpstatus		; 
 	cpi	r16, mscp_go		; Make sure we are in GO state
-	breq	poll100
-	rjmp	poll110
+	breq	poll100			; and only then we call get packet
+	ldi	r17, 1			; Log state mismatch
+	;logtr	0x72, r16, r17		;
+	rjmp	poll110			; -> wait
 
 poll120:
-	lds	r16, mscpstatus		; Now make sure we process packets only in
-	;logtr	0x78, r16, zero		; mscp_go state
-	cpi	r16, mscp_go
-	brne	poll110
-
 	movw	yh:yl, r25:r24
-
 	ldd	r16, Y+pkt_size+0
 	ldd	r17, Y+pkt_size+1
 	ldd	r18, Y+pkt_type
@@ -229,7 +238,9 @@ poll120:
 	inc	r23
 	cpse	r23, zero		; Don't save overflow
 	st	X, r23
-	logtr	0x7E, r20, r22		; Unit / Opcode
+	ldd	r23, Y+cmd_mod+0	;
+	logtr	0x71, r22, r23		; Opcode / Modifiers
+	logtr	0x7F, r20, r21		; Unit
 	logtr	0x7F, r18, r19		; Packet Type / Connection ID
 	andi	r18, 0xF0		; Mask credit fields to get message type
 	brne	poll140			; This is not a sequential message -> fatal
@@ -377,12 +388,9 @@ get_packet100:
 	sbci	r18, byte3(4)
 	sbci	r19, byte4(4)
 	
-	logtr	0x7D, r16, r17
-	logtr	0x7F, r18, zero	
-	
 	ori	r16, 1
-	dmaaddr r16, r17, r18		; Address can be seen in the descriptor trace
-
+	logdmapoll	0x01, r16, r17, r18	; Packet DMA Address
+	dmaaddr r16, r17, r18
 
 	ldi	xl, low(cmd_link)
 	ldi	xh, high(cmd_link)
@@ -436,13 +444,12 @@ put_packet:
 	push	yl
 	push	yh
 	movw	yh:yl, r25:r24
-
+	
 	ldd	r16, Y+rsp_opcd+0
 	ldd	r17, Y+rsp_flgs+0
 	ldd	r18, Y+rsp_sts+0
 	ldd	r19, Y+rsp_sts+1
-	;logtr	0x7A, r16, r17			
-	;logtr	0x7F, r18, r19	
+	logtr	0x7E, r18, r19		; 
 	ldi	r16, 10
 put_packet090:
 	sts	put_packet_wait, r16
@@ -501,27 +508,19 @@ put_packet140:
 	sbci	r18, byte3(4)
 	sbci	r19, byte4(4)
 
+	logdmapoll	0x01, r16, r17, r18	; Response Packet DMA Address
 	dmaaddr r16, r17, r18
 
 	ldd	r24, Y+rsp_sts+0
 	ldd	r25, Y+rsp_sts+1
-
-	;logtr	0x7C, r24, r25
-
 	movw	xh:xl, yh:yl		; Get Packet Address
 	adiw	xh:xl, 2		; Skip Link Header
 
 	ld	r24, X+			; Get Message Size
 	ld	r25, X+
 	dmawrt	r24, r25		; Put Message Size
-
-	;logtr	0x7B, r24, r25
-
 	ld	r16, X+			; Get Packet-type, Credits, Connection ID
 	ld	r17, X+
-
-	;logtr	0x7F, r16, r17		; Packet-type, Credits, Connection ID
-
 	dmawrt	r16, r17		; Put Packet-type, Credits, Connection ID
 put_packet145:
 	ld	r16, X+
@@ -599,7 +598,7 @@ get_descriptor:
 	sts	descr_addr+3, r19
 
 	ori	r16, 1			; DMA Read
-	;logtr	0x71, r16, r17		; 
+	logdmapoll	0x00, r16, r17, r18	; Read Descriptor DMA Address
 	dmaaddr r16, r17, r18
 
 	clr	r12
@@ -615,10 +614,6 @@ get_descriptor050:
 	sts	descriptor+1, r21
 	sts	descriptor+2, r22
 	sts	descriptor+3, r23
-	
-	;logtr	0x72, r20, r21		; Low
-	;logtr	0x7F, r22, r23		; High word of descriptor
-
 get_descriptor100:
 	pop	yh
 	pop	yl
@@ -657,10 +652,7 @@ put_descriptor:
 	lds	r23, descriptor+3
 	ori	r23, 0x40		; set F flag
 	andi	r23, 0x7F		; clear O flag (ownership)
-
-	;logtr	0x73, r16, r17
-	;logtr	0x7F, r22, r23
-
+	logdmapoll	0x00, r16, r17, r18	; Write Descriptor DMA Address
 	dmaaddr r16, r17, r18
 	dmawrt	r22, r23	
 	brcc	put_descriptor050
@@ -695,16 +687,12 @@ put_descriptor060:
 	adc	r22, zero
 	adc	r23, zero
 	ori	r20, 1			; DMA read
+	logdmapoll	0x02, r20, r21, r22	; Read Previous Descriptor DMA Address
 	dmaaddr r20, r21, r22		; set DMA address
 	dmaread	r24, r25		; read the 2nd word of the descrption
 	brcc	put_descriptor070
 	rjmp	put_descriptor120
 put_descriptor070:
-
-	;logtr	0x74, r20, r21		; Full DMA addres (32-bit) of second word
-	;logtr	0x7F, r22, r23		; of previous descriptor
-	;logtr	0x7F, r24, r25		; value
-
 	tst	r25			; do we own the previous entry
 	brmi	put_descriptor100
 	rjmp	put_descriptor110	; no
@@ -733,9 +721,7 @@ put_descriptor100:
 	ldd	r19, Y+ring_flag+3	; to a non-zero value before we activate the
 	ldi	r24, low(1)		; interrupt
 	ldi	r25, high(1)
-
-	;logtr	0x75, r16, r17		
-
+	logdmapoll	0x02, r16, r17, r18	; Write Flag DMA Address
 	dmaaddr	r16, r17, r18
 	dmawrt	r24, r25
 	brcs	put_descriptor120
@@ -754,9 +740,6 @@ put_descriptor110:
 	and	r25, r19
 	std	Y+ring_index+0, r24
 	std	Y+ring_index+1, r25
-
-	;logtr	0x76, r24, r25		;----> New descriptor index
-
 	pop	yh
 	pop	yl
 	ret

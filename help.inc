@@ -9,7 +9,7 @@
 ;	"----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8"
 .db	CR, LF, CR, LF
 #ifdef cpldif
-.db	"Universal Disk Emulator V2 Vers 1.0.0   ",__DATE__ ,"  CPLD Interface active    ", CR, LF
+.db	"Universal Disk Emulator V2 Vers 1.0.0   ",__DATE__ ," ", __TIME__, "  CPLD Interface active ", CR, LF
 #else
 .db	"Universal Disk Emulator V2 Vers 1.0.0   ",__DATE__ ,"  CPLD Interface disabled  ", CR, LF
 #endif
@@ -176,7 +176,7 @@
 .db	"     [no] logging registers ", CR, LF
 .db	"     [no] logging interrupt ", CR, LF
 .db	"", CR, LF
-.db	"     <unit>     RL0, RL1, RL2, RL3", CR, LF
+.db	"     <unit>     RL0, RL1, RL2, RL3 or UNIT0, UNIT1, UNIT2, UNIT3", CR, LF
 .db	"", CR, LF
 .db	"   load bootrom ", CR, LF
 .db	"     load <address> ", CR, LF

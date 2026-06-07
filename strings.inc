@@ -75,39 +75,50 @@
 	.db	"inv."
 
 .equ mscp_names = (PC - 0x8000) * 2 + 0x8000
-	.db	"    "				;/*  0 */
+	.db	"  0 "				;/*  0 */
 	.db	"ABO "				;/*  1 b: abort */
 	.db	"GCS "				;/*  2 b: get command status */
 	.db	"GUS "				;/*  3 b: get unit status */
 	.db	"SCC "				;/*  4 b: set controller char */
-	.db	"    ", "    ", "    "		;/*  5-7 */
+	.db	"  5 ", "  6 ", "  7 "		;/*  5-7 */
 	.db	"AVL "				;/*  8 b: available */
 	.db	"ONL "				;/*  9 b: online */
 	.db	"SUC "				;/* 10 b: set unit char */
 	.db	"DAP "				;/* 11 b: det acc paths - nop */
-	.db	"    ","    ","    ","    "	;/* 12-15 */
+	.db	" 12 "," 13 "," 14 "," 15 "	;/* 12-15 */
 	.db	"ACC "				;/* 16 b: access */
 	.db	"CCD "				;/* 17 d: compare - nop */
 	.db	"ERS "				;/* 18 b: erase */
 	.db	"FLU "				;/* 19 d: flush - nop */
-	.db	"    ","    "			;/* 20-21 */
+	.db	" 20 "," 21 "			;/* 20-21 */
 	.db	"ERG "				;/* 22 t: erase gap */
-	.db	"    ","    ","    ","    "	;/* 23-26 */
-	.db	"    ","    ","    ","    "	;/* 27-30 */
-	.db	"    "				;/* 31 */
+	.db	" 23 "," 24 "," 25 "," 26 "	;/* 23-26 */
+	.db	" 27 "," 28 "," 29 "," 30 "	;/* 27-30 */
+	.db	" 31 "				;/* 31 */
 	.db	"CMP "				;/* 32 b: compare */
 	.db	"RD  "				;/* 33 b: read */
 	.db	"WR  "				;/* 34 b: write */
-	.db	"    "				;/* 35 */
+	.db	" 35 "				;/* 35 */
 	.db	"WTM "				;/* 36 t: write tape mark */
 	.db	"POS "				;/* 37 t: reposition */
-	.db	"    ","    ","    ","    "	;/* 38-41 */
-	.db	"    ","    ","    ","    "	;/* 42-45 */
-	.db	"    "				;/* 46 */
+	.db	" 38 "," 39 "," 40 "," 41 "	;/* 38-41 */
+	.db	" 42 "," 43 "," 44 "," 45 "	;/* 42-45 */
+	.db	" 46 "				;/* 46 */
 	.db	"FMT "				;/* 47 d: format */
-	.db	"    ","    ","    ","    "	;/* 48-51 */
-	.db	"    ","    ","    ","    "	;/* 52-55 */
-	.db	"    ","    ","    ","    "	;/* 56-59 */
-	.db	"    ","    ","    ","    "	;/* 60-63 */
+	.db	" 48 "," 49 "," 50 "," 51 "	;/* 48-51 */
+	.db	" 52 "," 53 "," 54 "," 55 "	;/* 52-55 */
+	.db	" 56 "," 57 "," 58 "," 59 "	;/* 56-59 */
+	.db	" 60 "," 61 "," 62 "," 63 "	;/* 60-63 */
+
+.equ poll_dma_text = (PC - 0x8000) * 2 + 0x8000
+		;----+----1----+----2----+----3--
+	.db	"Poll DMA Put Descriptor ......: "
+	.db	"Poll DMA Get Descriptor ......: "
+	.db	"Poll DMA Put Packet ..........: "
+	.db	"Poll DMA Get Packet ..........: "
+	.db	"Poll DMA Write Flag ..........: "
+	.db	"Poll DMA Read Prev. Descr. ...: "
+	.db	"Poll DMA undefined ...........: "
+	.db	"Poll DMA undefined ...........: "
 #endif
 

@@ -18,7 +18,8 @@
 ;	2	0001	romrd		address??	value
 ;	3	addr	dato		timestamp	data
 ;	4	addr	dati		timestamp	data
-;	5		unused
+;	5	0000	Poll Job Encoded DMA Address 	
+;	5	other	unused
 ;	6		unused
 ;	7		unused
 ;	8	RLV12 unit & command	timestamp	data	
@@ -115,7 +116,59 @@ logentry010:
 	call	logprintentry
 	clc
 	ret
+;=============================================================================
+;
+;	Print logging entries to make efficient use of a jump table we
+;	place the dispatcher in the middle of the effective printing 
+;	routines, therefore we have first a set of printing routines
+;	then we have the logprintentry dispatcher and then another
+;	set of printing routines
+;	
+;--------------------------------------------------------------------------
+;
+;	0x50	Poll DMA Address
+;
+logprint5x:
+	cpi	r16, 0x50		; for the moment just a hack
+	breq	logprint5x010
+	ret				; nothing to print
+;
+;	the log entry is a 32-bit value with the following fields
+;	- bit0		DMA Direction 1=read, 0=write
+;	- bit1..21	DMA Address
+;	- bit22..23	ID
+;
+;	First we collect the direction and ID to form an index
+;
+logprint5x010:
+	clr	zl			; prepare index to text
+	clr	zh
+	bst	r17, 0			; Save direction bit
+	bld	zl, 5			; Copy to index
+	andi	r17, 0xfe		; Remove direction bit from address
+	sts	pprint+1, r17		; write it back
+
+	bst	r19, 6			; Save LSB of ID
+	bld	zl, 6			; Copy to index
+
+	bst	r19, 7			; Save MSB of ID
+	bld	zl, 7			; Copy to index
+
+	andi	r19, 0x3f		; Remove ID bit from address
+	sts	pprint+3, r19		; write it back
+
+	subi	zl, low(-poll_dma_text)
+	sbci	zh, high(-poll_dma_text)
 	
+	ldi	r16, 32
+logprint5x020:
+	ld	r24, Z+
+	call	serout
+	dec	r16
+	brne	logprint5x020
+	call	print
+	.db	0xb1, CR, LF, 0
+	ret
 ;--------------------------------------------------------------------------
 ;
 ;	Prints log entry and then zeroize it
@@ -146,13 +199,15 @@ logprintentry:
 	pop	r25
 	ret
 	
+	
+
 logprinttbl:
 	rjmp	logprintnone		; 0
 	rjmp	logprintint		; 1
 	rjmp	logprintrom		; 2
 	rjmp	logprintdato		; 3
 	rjmp	logprintdati		; 4
-	rjmp	logprintnoop		; 5
+	rjmp	logprint5x		; 5
 	rjmp	logprintnoop		; 6
 	rjmp	logprintnoop		; 7
 	rjmp	logprintcommand		; 8
@@ -442,6 +497,18 @@ logprintcyl060:
 ;
 ;
 ;
+logdma_poll:
+	lds	r18, tpflags
+	sbrc	r18, tp__no
+	rjmp	logdmapollno
+	sbi	FLAGS_LOG, log__dmapoll
+	clc
+	ret
+logdmapollno:
+	cbi	FLAGS_LOG, log__dmapoll
+	clc
+	ret
+
 logreg:
 	lds	r18, tpflags
 	sbrc	r18, tp__no
@@ -582,6 +649,11 @@ logstatus:
 	call	print
 	.db	"Logging Trace ..................:", NULL
 	bst	r18, log__trace
+	rcall	logstatusonoff
+;
+	call	print
+	.db	"Logging poll DMA Addresses  ....:", NULL
+	bst	r18, log__dmapoll
 	rcall	logstatusonoff
 ;
 	call	print

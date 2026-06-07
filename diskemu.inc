@@ -235,6 +235,19 @@
 #define	log_sago	0x0E
 #define	log_saer	0x0F
 ;
+;	0x50 - DMA Poll
+;	
+;	+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+;	|  code |A21|A20|A19|A18|A17|A16|A15|A14|A13|A12|A11|A10| A9| A8| A7| A6| A5| A4| A3| A2| A1|DIR|
+;	+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+;
+;	code	description
+;	  0	descriptor DMA address
+;	  1	packet DMA address
+;	  2	Write Flag DMA Address / Read Previous Descriptor DMA Address
+;	  3	-reserved-
+;
+;
 ;	0x5x - reserved
 ;
 
@@ -310,7 +323,7 @@
 ;			  0		; reserved
 ;			  1		; reserved
 ;			  2		; reserved
-;			  3		; reserved
+.equ	log__dmapoll	= 3		; DMA Address poll job
 .equ	log__trace	= 4		; Log Debug Traces
 .equ	log__iack	= 5		; Log Interrupt Ack and bus INIT
 .equ	log__pbn	= 6		; Log physical block number
@@ -319,7 +332,7 @@
 ;#define logging (1<<log__pbn) | (0<<log__trace) | (1<<log__reg) | (1<<log__iack)
 ;#define logging (0<<log__pbn) | (0<<log__trace) | (0<<log__reg) | (1<<log__iack)
 ;#define logging (1<<log__pbn) | (1<<log__trace) | (1<<log__reg) | (1<<log__iack)
-#define logging (0<<log__pbn) | (1<<log__trace) | (1<<log__reg) | (1<<log__iack)
+#define logging (0<<log__pbn) | (1<<log__trace) | (1<<log__reg) | (1<<log__iack) | (1<<log__dmapoll)
 .if (log_begin & 0xFF >0)
 	.error " Invalid non-circular buffer size"
 .endif
@@ -349,6 +362,39 @@
 	sts	log_pointer+1, @1
 	sei
 	movw	@1:@0, @3:@2
+	.endmacro
+
+
+;
+;	Trace function which creates a log entry with an ID and a 16-bit      
+;	value, typically used to display the current value of register or a   
+; 	register pair mostly used during debugging                            
+;
+	.macro	logdmapoll; trace-id, addrl, addrh, addrx
+	sbis	FLAGS_LOG, log__dmapoll
+	rjmp	notrace
+	push	zl			; Save Z first
+	push	zh
+	push	yl			; temporary register
+	ldi	yl, 0x50
+	cli				;;;
+	lds	zl, log_pointer+0	;;;  3 Logging
+	lds	zh, log_pointer+1	;;;  3 Logging
+	st	Z+, yl			;;;  2
+	st	Z+, @1			;;;  2
+	st	Z+, @2			;;;  2
+	mov	yl, @3			;;;  1
+	ori	yl, (@0<<6)		;;;  1
+	st	Z+, yl			;;;  2
+	sbrc	zh, log_overflow	;;;  2/1
+	ldi	zh, high(log_buffer+log_begin)
+	sts	log_pointer+0, zl	;;;  2
+	sts	log_pointer+1, zh	;;;  2
+	sei				;;;  1	-> 23 cycles ~1usec
+	pop	yl
+	pop	zh			; Restore Z registers
+	pop	zl
+notrace:
 	.endmacro
 
 ;

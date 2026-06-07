@@ -275,6 +275,7 @@ cmd_set:
 cmd_logging:
 	.dw	kw_register,	0,		cmd_logregister
 	.dw	kw_interrupt,	0,		cmd_loginterrupt
+	.dw	kw_dmapoll,	0,		cmd_logdmapoll
 	.dw	kw_units,	0,		cmd_logunits
 	.dw	kw_attdev, 	a_dev,		cmd_logunit
 	.dw	kw_attunit, 	a_dev,		cmd_logunit
@@ -295,6 +296,10 @@ cmd_logregister:
 
 cmd_loginterrupt:
 	.dw	kw_eol,		logiack, 	cmd_done
+	.dw	0
+
+cmd_logdmapoll:
+	.dw	kw_eol,		logdma_poll, 	cmd_done
 	.dw	0
 
 cmd_logunits:
@@ -559,6 +564,7 @@ kw_sdcaddr:	P_KEYWORD	"Address"
 kw_unblock:	P_KEYWORD	"UNBlock"
 kw_unbdoonl:	P_KEYWORD	"DOONL"
 kw_unbdorw:	P_KEYWORD	"DORW"
+kw_dmapoll:	P_KEYWORD	"DMAPOLL"
 
 cmd_sdread:
 	.dw	kw_sdclbn,	0,		cmd_sdread010
