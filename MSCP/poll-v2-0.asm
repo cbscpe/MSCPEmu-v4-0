@@ -779,6 +779,7 @@ fatal_error:
 	sts	sa_go+0, r24
 	sts	sa_go+1, r25
 	sbi	b_CRDY
+	cbi	FLAGS_LOG, log__reg	; Stop logging of registers
 	movw	r9:r8, r25:r24
 fatal_error010:
 	ldi	r24, low(10240)		;;; 10 seconds
