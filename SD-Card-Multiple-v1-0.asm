@@ -58,7 +58,7 @@ l1:
 SD_CARD_MULTIPLE:
 	push	r4			; Save Registers
 	push	r5
-	push	r6
+	push	yl
 	push	yh
 	movw	yh:yl, r25:r24		; Copy Parameter Block Address
 	rcall	SPI_transfer_dummy	;
