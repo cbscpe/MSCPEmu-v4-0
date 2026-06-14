@@ -34,16 +34,9 @@
 ;	Logging
 ;
 ;	0x50	word count, block count
-;	0x51	lbn
-;	0x52	pbn
-;	0x53	P_Maxsector
-;	0x54	block count in mscp_rd040 loop
-;	0x55	Wordcount of partial block
-;	0x56	first sector (partition)
-;	0x57	remaining block count mscp_rd110
-;	0x58	2's complement of word count in last 64k block
-;	0x59	ucb, fcb
-
+;	LBN:
+;	PBN:
+;
 .def	count	= r3			; Local Counter 
 .def	datal	= r4			; DMA data
 .def	datah	= r5
@@ -446,9 +439,7 @@ mscp_rd:
 	ldd	r18, Y+rwc_lbn+2
 	ldd	r19, Y+rwc_lbn+3
 	
-	logtr	0x51, r16, r17
-	logtr	0x5F, r18, r19
-	
+	loglbn	r16, r17, r18, r19	
 ;
 ;	Get Image Pointer from the UCB and then the IO control block from
 ;	the image control block
@@ -457,10 +448,6 @@ mscp_rd:
 	ldd	zl, Y+ucb_imgptr+0	; Get pointer to disk image control block
 	ldd	zh, Y+ucb_imgptr+1
 	movw	r25:r24, zh:zl
-
-	;logtr	0x59, ucbl, ucbh
-	;logtr	0x5F, r24, r25
-
 	ldd	r20, Y+ucb_status	; Get the status
 	sbrs	r20, ucb__file		; Is unit attached to a file?
 	rjmp	mscp_rd100		; No it is attached to a partition
@@ -489,22 +476,17 @@ mscp_rd:
 ;	bkch:bkcl	The number of entire 64kW blocks to read	
 ;	wcnth:wcntl	The words in last 64kW block to read
 ;
+mscp_rd020:
 	ldd	r16, Y+P_Sector+0	; 
 	ldd	r17, Y+P_Sector+1	; 
 	ldd	r18, Y+P_Sector+2	; 
 	ldd	r19, Y+P_Sector+3	; 
+	logpbn	r16, r17, r18, r19
 
-	;logtr	0x52, r16, r17
-	;logtr	0x5F, r18, r19
-
-mscp_rd020:
 	ldd	r16, Y+P_Maxsector+0	; Get the size of the rest of the fragment
 	ldd	r17, Y+P_Maxsector+1	; that can be read as a contiguous part
 	ldd	r18, Y+P_Maxsector+2	;
 	ldd	r19, Y+P_Maxsector+3
-	
-	;logtr	0x53, r16, r17
-	;logtr	0x5F, r18, r19
 ;
 ;	bkch:bkcl:wcnth as a 24-bit integer is the total number of entire blocks
 ;	we need to read. If this is lower than the 32-bit value in P_Maxsector
@@ -531,8 +513,11 @@ mscp_rd020:
 ;
 	tst	wcntl		
 	brne	mscp_rd040		; Fragment too small need one more sector
+;
+;	Complete request fits in the rest of the fragment
+;
 mscp_rd030:
-	rjmp	mscp_rd110		; Rest of fragment is big enough for one go
+	rjmp	mscp_rd110		; Continue with one go
 ;
 ;	The IO request does not fit into the rest of the fragment. Therefore we
 ;	first read Maxsector and then need to find the next fragment. Note that
@@ -544,15 +529,18 @@ mscp_rd040:
 ;	The SD-Card IO routine supports transfers of up to2^16 words. Therefore 
 ;	we can read up to 256. sectors per call to the SD-Card IO routine.
 ;
+	ldd	r16, Y+P_Maxsector+0	;
 	ldd	r17, Y+P_Maxsector+1	;
 	ldd	r18, Y+P_Maxsector+2	;
 	ldd	r19, Y+P_Maxsector+3	;
 	
-	subi	r17, byte1(1)
-	sbci	r18, byte2(1)
-	sbci	r19, byte3(1)
+	subi	r16, byte1(256)
+	sbci	r17, byte2(256)
+	sbci	r18, byte3(256)
+	sbci	r19, byte4(256)
 	brmi	mscp_rd060		; less than 256 sectors, resp 2^16 words
-	std	Y+P_Maxsector+1, r17	; Update maxsector
+	std	Y+P_Maxsector+0, r16	; Update maxsector
+	std	Y+P_Maxsector+1, r17	; 
 	std	Y+P_Maxsector+2, r18
 	std	Y+P_Maxsector+3, r19
 	std	Y+P_Wordcount+0, zero	; Read 65536 words
@@ -566,29 +554,33 @@ mscp_rd040:
 	movw	r25:r24, bkch:bkcl	; Update the block count.
 	sbiw	r25:r24, 1		; 
 	movw	bkch:bkcl, r25:r24	; 
-	
-	;logtr	0x54, bkcl, bkch
 ;
+	ldd	r16, Y+P_Sector+0
 	ldd	r17, Y+P_Sector+1	; Update start physical sector for next transfer
 	ldd	r18, Y+P_Sector+2	; required for further calls to the IO routine
 	ldd	r19, Y+P_Sector+3	; Note SD-Cards may have more than 2^24 sectors
 
-	subi	r17, byte1(-256)	; Start Sector of next read
-	sbci	r18, byte2(-256)	;
-	sbci	r19, byte3(-256)	;
+	subi	r16, byte1(-256)
+	sbci	r17, byte2(-256)	; Start Sector of next read
+	sbci	r18, byte3(-256)	;
+	sbci	r19, byte4(-256)	;
 
+	std	Y+P_Sector+0, r16
 	std	Y+P_Sector+1, r17
 	std	Y+P_Sector+2, r18	;
-	std	Y+P_Sector+2, r19	;
+	std	Y+P_Sector+3, r19	;
 ;
+	ldd	r16, Y+P_Cluster+0
 	ldd	r17, Y+P_Cluster+1	; Update LBN of next read we need to keep
 	ldd	r18, Y+P_Cluster+2	; track of the LBN as this will be the base
 	ldd	r19, Y+P_Cluster+3	; for the next call to Logical2Physical
 
-	subi	r17, byte1(-256)
-	sbci	r18, byte2(-256)
-	sbci	r19, byte3(-256)
+	subi	r16, byte1(-256)
+	sbci	r17, byte2(-256)
+	sbci	r18, byte3(-256)
+	sbci	r19, byte4(-256)
 
+	std	Y+P_Cluster+0, r16	; 
 	std	Y+P_Cluster+1, r17	; 
 	std	Y+P_Cluster+2, r18	; 
 	std	Y+P_Cluster+3, r19	; 
@@ -600,12 +592,11 @@ mscp_rd040:
 mscp_rd060:
 	ldd	r25, Y+P_Maxsector+0	; Need only lower byte of 32-bit integer
 	tst	r25			; if zero nothing to do, ie Maxsector was
-	breq	mscp_rd070		; a multiple of 256
+	brne	mscp_rd061
+	rjmp	mscp_rd070		; a multiple of 256
+mscp_rd061:
 	clr	r24			; r25:r24 = 2's complement of word count
 	neg	r25			;  of last transfer
-	
-	;logtr	0x55, r24, r25
-	
 	std	Y+P_Wordcount+0, r24
 	std	Y+P_Wordcount+1, r25
 	movw	r25:r24, yh:yl		; Get IO control block
@@ -631,14 +622,18 @@ mscp_rd060:
 	std	Y+P_Cluster+2, r18
 	std	Y+P_Cluster+3, r19
 
+	loglbn	r16, r17, r18, r19
+
 	sub	wcnth, r25
 	sbc	bkcl, zero
 	sbc	bkch, zero
-
+;
+;	Now we have read Maxsector sectors, now we need to find next fragment
+;
 mscp_rd070:
-	movw	yh:yl, ucbh:ucbl 	; Get UCB
-	ldd	r24, Y+ucb_imgptr+0	; Get pointer to file control block
-	ldd	r25, Y+ucb_imgptr+1
+	movw	zh:zl, ucbh:ucbl	;
+	ldd	r24, Z+ucb_imgptr+0	; Get File Control Block
+	ldd	r25, Z+ucb_imgptr+1
 	call	Logical2Physical	; Translate LBN to PBN, i.e. find next fragment
 	rjmp	mscp_rd020		; and check if the remainder fits the fragment
 ;
@@ -656,8 +651,7 @@ mscp_rd100:
 	adc	r18, r22
 	adc	r19, r23
 	
-	;logtr	0x56, r16, r17
-	;logtr	0x5F, r18, r19
+	logpbn	r16, r17, r18, r19
 	
 	ldi	yl, low(sdio)		; Partition IO makes use of the common
 	ldi	yh, high(sdio)		; SD-CARD IO control block
@@ -678,23 +672,23 @@ mscp_rd110:
 	sbiw	r25:r24, 1		; 
 	brmi	mscp_rd120
 	movw	bkch:bkcl, r25:r24	; Save remaining block count
-	
-	;logtr	0x57, r24, r25
-	
 	std	Y+P_Wordcount+0, zero	; Assume 65536 words
 	std	Y+P_Wordcount+1, zero
 	movw	r25:r24, yh:yl		; Get IO control block
 	LEDON
 	call	SD_CARD_MULTIPLE
 
+	ldd	r16, Y+P_Sector+0
 	ldd	r17, Y+P_Sector+1	; Update start physical sector for next transfer
 	ldd	r18, Y+P_Sector+2	; required for further calls to the IO routine
 	ldd	r19, Y+P_Sector+3	; Note SD-Cards may have more than 2^24 sectors
 
-	subi	r17, byte1(-256)	; Start Sector of next read
-	sbci	r18, byte2(-256)	;
-	sbci	r19, byte3(-256)	;
+	subi	r16, byte1(-256)	; Start Sector of next read
+	sbci	r17, byte2(-256)	;
+	sbci	r18, byte3(-256)	;
+	sbci	r19, byte4(-256)	;
 
+	std	Y+P_Sector+0, r16
 	std	Y+P_Sector+1, r17
 	std	Y+P_Sector+2, r18	;
 	std	Y+P_Sector+2, r19	;
@@ -705,7 +699,6 @@ mscp_rd120:
 	com	r25			; 2's complement of remaining word count
 	neg	r24
 	sbci	r25,0xff
-	;logtr	0x58, r24, r25
 	std	Y+P_Wordcount+0, r24	; Set Words
 	std	Y+P_Wordcount+1, r25
 	movw	r25:r24, yh:yl		; Get IO control block
@@ -886,10 +879,7 @@ mscp_setupe:				; ERASE
 	ldd	r17, Y+rwc_lbn+1
 	ldd	r18, Y+rwc_lbn+2
 	ldd	r19, Y+rwc_lbn+3	; Logical Block Number
-	
-	;logtr	0x55, r20, r21		; DMA Start Address and word
-	;logtr	0x5F, r22, wcntl		; count in last block (0=entire block)
-	;logtr	0x5F, bkcl, bkch	; block count
+	loglbn	r16, r17, r18, r19
 ;
 ;	Get Image Pointer
 ;	
