@@ -15,6 +15,10 @@ main :
 	  
 .PHONY : install, readflash, verify, mscp, rlv
 
+#
+#	QBUS64 Hardware Version 4.0
+#
+#
 mscp :
 	avrasm2 -fI -o main-v2-1.hex  -m main-v2-1.map  -l main-v2-1.lss  -S main-v2-1.tmp  -W+ie \
 	 -I ~/AVR-Projects/include  \
@@ -24,8 +28,34 @@ mscp :
 	 -e main-v2-1.eep \
 	 -D mscpemulation \
 	  main-v2-1.asm
-
+#
+#	QBUS Hardware Version 5.1
+#
 qbus :
+	avrasm2 -fI -o main-v2-1.hex  -m main-v2-1.map  -l main-v2-1.lss  -S main-v2-1.tmp  -W+ie \
+	 -I ~/AVR-Projects/include  \
+	 -I ~/AVR-Projects/avrasminclude \
+	 -i AVR128DB48def.inc \
+	 -d main-v2-1.obj  \
+	 -e main-v2-1.eep \
+	 -D mscpemulation \
+	 -D qbus51 \
+	  main-v2-1.asm
+#
+#	QBUS64 Hardware Version 5.1
+#
+qbus64 :
+	avrasm2 -fI -o main-v2-1.hex  -m main-v2-1.map  -l main-v2-1.lss  -S main-v2-1.tmp  -W+ie \
+	 -I ~/AVR-Projects/include  \
+	 -I ~/AVR-Projects/avrasminclude \
+	 -i AVR128DB48def.inc \
+	 -d main-v2-1.obj  \
+	 -e main-v2-1.eep \
+	 -D mscpemulation \
+	 -D qbus64 \
+	  main-v2-1.asm
+
+qbus50 :
 	avrasm2 -fI -o main-v2-1.hex  -m main-v2-1.map  -l main-v2-1.lss  -S main-v2-1.tmp  -W+ie \
 	 -I ~/AVR-Projects/include  \
 	 -I ~/AVR-Projects/avrasminclude \
