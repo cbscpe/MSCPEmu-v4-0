@@ -33,21 +33,21 @@ mscp_reset020:
 ;
 mscp_reset:
 	clr	yh
-	lds	zh, unittable+ucb_size*0+ucb_status+0		
+	lds	zh, unittable+ucb_size*0+ucb_status		
 	cbr	zh, (1<<ucb__onl) | (1<<ucb__ofl)		
-	sts	unittable+ucb_size*0+ucb_status+0, zh		
+	sts	unittable+ucb_size*0+ucb_status, zh		
 
-	lds	zh, unittable+ucb_size*1+ucb_status+0
+	lds	zh, unittable+ucb_size*1+ucb_status
 	cbr	zh, (1<<ucb__onl) | (1<<ucb__ofl)
-	sts	unittable+ucb_size*1+ucb_status+0, zh
+	sts	unittable+ucb_size*1+ucb_status, zh
 
-	lds	zh, unittable+ucb_size*2+ucb_status+0
+	lds	zh, unittable+ucb_size*2+ucb_status
 	cbr	zh, (1<<ucb__onl) | (1<<ucb__ofl)
-	sts	unittable+ucb_size*2+ucb_status+0, zh
+	sts	unittable+ucb_size*2+ucb_status, zh
 
-	lds	zh, unittable+ucb_size*3+ucb_status+0
+	lds	zh, unittable+ucb_size*3+ucb_status
 	cbr	zh, (1<<ucb__onl) | (1<<ucb__ofl)
-	sts	unittable+ucb_size*3+ucb_status+0, zh
+	sts	unittable+ucb_size*3+ucb_status, zh
 								
 	sts	unitbase+0, yh					
 	sts	unitbase+1, yh
