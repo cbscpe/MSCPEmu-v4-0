@@ -295,10 +295,16 @@ qbus_dati_ip_wr:
 	INTEXIT	log_dati|log_ipwr
 
 qbus_dati_ip_go:
+#if debugmode==debuggpio
+	sbi	VPORTE_OUT, 1		;<<< debug
+#endif
 	lds	yl, ipr+0
 	lds	yh, ipr+1
 	cbi	b_IP
 	DATI
+#if debugmode==debuggpio
+	cbi	VPORTE_OUT, 1		;<<< debug
+#endif
 	INTEXIT	log_dati|log_ipgo
 
 ;-----------------------------------------------------------------------------
@@ -327,6 +333,9 @@ qbus_dato_ip_s2:
 qbus_dato_ip_s3:
 qbus_dato_ip_s4:
 qbus_dato_ip_go:
+#if debugmode==debuggpio
+	sbi	VPORTE_OUT, 0		;<<< debug
+#endif
 	DATO
 	sts	ipr+0, yl
 	sts	ipr+1, yh
@@ -334,13 +343,10 @@ qbus_dato_ip_go:
 	clr	zl			; clear important states
 	sts	sa_s1+0, zl
 	sts	sa_s1+1, zl
-	sts	sa_s2+0, zl
-	sts	sa_s2+1, zl
-	sts	sa_s3+0, zl
-	sts	sa_s3+1, zl
-	sts	sa_s4+0, zl
-	sts	sa_s4+1, zl
-	sts	mscpstatus, zl
+	sts	mscpstatus, zl		; Only do the minimum
+#if debugmode==debuggpio
+	cbi	VPORTE_OUT, 0		;<<< debug
+#endif
 	sbi	b_CRDY			; Enable SA Read Interrupt
 	INTEXIT	log_dato|log_ip
 
@@ -704,8 +710,6 @@ qbus_rom:
 ;
 ;	Quick fix to add DUBOOT to Emulator
 ;
-;
-
 	sbrc	zl, WTBT
 	rjmp	qbus_rom_dato
 	
@@ -719,21 +723,12 @@ qbus_rom:
 	DATI
 	INTEXIT	log_romrd
 	
-	
-	andi	zl, 0x03
-	clr	zh
-	subi	zl, low(-qbus_rom_table)
-	sbci	zh, high(-qbus_rom_table)
-	ijmp
-
-qbus_rom_table:
-	rjmp	qbus_rom0_dati
-	rjmp	qbus_rom_dato
-	rjmp	qbus_rom2_dati
-	rjmp	qbus_rom_dato
-
 qbus_rom_dato:
 	INTEXIT	log_romwr
+
+;
+;	Future DU boot with autobboot trick
+;
 
 qbus_rom0_dati:
 	ldi	yl, low(0777)		; 1 Assume DMA still pending
