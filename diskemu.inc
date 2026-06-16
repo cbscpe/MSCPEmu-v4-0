@@ -15,8 +15,8 @@
 ;	reliable. For the moment we will leave it at 24MHz which is
 ;	still fast enough.
 ;
-.equ	F_CLK	=	CLKCTRL_FREQSEL_20M_gc
-.equ	F_CPU	=	20000000
+.equ	F_CLK	=	CLKCTRL_FREQSEL_24M_gc
+.equ	F_CPU	=	24000000
 ;
 ;	Baud Rate Generator with fractional baud-rate generator
 ;
@@ -51,12 +51,51 @@
 
 ;--------------------------------------------------------------------------
 ;
+;	2026-06-11 Peter Schranz
+;
+;	There are now many variants of the Disk Emulator Hardware which all
+;	require different pin definitions. There once was a plan to upgrade
+;	the RLV12 Emulator V2.0 for the Q-Bus with a daughter board that 
+;	replaces the ATMega1284P with a AVR128DB48. Prototype existed but
+;	this project will not be pursued any more and thus the CPLD interface
+;	version 2.2 is obsolete. 
+;
+;	All other hardware variants make use of the CPLD Interface version 4.0.
+;	the only difference between the variants is the usage of the GPIOs of
+;	the AVR128DB48 on these boards. The following variants exist
+;
+;	- Disk Emulator Version 4.0 for the QBUS64, however this hardware 
+;	  version cannot switch between MSCP and RLV12 registers you need
+;	  to program the single CPLD according the emulation you want to load.
+;	  This was the initial development system for my MSCP Server and most
+;	  likely will disappear, i.e. be dismantled and the ICs being reused.
+;	- Disk Emulator Version 5.0 for the QBUS, this was the prototype and
+;	  as always I screwed the first version of PCB layout, it has too many
+;	  errors and was just used as a proof of concept. Also this version will
+;	  soon be dismantled.
+;
+;	- Disk Emulator Version 5.1 for the QBUS64
+;	- Disk Emulator Version 5.1 for the QBUS
+;
+;	The only difference between the two Version 5.1 is that WP and CD are
+;	connected reversed. I'm seriously considering a new PCB for the QBUS64
+;	version.
+;
+;
 ;	Q-Bridge CPLD Version
 ;
+#ifdef qbus51
+.include	"portdefsqbus51.inc"	; CPLD Interface 4.0 QBUS PCB Version 5.0
+#else
 #ifdef qbus50
 .include	"portdefs40qbus.inc"	; CPLD Interface 4.0 QBUS PCB Version 5.0
 #else
-.include	"portdefs40.inc"	; CPLD Interface 4.0 PDP-11/Hack
+#ifdef qbus64
+.include	"portdefsqbus64.inc"	; CPLD Interface 4.0 PDP-11/Hack Version 5.1
+#else
+.include	"portdefs40.inc"	; CPLD Interface 4.0 PDP-11/Hack Version 4.0
+#endif
+#endif
 #endif
 ;.include	"portdefs22b.inc"	; CPLD Interface 2.2 RLV12 Emu 2.0 Adapter B
 ;.include	"portdefs22c.inc"	; CPLD Interface 2.2 RLV12 Emu 2.0 Adapter C
@@ -290,8 +329,13 @@
 #define log_traceo	0xe2	; octal word
 #define log_tracebh	0xe3	; hex bytes
 #define log_tracebo	0xe4	; octal bytes
+#define log_traced	0xe5	; decimal
 ;
 ;	0xfx -reserved
+;
+
+;
+;	0xff -fatal_error
 ;
 
 ;
@@ -314,7 +358,7 @@
 ;
 .equ	log_buffer	= 0x7000
 .equ	log_buffersize	= 0x1000
-.equ	log_begin	= 0x0c00
+.equ	log_begin	= 0x0800
 .equ	log_size	= log_buffersize - log_begin
 .equ	log_overflow	= 7		; the 7th bit of the high byte address
 ;
@@ -332,7 +376,7 @@
 ;#define logging (1<<log__pbn) | (0<<log__trace) | (1<<log__reg) | (1<<log__iack)
 ;#define logging (0<<log__pbn) | (0<<log__trace) | (0<<log__reg) | (1<<log__iack)
 ;#define logging (1<<log__pbn) | (1<<log__trace) | (1<<log__reg) | (1<<log__iack)
-#define logging (0<<log__pbn) | (1<<log__trace) | (1<<log__reg) | (1<<log__iack) | (1<<log__dmapoll)
+#define logging (1<<log__pbn) | (1<<log__trace) | (1<<log__reg) | (1<<log__iack) | (1<<log__dmapoll)
 .if (log_begin & 0xFF >0)
 	.error " Invalid non-circular buffer size"
 .endif
@@ -342,6 +386,19 @@
 .if ((log_buffer & (log_buffersize - 1)) != 0)
 	.error " Invalid logging buffer definitions"
 .endif
+;--------------------------------------------------------------------------
+;
+;	GPIO Debugging, the options are gpio or spi mode
+;	
+;	Currently we can use Port E in two modes, either as normal GPIO to 
+;	signal up to four outputs or as SPI to send telegrams over SPI
+;	to the logic analyzer. T activate set debugmode to either the 
+;	value of debugpio or debugspi
+;
+#define debuggpio 1
+#define debugspi 2
+
+#define debugmode 1
 ;--------------------------------------------------------------------------
 ;
 ;	Get the current log pointer and update the log pointer with the next entry
@@ -450,7 +507,7 @@ notrace:
 	sbrc	zh, log_overflow
 	ldi	zh, high(log_buffer+log_begin)
 	sts	log_pointer+0, zl
-	sts	log_pointer+0, zh
+	sts	log_pointer+1, zh
 	sei
 	pop	zh
 	pop	zl
@@ -477,7 +534,7 @@ notrace:
 	sbrc	zh, log_overflow
 	ldi	zh, high(log_buffer+log_begin)
 	sts	log_pointer+0, zl
-	sts	log_pointer+0, zh
+	sts	log_pointer+1, zh
 	sei
 	pop	zh
 	pop	zl
