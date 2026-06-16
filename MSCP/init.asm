@@ -100,6 +100,28 @@ init_invalid:
 ;	done in the QBUS interrupt service routine.
 ;
 init_s1:
+;
+;	Take over from write IP register in qbus-v2-0.asm 
+;
+	sts	sa_s2+0, zero
+	sts	sa_s2+1, zero
+	sts	sa_s3+0, zero
+	sts	sa_s3+1, zero
+	sts	sa_s4+0, zero
+	sts	sa_s4+1, zero
+	lds	r18, unittable+ucb_size*0+ucb_status	;
+	cbr	r18, (1<<ucb__onl)
+	sts	unittable+ucb_size*0+ucb_status, r18	;
+	lds	r18, unittable+ucb_size*1+ucb_status	;
+	cbr	r18, (1<<ucb__onl)
+	sts	unittable+ucb_size*1+ucb_status, r18	;
+	lds	r18, unittable+ucb_size*2+ucb_status	;
+	cbr	r18, (1<<ucb__onl)
+	sts	unittable+ucb_size*2+ucb_status, r18	;
+	lds	r18, unittable+ucb_size*3+ucb_status	;
+	cbr	r18, (1<<ucb__onl)
+	sts	unittable+ucb_size*3+ucb_status, r18	;
+
 	cli
 	lds	r20, sa_s1+0		;;; Get SA value written by host
 	lds	r21, sa_s1+1		;;;
@@ -112,9 +134,9 @@ init_s1:
 ;	+---+---+---+---+---+---+---+---++---+---+---+---+---+---+---+---+
 ;
 	tst	r21
-	brpl	init010			; Invalid Value must have MSB set, although
-					; we expect that the QBUS ISR does not trigger
-					; a software interrupt we still check
+	brmi	init110			; Invalid Value must have MSB set, although
+	rjmp	init010			; we expect that the QBUS ISR does not trigger
+init110:					; a software interrupt we still check
 ;
 ;	Process S1 responses
 ;
@@ -523,7 +545,7 @@ init410:
 	ldi	r24, low(mscpinit)	; 
 	ldi	r25, high(mscpinit)	;
 	call	unblock			;
-	cbi	b_CRDY			; Disable SA Read Interrupt
+;	cbi	b_CRDY			; Disable SA Read Interrupt
 	rjmp	init010
 ;--------------------------------------------------------------------------
 ;
