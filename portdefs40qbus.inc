@@ -1,8 +1,9 @@
 ;=============================================================================
 ;
-;	PDP-11/Hack
+;	PDP-11 Systems with Q-Bus
 ;
-
+;	Disk Emulator Version 5-0
+;
 #define cpldif 40
 #define qbus 50
 
@@ -176,5 +177,3 @@
 
 #define int_port VPORTF_IN
 #define int_flags VPORTF_INTFLAGS
-
-
