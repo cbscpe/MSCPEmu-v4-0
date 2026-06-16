@@ -344,6 +344,24 @@ loginit010:
 	out	dataportdir, r18	; default data port direction is output !!!
 ;=============================================================================
 ;
+;	Port E - Debug
+;
+#if debugmode==debuggpio
+	ldi	r16, 0x0F
+	out	VPORTE_DIR, r16
+	out	VPORTE_OUT, zero
+#endif
+#if debugmode==debugspi
+	lds	r18, PORTMUX_SPIROUTEA
+	ori	r18, PORTMUX_SPI0_ALT1_gc
+	sts	PORTMUX_SPIROUTEA, r18
+	ldi	r18, SPI_SSD_bm | SPI_BUFEN_bm
+	sts	SPI0_CTRLB, r18
+	ldi	r18, SPI_ENABLE_bm | SPI_MASTER_bm | SPI_PRESC_DIV4_gc
+	sts	SPI0_CTRLA, r18		
+#endif
+;=============================================================================
+;
 ;	Map Flash section 2 to Data address space
 ;
 	ldi	r18, CPU_CCP_IOREG_gc
@@ -733,7 +751,7 @@ serin100:				; Else proceed with polled IO
 ;
 main:
 	call	print
-	.db	CR, LF, "Hallo RTOS on Universal Disk Emulator ", CR, LF, 0, 0
+	.db	CR, LF, "Entering RTOS on Universal Disk Emulator ", CR, LF, 0
 #ifdef mscpemulation
 	call	mscp_reset
 #endif
