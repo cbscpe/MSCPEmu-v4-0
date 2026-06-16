@@ -323,14 +323,14 @@ logprintseek:
 logprintpbn:
 	bst	r16, 3
 	andi	r16, 0x07
+	sts	pprint+4, r16
 	brts	logprintlbn	
-	sts	pprint+0, r16
 	call	print
-	.db	TAB, "     PBN  0x", 0x80, 0x81, 0x82, 0x83, CR, LF, 0
+	.db	"PBN: ", 0xD1, "./ 0x", 0x84, 0x83, 0x82, 0x81, CR, LF, 0
 	ret
 logprintlbn:
 	call	print
-	.db	TAB, "     LBN  0x", 0x80, 0x81, 0x82, 0x83, CR, LF, 0
+	.db	"LBN: ", 0xD1, "./ 0x", 0x84, 0x83, 0x82, 0x81, CR, LF, 0
 	ret
 	
 logprintdiskaddr:
