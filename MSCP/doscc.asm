@@ -33,6 +33,27 @@ recordend	scc, next		; 38.
 DBG(136791432)> RQ TRACE: txt=0020, 0000, 0000, 0000, 0000, 0000, 0084, 0000
 DBG(136791432)> RQ TRACE: txt=0000, 8000, 0078, 0103, 0000, 0000, 0000, 0113
 DBG(136791432)> RQ TRACE: txt=0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000
+
+0x74B4 Trace ID 0x90, Bytes 0x20 0x00 Word 000040	0020
+0x74B8 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000
+
+0x74BC Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000	command reference number
+0x74C0 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000
+0x74C4 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000	reserved
+0x74C8 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000
+0x74CC Trace ID 0x9F, Bytes 0x84 0x00 Word 000204	0084	opcode / flags
+0x74D0 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000	status
+0x74D4 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000	version
+0x74D8 Trace ID 0x9F, Bytes 0xD0 0x80 Word 100320	8000	controller flags
+0x74DC Trace ID 0x9F, Bytes 0x78 0x00 Word 000170	0078	controller timeout
+0x74E0 Trace ID 0x9F, Bytes 0x03 0x01 Word 000403	0103	software / hardware version
+0x74E4 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000	controller id
+0x74E8 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000
+0x74EC Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000
+0x74F0 Trace ID 0x9F, Bytes 0x13 0x01 Word 000423	0113
+0x74F4 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000	maximum byte count
+0x74F8 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000
+
  */
 
 do_scc:					; Set Controller Characteristics
@@ -69,20 +90,20 @@ do_scc020:
 	sts	_ccb_timeout+1, r25
 	lds	r24, _ccb_flags+0	; Get Controller Flags
 	lds	r25, _ccb_flags+1
-	andi	r24, low(cf_rpl)	;
+	andi	r24, low(cf_rpl)	; 
 	andi	r25, high(cf_rpl)
 	ldd	r22, Y+scc_cntf+0
 	ldd	r23, Y+scc_cntf+1
-	andi	r22, low(cf_msk)
+	andi	r22, low(cf_msk)	; Only flags that can be set by the host
 	andi	r23, high(cf_msk)
 	or	r24, r22
 	or	r25, r23
 	sts	_ccb_flags+0, r24
-	sts	_ccb_flags+1, r25	
+	sts	_ccb_flags+1, r25	;  Set Controller Flags
 	ldi	r24, low(120)
 	ldi	r25, high(120)
 	std	Y+scc_ctmo+0, r24
-	std	Y+scc_ctmo+1, r25
+	std	Y+scc_ctmo+1, r25	; 
 	ldi	r24, 0x03;low(mscp_softv)
 	ldi	r25, 0x01;high(mscp_hardv)
 	std	Y+scc_csvr, r24
@@ -101,11 +122,10 @@ do_scc020:
 	std	Y+scc_cnti+7, r25
 	std	Y+scc_mcnt+0, zero
 	std	Y+scc_mcnt+1, zero
-	ldi	r24, low(cf_rpl);low(cf_rpl | cf_atn | cf_msc | cf_ths)
-	ldi	r25, high(cf_rpl);high(cf_rpl | cf_atn | cf_msc | cf_ths)
+	ldi	r24, low(cf_rpl | cf_atn | cf_msc | cf_ths)	;low(cf_rpl);
+	ldi	r25, high(cf_rpl | cf_atn | cf_msc | cf_ths)	;high(cf_rpl);
 	std	Y+scc_cntf+0, r24
 	std	Y+scc_cntf+1, r25
-
 ;
 ;
 ;
