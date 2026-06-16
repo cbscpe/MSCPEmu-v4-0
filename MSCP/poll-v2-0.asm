@@ -44,7 +44,7 @@
 ;	New traces and added DMAPOLL option to enable and disable logging of
 ;	of DMA addresses used in poll job
 ;
-;		0x71	Info about packet
+;		0x71	Info about command packet
 ;		0x72	MSCP STATUS violations
 ;		0x7E	Response Status
 ;--------------------------------------------------------------------------
@@ -67,7 +67,6 @@ poll_:
 	push	yh
 	push	yl
 	sbi	f_IP			; Acknowledge interrupt
-
 	cli
 	lds	zl, log_pointer+0	; 3 Logging is done only if log__reg is set
 	lds	zh, log_pointer+1	; 3
@@ -84,7 +83,6 @@ poll_:
 	sts	log_pointer+0, zl	; 2
 	sts	log_pointer+1, zh	; 2
 	sei	
-	
 	ldi	zl, low(mscpipr)
 	ldi	zh, high(mscpipr)
 	jmp	unblocki
@@ -760,7 +758,6 @@ put_descriptor120:
 ; Of course, we save the SA error code for the next initialization attempt.
 ;
 fatal_error:
-
 	cli
 	lds	zl, log_pointer+0	; 3 Logging is done only if log__reg is set
 	lds	zh, log_pointer+1	; 3
@@ -778,6 +775,9 @@ fatal_error:
 
 	sts	sa_go+0, r24
 	sts	sa_go+1, r25
+	ldi	r24, low(2)
+	ldi	r25, high(2)
+	call	delay
 	sbi	b_CRDY
 	cbi	FLAGS_LOG, log__reg	; Stop logging of registers
 	movw	r9:r8, r25:r24
