@@ -1011,33 +1011,33 @@ showfree090:
 ;
 cmd_showrings:
 
-	lds	r16, cmd+0
+	lds	r16, cmd+ring_base+0
 	sts	pprint+0, r16
-	lds	r16, cmd+1
+	lds	r16, cmd+ring_base+1
 	sts	pprint+1, r16
-	lds	r16, cmd+2
+	lds	r16, cmd+ring_base+2
 	sts	pprint+2, r16
-	lds	r16, cmd+3
+	lds	r16, cmd+ring_base+3
 	sts	pprint+3, r16
-	lds	r16, cmd+4
+	lds	r16, cmd+ring_flag+0
 	sts	pprint+4, r16
-	lds	r16, cmd+5
+	lds	r16, cmd+ring_flag+1
 	sts	pprint+5, r16
-	lds	r16, cmd+6
+	lds	r16, cmd+ring_flag+2
 	sts	pprint+6, r16
-	lds	r16, cmd+7
+	lds	r16, cmd+ring_flag+3
 	sts	pprint+7, r16
-	lds	r16, cmd+8
+	lds	r16, cmd+ring_size+0
 	sts	pprint+8, r16
-	lds	r16, cmd+9
+	lds	r16, cmd+ring_size+1
 	sts	pprint+9, r16
-	lds	r16, cmd+10
+	lds	r16, cmd+ring_mask+0
 	sts	pprint+10, r16
-	lds	r16, cmd+11
+	lds	r16, cmd+ring_mask+1
 	sts	pprint+11, r16
-	lds	r16, cmd+12
+	lds	r16, cmd+ring_index+0
 	sts	pprint+12, r16
-	lds	r16, cmd+13
+	lds	r16, cmd+ring_index+1
 	sts	pprint+13, r16
 
 	call	print
@@ -1045,37 +1045,37 @@ cmd_showrings:
 	.db	TAB, "Base Address ", 0xB0, CR, LF, SPACE
 	.db	TAB, "Flag Address ", 0xB4, CR, LF, SPACE
 	.db	TAB, "Size         ", 0xC8, CR, LF, SPACE
-	.db	TAB, "Mask         0x", 0x8A, 0x8B, CR, LF
-	.db	TAB, "Index        0x", 0x8C, 0x8D, CR, LF, NULL, NULL
+	.db	TAB, "Mask         0x", 0x8B, 0x8A, CR, LF
+	.db	TAB, "Index        0x", 0x8D, 0x8C, CR, LF, NULL, NULL
 
 
-	lds	r16, rsp+0
+	lds	r16, rsp+ring_base+0
 	sts	pprint+0, r16
-	lds	r16, rsp+1
+	lds	r16, rsp+ring_base+1
 	sts	pprint+1, r16
-	lds	r16, rsp+2
+	lds	r16, rsp+ring_base+2
 	sts	pprint+2, r16
-	lds	r16, rsp+3
+	lds	r16, rsp+ring_base+3
 	sts	pprint+3, r16
-	lds	r16, rsp+4
+	lds	r16, rsp+ring_flag+0
 	sts	pprint+4, r16
-	lds	r16, rsp+5
+	lds	r16, rsp+ring_flag+1
 	sts	pprint+5, r16
-	lds	r16, rsp+6
+	lds	r16, rsp+ring_flag+2
 	sts	pprint+6, r16
-	lds	r16, rsp+7
+	lds	r16, rsp+ring_flag+3
 	sts	pprint+7, r16
-	lds	r16, rsp+8
+	lds	r16, rsp+ring_size+0
 	sts	pprint+8, r16
-	lds	r16, rsp+9
+	lds	r16, rsp+ring_size+1
 	sts	pprint+9, r16
-	lds	r16, rsp+10
+	lds	r16, rsp+ring_mask+0
 	sts	pprint+10, r16
-	lds	r16, rsp+11
+	lds	r16, rsp+ring_mask+1
 	sts	pprint+11, r16
-	lds	r16, rsp+12
+	lds	r16, rsp+ring_index+0
 	sts	pprint+12, r16
-	lds	r16, rsp+13
+	lds	r16, rsp+ring_index+1
 	sts	pprint+13, r16
 
 	call	print
@@ -1083,8 +1083,8 @@ cmd_showrings:
 	.db	TAB, "Base Address ", 0xB0, CR, LF, SPACE
 	.db	TAB, "Flag Address ", 0xB4, CR, LF, SPACE
 	.db	TAB, "Size         ", 0xC8, CR, LF, SPACE
-	.db	TAB, "Mask         0x", 0x8A, 0x8B, CR, LF
-	.db	TAB, "Index        0x", 0x8C, 0x8D, CR, LF, NULL, NULL
+	.db	TAB, "Mask         0x", 0x8B, 0x8A, CR, LF
+	.db	TAB, "Index        0x", 0x8D, 0x8C, CR, LF, NULL, NULL
 	ret
 #endif
 ;--------------------------------------------------------------------------
