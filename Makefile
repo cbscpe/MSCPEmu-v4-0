@@ -55,16 +55,6 @@ qbus64 :
 	 -D qbus64 \
 	  main.asm
 
-qbus50 :
-	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
-	 -I ~/AVR-Projects/include  \
-	 -I ~/AVR-Projects/avrasminclude \
-	 -i AVR128DB48def.inc \
-	 -d main.obj  \
-	 -e main.eep \
-	 -D mscpemulation \
-	 -D qbus50 \
-	  main.asm
 
 rlv :
 	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
