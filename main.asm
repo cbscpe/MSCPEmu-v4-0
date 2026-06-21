@@ -35,7 +35,7 @@
 ;
 ;	Data Segment
 ;	
-.include "main-v2-1.inc"		; Disk Emulator Data section
+.include "main.inc"		; Disk Emulator Data section
 
 	.macro	LEDON
 	ldi	r18, led_time
