@@ -37,7 +37,7 @@
 /*
  *
  */
-#define		max_commands	16
+#define		max_commands	4
 #define		max_errors	4
 #define		max_packets	max_commands+max_errors
 
@@ -254,9 +254,10 @@
 #define		er_dnr		bit0
 /*
  *	Initialisation
+#define	step1		005500
  *
  */
-#define	step1		005500
+#define	step1		005000
 #define	step2		010000
 #define	step3		020000
 #define	step4		040463

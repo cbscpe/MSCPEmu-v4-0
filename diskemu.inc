@@ -348,17 +348,17 @@
 ;	log_buffersize. Both, log_begin and log_buffersize must be a multiple 
 ;	of 256. The logging buffer must end at a boundary which is a power of   
 ;	two so that an overflow of the log_pointer can be detected by a bit   
-;	set in the log_pointer. E.g. if the buffer goes up to 0x7FF4 (each    
+;	set in the log_pointer. E.g. if the buffer goes up to 0x7FFC (each    
 ;	entry starts at a 4-byte boundary) and we add 4 to get the next       
 ;	log_pointer we just need to check bit 15 of the pointer, which is bit 
 ;	7 of the high byte. If this bit is set we know that we have reached   
 ;	the end of the circular buffer and need to reset the log_pointer to   
-;	the start of the circular buffer. This is simply done by subtracting  
-;	the high-byte of the circular buffer size, log_size, from log_pointer.           
+;	the start of the circular buffer. This is simply done by setting  
+;	the high-byte of the logging pointer to log_buffer + log_begin.           
 ;
 .equ	log_buffer	= 0x7000
 .equ	log_buffersize	= 0x1000
-.equ	log_begin	= 0x0800
+.equ	log_begin	= 0x0C00
 .equ	log_size	= log_buffersize - log_begin
 .equ	log_overflow	= 7		; the 7th bit of the high byte address
 ;
@@ -376,7 +376,7 @@
 ;#define logging (1<<log__pbn) | (0<<log__trace) | (1<<log__reg) | (1<<log__iack)
 ;#define logging (0<<log__pbn) | (0<<log__trace) | (0<<log__reg) | (1<<log__iack)
 ;#define logging (1<<log__pbn) | (1<<log__trace) | (1<<log__reg) | (1<<log__iack)
-#define logging (1<<log__pbn) | (1<<log__trace) | (1<<log__reg) | (1<<log__iack) | (1<<log__dmapoll)
+#define logging (1<<log__pbn) | (1<<log__trace) | (0<<log__reg) | (1<<log__iack) | (1<<log__dmapoll)
 .if (log_begin & 0xFF >0)
 	.error " Invalid non-circular buffer size"
 .endif
