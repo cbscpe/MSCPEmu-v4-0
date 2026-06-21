@@ -4,14 +4,14 @@
 #	       https://web.mit.edu/gnu/doc/html/make_2.html
 #
 main : 
-	avrasm2 -fI -o main-v2-1.hex  -m main-v2-1.map  -l main-v2-1.lss  -S main-v2-1.tmp  -W+ie \
+	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
 	 -I ~/AVR-Projects/include  \
 	 -I ~/AVR-Projects/avrasminclude \
 	 -i AVR128DB48def.inc \
-	 -d main-v2-1.obj  \
-	 -e main-v2-1.eep \
+	 -d main.obj  \
+	 -e main.eep \
 	 -D mscpemulation \
-	  main-v2-1.asm
+	  main.asm
 	  
 .PHONY : install, readflash, verify, mscp, rlv
 
@@ -20,70 +20,70 @@ main :
 #
 #
 mscp :
-	avrasm2 -fI -o main-v2-1.hex  -m main-v2-1.map  -l main-v2-1.lss  -S main-v2-1.tmp  -W+ie \
+	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
 	 -I ~/AVR-Projects/include  \
 	 -I ~/AVR-Projects/avrasminclude \
 	 -i AVR128DB48def.inc \
-	 -d main-v2-1.obj  \
-	 -e main-v2-1.eep \
+	 -d main.obj  \
+	 -e main.eep \
 	 -D mscpemulation \
-	  main-v2-1.asm
+	  main.asm
 #
 #	QBUS Hardware Version 5.1
 #
 qbus :
-	avrasm2 -fI -o main-v2-1.hex  -m main-v2-1.map  -l main-v2-1.lss  -S main-v2-1.tmp  -W+ie \
+	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
 	 -I ~/AVR-Projects/include  \
 	 -I ~/AVR-Projects/avrasminclude \
 	 -i AVR128DB48def.inc \
-	 -d main-v2-1.obj  \
-	 -e main-v2-1.eep \
+	 -d main.obj  \
+	 -e main.eep \
 	 -D mscpemulation \
 	 -D qbus51 \
-	  main-v2-1.asm
+	  main.asm
 #
 #	QBUS64 Hardware Version 5.1
 #
 qbus64 :
-	avrasm2 -fI -o main-v2-1.hex  -m main-v2-1.map  -l main-v2-1.lss  -S main-v2-1.tmp  -W+ie \
+	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
 	 -I ~/AVR-Projects/include  \
 	 -I ~/AVR-Projects/avrasminclude \
 	 -i AVR128DB48def.inc \
-	 -d main-v2-1.obj  \
-	 -e main-v2-1.eep \
+	 -d main.obj  \
+	 -e main.eep \
 	 -D mscpemulation \
 	 -D qbus64 \
-	  main-v2-1.asm
+	  main.asm
 
 qbus50 :
-	avrasm2 -fI -o main-v2-1.hex  -m main-v2-1.map  -l main-v2-1.lss  -S main-v2-1.tmp  -W+ie \
+	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
 	 -I ~/AVR-Projects/include  \
 	 -I ~/AVR-Projects/avrasminclude \
 	 -i AVR128DB48def.inc \
-	 -d main-v2-1.obj  \
-	 -e main-v2-1.eep \
+	 -d main.obj  \
+	 -e main.eep \
 	 -D mscpemulation \
 	 -D qbus50 \
-	  main-v2-1.asm
+	  main.asm
 
 rlv :
-	avrasm2 -fI -o main-v2-1.hex  -m main-v2-1.map  -l main-v2-1.lss  -S main-v2-1.tmp  -W+ie \
+	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
 	 -I ~/AVR-Projects/include  \
 	 -I ~/AVR-Projects/avrasminclude \
 	 -i AVR128DB48def.inc \
-	 -d main-v2-1.obj  \
-	 -e main-v2-1.eep \
+	 -d main.obj  \
+	 -e main.eep \
 	 -D rlv12emulation \
-	  main-v2-1.asm
+	  main.asm
 
 install :
-	avrdude -p AVR128DB48 -c atmelice_updi -U flash:w:main-v2-1.hex
+	avrdude -p AVR128DB48 -c atmelice_updi -U flash:w:main.hex
 	
 verify :
-	avrdude -p AVR128DB48 -c atmelice_updi -U flash:v:main-v2-1.hex
+	avrdude -p AVR128DB48 -c atmelice_updi -U flash:v:main.hex
 	
 readflash :
-	avrdude -p AVR128DB48 -c atmelice_updi -U flash:r:main-v2-1.hex:i
+	avrdude -p AVR128DB48 -c atmelice_updi -U flash:r:main.hex:i
 
 
 duboot :
