@@ -5,8 +5,8 @@
 #
 main : 
 	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
-	 -I ~/AVR-Projects/include  \
-	 -I ~/AVR-Projects/avrasminclude \
+	 -I ../include  \
+	 -I ../avrasminclude \
 	 -i AVR128DB48def.inc \
 	 -d main.obj  \
 	 -e main.eep \
@@ -21,8 +21,8 @@ main :
 #
 mscp :
 	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
-	 -I ~/AVR-Projects/include  \
-	 -I ~/AVR-Projects/avrasminclude \
+	 -I ../include  \
+	 -I ../avrasminclude \
 	 -i AVR128DB48def.inc \
 	 -d main.obj  \
 	 -e main.eep \
@@ -33,8 +33,8 @@ mscp :
 #
 qbus :
 	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
-	 -I ~/AVR-Projects/include  \
-	 -I ~/AVR-Projects/avrasminclude \
+	 -I ../include  \
+	 -I ../avrasminclude \
 	 -i AVR128DB48def.inc \
 	 -d main.obj  \
 	 -e main.eep \
@@ -46,8 +46,8 @@ qbus :
 #
 qbus64 :
 	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
-	 -I ~/AVR-Projects/include  \
-	 -I ~/AVR-Projects/avrasminclude \
+	 -I ../include  \
+	 -I ../avrasminclude \
 	 -i AVR128DB48def.inc \
 	 -d main.obj  \
 	 -e main.eep \
@@ -58,8 +58,8 @@ qbus64 :
 
 rlv :
 	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
-	 -I ~/AVR-Projects/include  \
-	 -I ~/AVR-Projects/avrasminclude \
+	 -I ../include  \
+	 -I ../avrasminclude \
 	 -i AVR128DB48def.inc \
 	 -d main.obj  \
 	 -e main.eep \
