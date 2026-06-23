@@ -97,7 +97,7 @@ initcount:	.byte	1
 ;	Data Segments of external modules
 ;	
 .include "monitor-v2-0.inc"		; Interactive monitor
-.include "print-v2-0.inc"		; Print routine
+.include "print-v2-1.inc"		; Print routine
 .include "tparse-v2-0.inc"		; Table Driven Parser
 ; #ifdef rlv12emulation
 .include "rlv12-v2-0.inc"		; Disk Emulator

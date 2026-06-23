@@ -6,7 +6,7 @@
 ;
 	.listmac
 
-.include "macro-library-v1-1.asm"	; My standard macros
+.include "macro-library-v1-2.asm"	; My standard macros
 .include "FAT/FAT-defs.asm"		; FAT defintions
 
 
