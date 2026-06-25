@@ -11,6 +11,7 @@ main :
 	 -d main.obj  \
 	 -e main.eep \
 	 -D mscpemulation \
+	 -D qbus51 \
 	  main.asm
 	  
 .PHONY : install, readflash, verify, mscp, rlv
@@ -54,8 +55,35 @@ qbus64 :
 	 -D mscpemulation \
 	 -D qbus64 \
 	  main.asm
-
-
+#
+#	QBUS64 Hardware Version 5.1 using wine to run latest avrasm2 from Microchip Studio
+#
+qbus64w :
+	MVK_CONFIG_LOG_LEVEL=0 wine ~/windows.exe/avrasm2.exe -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
+	 -I ../avrasminclude \
+	 -I ../include  \
+	 -i AVR128DB48def.inc \
+	 -d main.obj  \
+	 -e main.eep \
+	 -D mscpemulation \
+	 -D qbus64 \
+	  main.asm
+#
+#	Q-BUS Hardware Version 5.1 using wine to run latest avrasm2 from Microchip Studio
+#
+qbusw :
+	MVK_CONFIG_LOG_LEVEL=0 wine ~/windows.exe/avrasm2.exe -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
+	 -I ../avrasminclude \
+	 -I ../include  \
+	 -i AVR128DB48def.inc \
+	 -d main.obj  \
+	 -e main.eep \
+	 -D mscpemulation \
+	 -D qbus51 \
+	  main.asm
+#
+#	RLV12 Emulation
+#
 rlv :
 	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
 	 -I ../include  \
