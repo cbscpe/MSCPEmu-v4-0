@@ -1,8 +1,12 @@
 ;=============================================================================
 ;
-;	PDP-11/Hack
+;	PDP-11 Systems
 ;
 ;	Disk Emulator Version 5-1
+;
+;	PDP-11/Hack
+;
+;	Disk Emulator Version 5-1a
 ;
 #define cpldif 40
 #define qbus 51
