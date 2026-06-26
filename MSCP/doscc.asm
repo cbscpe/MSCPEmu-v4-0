@@ -122,8 +122,10 @@ do_scc020:
 	std	Y+scc_cnti+7, r25
 	std	Y+scc_mcnt+0, zero
 	std	Y+scc_mcnt+1, zero
-	ldi	r24, low(cf_rpl | cf_atn | cf_msc | cf_ths)	;low(cf_rpl);
-	ldi	r25, high(cf_rpl | cf_atn | cf_msc | cf_ths)	;high(cf_rpl);
+;	ldi	r24, low(cf_rpl | cf_atn | cf_msc | cf_ths)
+;	ldi	r25, high(cf_rpl | cf_atn | cf_msc | cf_ths)
+	ldi	r24, low(cf_rpl)
+	ldi	r25, high(cf_rpl)
 	std	Y+scc_cntf+0, r24
 	std	Y+scc_cntf+1, r25
 ;

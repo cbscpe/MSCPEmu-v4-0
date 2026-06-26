@@ -775,6 +775,7 @@ fatal_error:
 
 	sts	sa_go+0, r24
 	sts	sa_go+1, r25
+	movw	r17:r16, r25:r24	; Make it visible in show jobs
 	ldi	r24, low(2)
 	ldi	r25, high(2)
 	call	delay

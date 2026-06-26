@@ -126,7 +126,14 @@ do_gus030:				; else
 	ldi	r17, high(st_ofl + (st_sub * sb_ofl_nv))
 	std	Y+gus_sts+0, r16	; RSP.p_sts = st_ofl || st_sub;
 	std	Y+gus_sts+1, r17
-	rjmp	do_gus060
+	ldi	zl, low(DriveTabRD54)
+	ldi	zh, high(DriveTabRD54)
+	ldi	r16, 3
+	cp	unitl, r16		; report RX50 for unattached Unit 3
+	brne	do_gus060_
+	ldi	zl, low(DriveTabRX50)
+	ldi	zh, high(DriveTabRX50)
+	rjmp	do_gus060_
 do_gus040:
 	sbrc	r18, ucb__onl		; else if ( !(UCB.state & us_onl) )
 	rjmp	do_gus050
@@ -153,26 +160,31 @@ do_gus055:
 	ldd	xl, Z+pcb_drvtab+0
 	ldd	xh, Z+pcb_drvtab+1
 	movw	zh:zl, xh:xl	
+
+do_gus060_:
 ;
 ;
 ;
-;	ldi	r24, low(uf_rpl | uf_rmv)
-;	ldi	r25, high(uf_rpl | uf_rmv)
-	ldi	r24, low(uf_rpl)
+	ldd	r20, Z+Drv_Flags		; Get Drive Type from Drive Table Entry
+	ldi	r24, low(uf_rpl)		; Assume harddrive
+	sbrc	r20, DT__RX			; YES
+	ldi	r24, low(uf_rpl | uf_rmv)	; Floppy is removalbe
 	ldi	r25, high(uf_rpl)
+	sbrc	r20, DT__RX
+	ldi	r25, high(uf_rpl | uf_rmv)
 	std	Y+gus_unfl+0, r24
-	std	Y+gus_unfl+1, r25
-	std	Y+gus_unti+2, zero
+	std	Y+gus_unfl+1, r25		; Return Unitflags
+	std	Y+gus_unti+2, zero		; Initialize zero part of unti
 	std	Y+gus_unti+3, zero
 	std	Y+gus_unti+4, zero
 	std	Y+gus_unti+5, zero
-
-;	std	Y+gus_unti+6, zero	; UCB.type
-;	std	Y+gus_unti+7, zero
-
-	ldi	r16, low(0x020D)
-	ldi	r17, high(0x020D)
-	std	Y+gus_unti+6, r16	; UCB.type
+;
+;	unit+6 is model, for the moment we use Drv_Type because of RSTS/E debugging
+;	unti+7 is class, disks are of class 0x02
+;
+	ldd	r16, Z+Drv_Type			; disk model
+	ldi	r17, 0x02			; disk class
+	std	Y+gus_unti+6, r16		; UCB.type
 	std	Y+gus_unti+7, r17
 
 	ldd	r16, Z+Drv_MediaID+0
@@ -197,14 +209,18 @@ do_gus055:
 	std	Y+gus_cyl+0, r16
 	std	Y+gus_cyl+1, r17
 	ldi	r16, mscp_softv
-	std	Y+gus_usvr, zero;r16		; Software Version
+	std	Y+gus_usvr, zero;r16	; Software Version
 	ldi	r16, mscp_hardv
-	std	Y+gus_uhvr, zero;r16		; Hardware Version
-	ldd	r16, Z+Drv_RCTSize+0	; RCT Size
-	ldd	r17, Z+Drv_RCTSize+1
-	std	Y+gus_rcts+0, r16	; RCT Size
-	std	Y+gus_rcts+1, r17
+	std	Y+gus_uhvr, zero;r16	; Hardware Version
+	ldd	r24, Z+Drv_RCTSize+0	; RCT Size
+	ldd	r25, Z+Drv_RCTSize+1
+	std	Y+gus_rcts+0, r24	; RCT Size
+	std	Y+gus_rcts+1, r25
+	clr	r16
+	sbiw	r25:r24, 0
+	breq	do_gus059
 	ldi	r16, 1
+do_gus059:
 	std	Y+gus_rbns, r16		; Number of RBN
 	std	Y+gus_rctc, r16		; Number of RCT
 ;

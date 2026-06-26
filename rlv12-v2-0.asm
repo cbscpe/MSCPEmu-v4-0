@@ -413,7 +413,7 @@ rlv12_get010:
 	bst	r16, DAR_RW_HS		; Get current head selected
 	bld	r18, MPR_GETS_HS	; Set selected head in status
 	ldd	r16, Y+ucb_type		; Get Volume Type
-	bst	r16, DL__RL02		; Copy RL02 bit
+	bst	r16, DT__RL02		; Copy RL02 bit
 	bld	r18, MPR_GETS_DT	; Set drive type in status
 rlv12_get020:
 ;

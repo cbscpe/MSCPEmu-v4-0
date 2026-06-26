@@ -102,7 +102,9 @@
 	.dw	0			; RCT only used for MSCP Emulation
 	.db	40, 2			; Sector/Track, Track/Cylinder
 	.dw	256			; Cylinders
-	.db	0, 0			; Drive Flags, Type
+	.db	0, 0			; Disk Type, Flags
+	.db	0, 0			; Replacement Control Table Count/Size
+	.dw	0			; Replacement Blocks
 ;
 ;	RL02	40	2	512	10Mbyte
 ;
@@ -113,7 +115,23 @@
 	.dw	0			; RCT only used for MSCP Emulation
 	.db	40, 2
 	.dw	512
-	.db	0, (1<<DL__RL02) 	; Drive Flags, Type
+	.db	0, (1<<DT__RL02)	; Disk Type, Flags
+	.db	0, 0			; Replacement Control Table Count/Size
+	.dw	0			; Replacement Blocks
+;
+;	RX50	10	1	40
+;
+.equ DriveTabRX50 = (PC - 0x8000) * 2 + 0x8000
+	.db	"RX50"
+	.dd	0x25658032
+	.dd	800
+	.dd	800
+	.dw	0
+	.db	10, 5
+	.dw	16
+	.db	7, (1<<DT__RX)
+	.db	0, 0			; Replacement Control Table Count/Size
+	.dw	0			; Replacement Blocks
 ;
 ;	RD31	17	4	615	20Mbyte		aka ST-225
 ;
@@ -124,7 +142,9 @@
 	.dw	3			; RCT Size
 	.db	17, 4
 	.dw	615
-	.db	0, 0
+	.db	12, 0			; Disk Type, Flags
+	.db	0, 0			; Replacement Control Table Count/Size
+	.dw	0			; Replacement Blocks
 ;
 ;	RD32	17	6	820	42Mbyte		aka ST-251-01
 ;
@@ -135,7 +155,9 @@
 	.dw	4			; RCT Size
 	.db	17, 6
 	.dw	820
-	.db	0, 0
+	.db	12, 0			; Disk Type, Flags
+	.db	0, 0			; Replacement Control Table Count/Size
+	.dw	0			; Replacement Blocks
 ;
 ;	RD52	18	7	450	36Mbyte		aka Quantum 540 / Atasi
 ;
@@ -149,7 +171,9 @@
 	.dw	4			; RCT Size
 	.db	18, 8
 	.dw	512
-	.db	0, 0
+	.db	8, 0			; Disk Type, Flags
+	.db	0, 0			; Replacement Control Table Count/Size
+	.dw	0			; Replacement Blocks
 ;
 ;	RD53	17	8	1024	71Mbyte		aka Micropolis 1325
 ;
@@ -160,10 +184,13 @@
 	.dw	5			; RCT Size
 	.db	17, 8
 	.dw	1024
-	.db	0, 0
+	.db	9, 0			; Disk Type, Flags
+	.db	0, 0			; Replacement Control Table Count/Size
+	.dw	0			; Replacement Blocks
 ;
 ;	RD54	17	15	1224	159Mbyte	aka Maxtor XT2190D
 ;
+.equ DriveTabRD54 = (PC - 0x8000) * 2 + 0x8000
 	.db	"RD54"
 	.dd	0x25644036		; Media ID
 	.dd	311200
@@ -171,7 +198,9 @@
 	.dw	7			; RCT Size
 	.db	17, 15			; 
 	.dw	1
-	.db	DT__IMGSZ_bm, 0
+	.db	13, 0			; Disk Type, Flags
+	.db	0, 0			; Replacement Control Table Count/Size
+	.dw	0			; Replacement Blocks
 ;
 ;	RA70	34	11	1507	280Mbyte
 ;
@@ -182,8 +211,9 @@
 	.dw	198			; RCT Size
 	.db	34, 11
 	.dw	1507
-	.db	DT__IMGSZ_bm, 0
-
+	.db	0, 0			; Disk Type, Flags
+	.db	0, 0			; Replacement Control Table Count/Size
+	.dw	0			; Replacement Blocks
 ;
 ;	RA72	51	20	1929	1092Mbyte
 ;
@@ -194,7 +224,9 @@
 	.dw	2040			; RCT Size
 	.db	57, 19			; Sector/Track, Track/Cylinder
 	.dw	1921			; Cylinders
-	.db	DT__IMGSZ_bm, 0
+	.db	0, 0			; Disk Type, Flags
+	.db	0, 0			; Replacement Control Table Count/Size
+	.dw	0			; Replacement Blocks
 ;
 ;	RA82	57	15	1423	622Mbyte
 ;
@@ -205,7 +237,9 @@
 	.dw	3420			; RCT Size
 	.db	57, 15
 	.dw	1423
-	.db	DT__IMGSZ_bm, 0
+	.db	0, 0			; Disk Type, Flags
+	.db	0, 0			; Replacement Control Table Count/Size
+	.dw	0			; Replacement Blocks
 ;
 ;	RA81	52	14	1248	456Mbyte
 ;
@@ -216,7 +250,9 @@
 	.dw	2856			; RCT Size
 	.db	52, 14
 	.dw	1248
-	.db	DT__IMGSZ_bm, 0
+	.db	0, 0			; Disk Type, Flags
+	.db	0, 0			; Replacement Control Table Count/Size
+	.dw	0			; Replacement Blocks
 ;
 ;	RA60	42	4	2382	205Mbyte
 ;
@@ -227,7 +263,9 @@
 	.dw	1008			; RCT Size
 	.db	42, 4
 	.dw	2382
-	.db	DT__IMGSZ_bm, 0
+	.db	0, 0			; Disk Type, Flags
+	.db	0, 0			; Replacement Control Table Count/Size
+	.dw	0			; Replacement Blocks
 ;
 ;	End of table
 ;

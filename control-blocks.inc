@@ -152,9 +152,38 @@ record		Drv, RCTSize, 2
 record		Drv, Sectors, 1
 record		Drv, Tracks, 1
 record		Drv, Cylinders, 2
-record		Drv, Flags, 1
 record		Drv, Type, 1
+record		Drv, Flags, 1
+record		Drv, RCTC, 1
+record		Drv, RCTS, 1
+record		Drv, RBNS, 2
 recordend	Drv, Size
+
+
+;
+;	Drive Type bits
+;
+;	RL01/02 specific definitions, 	bits 0..3
+;
+	.equ	DT__RL02	= 0	; 
+;
+;	MSCP specific definitions, 	bits 4..7
+;
+	.equ	DT__RX		= 4	; Floppy report removable
+;	
+;	We still have the issue that the file size of disk images and partitions
+;	may or may not be exactly the size of the real disks they intend to be
+;	emulated, e.g. RD54 has 311200. blocks but sometimes they have the RCTs
+;	included or sometimes simh adds some blocks, depending on the version you
+;	use (simh 4.0 beeing very annoying). Therefore I plan to have various
+;	flags and a "manual" size field. Currently the real size of the partition
+;	or the file is reported and the drive table has an lower and an upper
+;	block count that is used to map the drive to it and report a Media 
+;	Identifier to the OS to let him display a nice drive name as well.
+;
+;	Drive Flags
+;
+
 ;--------------------------------------------------------------------------
 ;
 ;	Unit control block
@@ -211,30 +240,3 @@ record		ucb, seek, 2		;
 record		ucb, rsvd2, 2		; 
 recordend	ucb, size
 
-;
-;	Drive Type bits
-;
-;	RL01/02 specific definitions, 	bits 0..3
-;
-	.equ	DL__RL02	= 0	; 
-;
-;	MSCP specific definitions, 	bits 4..7
-;
-;	We still have the issue that the file size of disk images and partitions
-;	may or may not be exactly the size of the real disks they intend to be
-;	emulated, e.g. RD54 has 311200. blocks but sometimes they have the RCTs
-;	included or sometimes simh adds some blocks, depending on the version you
-;	use (simh 4.0 beeing very annoying). Therefore I plan to have various
-;	flags and a "manual" size field. Currently the real size of the partition
-;	or the file is reported and the drive table has an lower and an upper
-;	block count that is used to map the drive to it and report a Media 
-;	Identifier to the OS to let him display a nice drive name as well.
-;
-;	Drive Flags
-;
-	.equ	DT__IMGSZ_bp	= 0	; Report size of image, i.e. partition size or file size
-	.equ	DT__IMGSZ_bm	= 0x01	; Report size of image, i.e. partition size or file size
-	.equ	DT__DRCAP_bp	= 1	; Report Drive Capacity
-	.equ	DT__DRCAP_bm	= 0x02	; Report Drive Capacity
-	.equ	DT__MXCAP_bp	= 2	; Report Max Capacity
-	.equ	DT__MXCAP_bm	= 0x04	; Report Max Capacity

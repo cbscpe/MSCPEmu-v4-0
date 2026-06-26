@@ -23,3 +23,15 @@ The CPLDs on the DISKEmu hardware need to be programmed with the appropriate JED
 
 To build the firmware for this MSCP Emulator you need also the include and FAT
 repositories
+
+
+## Releases
+
+### v1.0.0
+
+First public release. Boots RT-11 V5.3, RT-11 V5.7, RSX-11M+ V4.6 and BSD 2.11.
+There is still an issue booting RSTS/E
+
+### v1.0.1
+
+
