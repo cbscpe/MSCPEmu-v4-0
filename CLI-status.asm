@@ -40,19 +40,28 @@ printstatus:
 #endif
 	wordstatus	"heap          ", heap
 	wordstatus	"              ", heap+2
-	
+	rcall	convertuptime
+	call	print
+	.db	"SysUpTime ......................:", 0xda, "s", CR, LF, 0
+	call	print
+	.db	"SysUpTime ......................:", 0xc0, " Days ", 0x82, ":", 0x83, ":", 0x84, CR, LF, 0
+
+	clc
+	ret
+;
+;
+;
+convertuptime:	
 	cli
 	lds	r16, sysuptime+0
 	lds	r17, sysuptime+1
 	lds	r18, sysuptime+2
 	lds	r19, sysuptime+3
 	sei
-	sts	pprint+0, r16
-	sts	pprint+1, r17
-	sts	pprint+2, r18
-	sts	pprint+3, r19
-	call	print
-	.db	"SysUpTime ......................:", 0xd0, "s", CR, LF, 0
+	sts	pprint+10, r16
+	sts	pprint+11, r17
+	sts	pprint+12, r18
+	sts	pprint+13, r19
 
 ;
 ;	Calculate DAYs
@@ -114,11 +123,6 @@ printstatus060:
 	mov	r24, r16
 	rcall	printcvtbyte
 	sts	pprint+4, r24		; Store SECONDs
-
-	call	print
-	.db	"SysUpTime ......................:", 0xc0, " Days ", 0x82, ":", 0x83, ":", 0x84, CR, LF, 0
-
-	clc
 	ret
 
 ;

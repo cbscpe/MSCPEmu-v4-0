@@ -14,8 +14,10 @@ cmd_showvers010:
 	call	serout
 	rjmp	cmd_showvers010
 cmd_showvers020:
+	call	convertuptime
 	call	print
-	.db	"CPLD Interface is: ", '0'+cpldif/10, '0'+cpldif%10, CR, LF, 0
+	.db	"CPLD Interface ...: ", '0'+cpldif/10, '0'+cpldif%10, CR, LF
+	.db	"System Uptime ....:", 0xc0, " Days ", 0x82, ":", 0x83, ":", 0x84, CR, LF, 0
 	clc
 	ret
 ;--------------------------------------------------------------------------
