@@ -161,7 +161,7 @@ recordend	Drv, Size
 
 
 ;
-;	Drive Type bits
+;	Drive Flags bits
 ;
 ;	RL01/02 specific definitions, 	bits 0..3
 ;
@@ -180,8 +180,6 @@ recordend	Drv, Size
 ;	or the file is reported and the drive table has an lower and an upper
 ;	block count that is used to map the drive to it and report a Media 
 ;	Identifier to the OS to let him display a nice drive name as well.
-;
-;	Drive Flags
 ;
 
 ;--------------------------------------------------------------------------
@@ -228,8 +226,8 @@ record		ucb, status, 1
 	.equ	ucb__de		= 4	; Drive Error
 	.equ	ucb__onl	= 6	; MSCP
 	.equ	ucb__ofl	= 7	; MSCP
-record		ucb, flags, 1		; Unit flags
-record		ucb, type, 1		; Unit specific status
+record		ucb, flags, 1		; Unit flags copied from DriveTab
+record		ucb, type, 1		; Unit type copied from DriveTab
 record		ucb, log, 1		; Logging
 	.equ	ucb__log	= 0	; Logging Active for this unit
 	.equ	ucb__pbn	= 1	; Logging Physical Blocks
