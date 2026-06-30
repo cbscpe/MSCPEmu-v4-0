@@ -3,27 +3,26 @@
 #
 #	       https://web.mit.edu/gnu/doc/html/make_2.html
 #
-main : 
-	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
-	 -I ../include  \
-	 -I ../avrasminclude \
-	 -i AVR128DB48def.inc \
-	 -d main.obj  \
-	 -e main.eep \
-	 -D mscpemulation \
-	 -D qbus51 \
-	  main.asm
+main : qbusw
+#	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
+#	 -I ../include  \
+#	 -I ../avrasminclude \
+#	 -i AVR128DB48def.inc \
+#	 -d main.obj  \
+#	 -e main.eep \
+#	 -D mscpemulation \
+#	 -D qbus51 \
+#	  main.asm
 	  
 .PHONY : install, readflash, verify, mscp, rlv
 
 #
 #	QBUS64 Hardware Version 4.0
 #
-#
 mscp :
 	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
 	 -I ../include  \
-	 -I ../avrasminclude \
+	 -I ../avrinclude \
 	 -i AVR128DB48def.inc \
 	 -d main.obj  \
 	 -e main.eep \
@@ -35,7 +34,20 @@ mscp :
 qbus :
 	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
 	 -I ../include  \
+	 -I ../avrinclude \
+	 -i AVR128DB48def.inc \
+	 -d main.obj  \
+	 -e main.eep \
+	 -D mscpemulation \
+	 -D qbus51 \
+	  main.asm
+#
+#	Q-BUS Hardware Version 5.1 using wine to run latest avrasm2 from Microchip Studio
+#
+qbusw :
+	MVK_CONFIG_LOG_LEVEL=0 wine ~/windows.exe/avrasm2.exe -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
 	 -I ../avrasminclude \
+	 -I ../include  \
 	 -i AVR128DB48def.inc \
 	 -d main.obj  \
 	 -e main.eep \
@@ -48,7 +60,7 @@ qbus :
 qbus64 :
 	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
 	 -I ../include  \
-	 -I ../avrasminclude \
+	 -I ../avrinclude \
 	 -i AVR128DB48def.inc \
 	 -d main.obj  \
 	 -e main.eep \
@@ -69,19 +81,6 @@ qbus64w :
 	 -D qbus64 \
 	  main.asm
 #
-#	Q-BUS Hardware Version 5.1 using wine to run latest avrasm2 from Microchip Studio
-#
-qbusw :
-	MVK_CONFIG_LOG_LEVEL=0 wine ~/windows.exe/avrasm2.exe -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
-	 -I ../avrasminclude \
-	 -I ../include  \
-	 -i AVR128DB48def.inc \
-	 -d main.obj  \
-	 -e main.eep \
-	 -D mscpemulation \
-	 -D qbus51 \
-	  main.asm
-#
 #	RLV12 Emulation
 #
 rlv :
@@ -92,6 +91,7 @@ rlv :
 	 -d main.obj  \
 	 -e main.eep \
 	 -D rlv12emulation \
+	 -D lasttag=$(shell git tag  | sed -n '1p') \
 	  main.asm
 
 install :
@@ -102,7 +102,6 @@ verify :
 	
 readflash :
 	avrdude -p AVR128DB48 -c atmelice_updi -U flash:r:main.hex:i
-
 
 duboot :
 	macro11 -l DUBOOT.LST -o DUBOOT.OBJ DUBOOT.MAC

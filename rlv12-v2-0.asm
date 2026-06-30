@@ -40,6 +40,9 @@
 .def	addrh	= r13
 .def	ucbl	= r14
 .def	ucbh	= r15
+
+	.db	'lasttag'
+
 ;--------------------------------------------------------------------------
 ;
 ;	Software Triggered Pin Change Interrupt 
