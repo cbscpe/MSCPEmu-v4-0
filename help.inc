@@ -9,9 +9,9 @@
 ;	"----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8"
 .db	CR, LF, CR, LF
 #ifdef cpldif
-.db	"Universal Disk Emulator V2 Vers 1.0.0   ",__DATE__ ," ", __TIME__, "  CPLD Interface active ", CR, LF
+.db	"Universal Disk Emulator V2 Vers 1.0.1   ",__DATE__ ," ", __TIME__, "  CPLD Interface active ", CR, LF
 #else
-.db	"Universal Disk Emulator V2 Vers 1.0.0   ",__DATE__ ,"  CPLD Interface disabled  ", CR, LF
+.db	"Universal Disk Emulator V2 Vers 1.0.1   ",__DATE__ ,"  CPLD Interface disabled  ", CR, LF
 #endif
 .dw	0
 

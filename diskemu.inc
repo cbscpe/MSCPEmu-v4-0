@@ -274,7 +274,7 @@
 #define	log_sago	0x0E
 #define	log_saer	0x0F
 ;
-;	0x50 - DMA Poll
+;	0x5x - DMA Address
 ;	
 ;	+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 ;	|  code |A21|A20|A19|A18|A17|A16|A15|A14|A13|A12|A11|A10| A9| A8| A7| A6| A5| A4| A3| A2| A1|DIR|
@@ -286,10 +286,8 @@
 ;	  2	Write Flag DMA Address / Read Previous Descriptor DMA Address
 ;	  3	-reserved-
 ;
-;
-;	0x5x - reserved
-;
-
+#define	log_dmapoll	0x50
+#define	log_dmaio	0x51
 ;
 ;	0x6x - reserved
 ;
@@ -331,13 +329,9 @@
 #define log_tracebo	0xe4	; octal bytes
 #define log_traced	0xe5	; decimal
 ;
-;	0xfx -reserved
+;	0xfx -Error Logging
 ;
-
-;
-;	0xff -fatal_error
-;
-
+#define	log_fatalerror	0xff
 ;
 ;	Logging Buffer Definitions
 ;

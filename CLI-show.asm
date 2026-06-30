@@ -1082,9 +1082,9 @@ cmd_showrings:
 
 	call	print
 	.db	"Response Ring ", CR, LF
-	.db	TAB, "Base Address ", 0xB0, CR, LF, SPACE
-	.db	TAB, "Flag Address ", 0xB4, CR, LF, SPACE
-	.db	TAB, "Size         ", 0xC8, CR, LF, SPACE
+	.db	TAB, "Base Address ", 0xB0, SPACE, CR, LF
+	.db	TAB, "Flag Address ", 0xB4, SPACE, CR, LF
+	.db	TAB, "Size         ", SPACE, 0xC8, CR, LF
 	.db	TAB, "Mask         0x", 0x8B, 0x8A, CR, LF
 	.db	TAB, "Index        0x", 0x8D, 0x8C, CR, LF, NULL, NULL
 	ret
