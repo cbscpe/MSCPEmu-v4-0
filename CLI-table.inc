@@ -42,23 +42,9 @@ commandlist:
 	.dw	kw_pbn,		0,		cmd_l2p
 	.dw	kw_dmareg,	0,		cmd_dmareg
 	.dw	kw_interrupt,	0,		cmd_interrupt
-	.dw	kw_unblock,	0,		cmd_unblock
 	.dw	kw_eol,		0,		cmd_done
 	.dw	0
 
-;
-;	release 'lock'
-;
-cmd_unblock:
-	.dw	kw_unbdoonl,	0,		cmd_unbdoonl
-	.dw	kw_unbdorw,	0,		cmd_unbdorw
-	.dw	0
-cmd_unbdoonl:
-	.dw	kw_eol,		cmdunbdoonl,	cmd_done
-	.dw	0
-cmd_unbdorw:
-	.dw	kw_eol,		cmdunbdorw,	cmd_done
-	.dw	0
 ;
 ;	interrupt <nnn>
 ;
@@ -267,7 +253,7 @@ cmd_set:
 cmd_logging:
 	.dw	kw_register,	0,		cmd_logregister
 	.dw	kw_interrupt,	0,		cmd_loginterrupt
-	.dw	kw_dmapoll,	0,		cmd_logdmapoll
+	.dw	kw_dma,		0,		cmd_logdma
 	.dw	kw_units,	0,		cmd_logunits
 	.dw	kw_attdev, 	a_dev,		cmd_logunit
 	.dw	kw_attunit, 	a_dev,		cmd_logunit
@@ -290,8 +276,8 @@ cmd_loginterrupt:
 	.dw	kw_eol,		logiack, 	cmd_done
 	.dw	0
 
-cmd_logdmapoll:
-	.dw	kw_eol,		logdma_poll, 	cmd_done
+cmd_logdma:
+	.dw	kw_eol,		logdmalog, 	cmd_done
 	.dw	0
 
 cmd_logunits:
@@ -552,10 +538,7 @@ kw_message:	P_KEYWORD	"MESSage"
 kw_opcodes:	P_KEYWORD	"OPCodes"
 kw_sdclbn:	P_KEYWORD	"Lbn"
 kw_sdcaddr:	P_KEYWORD	"Address"
-kw_unblock:	P_KEYWORD	"UNBlock"
-kw_unbdoonl:	P_KEYWORD	"DOONL"
-kw_unbdorw:	P_KEYWORD	"DORW"
-kw_dmapoll:	P_KEYWORD	"DMAPOLL"
+kw_dma:		P_KEYWORD	"DMA"
 
 cmd_sdread:
 	.dw	kw_sdclbn,	0,		cmd_sdread010

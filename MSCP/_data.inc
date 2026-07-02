@@ -6,9 +6,6 @@
 mscpipr:	.byte	2		; Poll Job IP Read Wait Lock
 mscpsaw:	.byte	2		; Init Job SA Write Wait Lock
 mscpinit:	.byte	2
-doonllock:	.byte	2		; Debug Lock for doonl
-dorwlock:	.byte	2		; Debug Lock for dorw
-
 ;
 ;	This is the packet buffer, at the moment we do not implement a queue
 ;	with multiple commands and just process the commands sequentially. We

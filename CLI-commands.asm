@@ -468,25 +468,6 @@ cmddmatest020:
 	ret
 ;--------------------------------------------------------------------------
 ;
-;	unblock OS locks. This is no longer used and is kept just in case
-;	we need again some unblock routines for debugging
-;	
-cmdunbdoonl:
-	ldi	r24, low(doonllock)
-	ldi	r25, high(doonllock)
-	call	unblock
-	clc
-	ret
-;
-cmdunbdorw:
-	ldi	r24, low(dorwlock)
-	ldi	r25, high(dorwlock)
-	call	unblock
-	clc
-	ret
-
-;--------------------------------------------------------------------------
-;
 ;	interrupt <nnn> - this initiates an interrupt to the PDP-11 using
 ;	the vector address <nnn>. This is to test the interrupt code in
 ;	the firmware. Note to be effective a program, like the iotest 

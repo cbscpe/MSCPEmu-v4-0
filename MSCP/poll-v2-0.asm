@@ -387,7 +387,7 @@ get_packet100:
 	sbci	r19, byte4(4)
 	
 	ori	r16, 1
-	logdmapoll	0x01, r16, r17, r18	; Packet DMA Address
+	logdma	0x01, r16, r17, r18	; Packet DMA Address
 	dmaaddr r16, r17, r18
 
 	ldi	xl, low(cmd_link)
@@ -506,7 +506,7 @@ put_packet140:
 	sbci	r18, byte3(4)
 	sbci	r19, byte4(4)
 
-	logdmapoll	0x01, r16, r17, r18	; Response Packet DMA Address
+	logdma	0x01, r16, r17, r18	; Response Packet DMA Address
 	dmaaddr r16, r17, r18
 
 	ldd	r24, Y+rsp_sts+0
@@ -596,7 +596,7 @@ get_descriptor:
 	sts	descr_addr+3, r19
 
 	ori	r16, 1			; DMA Read
-	logdmapoll	0x00, r16, r17, r18	; Read Descriptor DMA Address
+	logdma	0x00, r16, r17, r18	; Read Descriptor DMA Address
 	dmaaddr r16, r17, r18
 
 	clr	r12
@@ -650,7 +650,7 @@ put_descriptor:
 	lds	r23, descriptor+3
 	ori	r23, 0x40		; set F flag
 	andi	r23, 0x7F		; clear O flag (ownership)
-	logdmapoll	0x00, r16, r17, r18	; Write Descriptor DMA Address
+	logdma	0x00, r16, r17, r18	; Write Descriptor DMA Address
 	dmaaddr r16, r17, r18
 	dmawrt	r22, r23	
 	brcc	put_descriptor050
@@ -685,7 +685,7 @@ put_descriptor060:
 	adc	r22, zero
 	adc	r23, zero
 	ori	r20, 1			; DMA read
-	logdmapoll	0x02, r20, r21, r22	; Read Previous Descriptor DMA Address
+	logdma	0x02, r20, r21, r22	; Read Previous Descriptor DMA Address
 	dmaaddr r20, r21, r22		; set DMA address
 	dmaread	r24, r25		; read the 2nd word of the descrption
 	brcc	put_descriptor070
@@ -719,7 +719,7 @@ put_descriptor100:
 	ldd	r19, Y+ring_flag+3	; to a non-zero value before we activate the
 	ldi	r24, low(1)		; interrupt
 	ldi	r25, high(1)
-	logdmapoll	0x02, r16, r17, r18	; Write Flag DMA Address
+	logdma	0x02, r16, r17, r18	; Write Flag DMA Address
 	dmaaddr	r16, r17, r18
 	dmawrt	r24, r25
 	brcs	put_descriptor120

@@ -361,7 +361,7 @@
 ;			  0		; reserved
 ;			  1		; reserved
 ;			  2		; reserved
-.equ	log__dmapoll	= 3		; DMA Address poll job
+.equ	log__dma	= 3		; DMA Address poll job
 .equ	log__trace	= 4		; Log Debug Traces
 .equ	log__iack	= 5		; Log Interrupt Ack and bus INIT
 .equ	log__pbn	= 6		; Log physical block number
@@ -370,7 +370,7 @@
 ;#define logging (1<<log__pbn) | (0<<log__trace) | (1<<log__reg) | (1<<log__iack)
 ;#define logging (0<<log__pbn) | (0<<log__trace) | (0<<log__reg) | (1<<log__iack)
 ;#define logging (1<<log__pbn) | (1<<log__trace) | (1<<log__reg) | (1<<log__iack)
-#define logging (1<<log__pbn) | (1<<log__trace) | (0<<log__reg) | (1<<log__iack) | (1<<log__dmapoll)
+#define logging (1<<log__pbn) | (1<<log__trace) | (0<<log__reg) | (1<<log__iack) | (1<<log__dma)
 .if (log_begin & 0xFF >0)
 	.error " Invalid non-circular buffer size"
 .endif
@@ -421,8 +421,8 @@
 ;	value, typically used to display the current value of register or a   
 ; 	register pair mostly used during debugging                            
 ;
-	.macro	logdmapoll; trace-id, addrl, addrh, addrx
-	sbis	FLAGS_LOG, log__dmapoll
+	.macro	logdma; trace-id, addrl, addrh, addrx
+	sbis	FLAGS_LOG, log__dma
 	rjmp	notrace
 	push	zl			; Save Z first
 	push	zh

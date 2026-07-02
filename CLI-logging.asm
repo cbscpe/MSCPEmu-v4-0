@@ -124,6 +124,7 @@ logentry010:
 ;	then we have the logprintentry dispatcher and then another
 ;	set of printing routines
 ;	
+#ifdef mscpemulation
 ;--------------------------------------------------------------------------
 ;
 ;	0x50	Poll DMA Address
@@ -169,6 +170,7 @@ logprint5x020:
 	call	print
 	.db	0xb1, CR, LF, 0
 	ret
+#endif
 ;--------------------------------------------------------------------------
 ;
 ;	Prints log entry and then zeroize it
@@ -207,7 +209,12 @@ logprinttbl:
 	rjmp	logprintrom		; 2
 	rjmp	logprintdato		; 3
 	rjmp	logprintdati		; 4
+#ifdef mscpemulation
 	rjmp	logprint5x		; 5
+#endif
+#ifdef rlv12emulation
+	rjmp	logprintnoop		; 5
+#endif
 	rjmp	logprintnoop		; 6
 	rjmp	logprintnoop		; 7
 	rjmp	logprintcommand		; 8
@@ -497,15 +504,15 @@ logprintcyl060:
 ;
 ;
 ;
-logdma_poll:
+logdmalog:
 	lds	r18, tpflags
 	sbrc	r18, tp__no
-	rjmp	logdmapollno
-	sbi	FLAGS_LOG, log__dmapoll
+	rjmp	logdmalogno
+	sbi	FLAGS_LOG, log__dma
 	clc
 	ret
-logdmapollno:
-	cbi	FLAGS_LOG, log__dmapoll
+logdmalogno:
+	cbi	FLAGS_LOG, log__dma
 	clc
 	ret
 
@@ -653,7 +660,7 @@ logstatus:
 ;
 	call	print
 	.db	"Logging poll DMA Addresses  ....:", NULL
-	bst	r18, log__dmapoll
+	bst	r18, log__dma
 	rcall	logstatusonoff
 ;
 	call	print
