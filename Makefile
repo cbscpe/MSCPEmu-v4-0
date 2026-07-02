@@ -1,33 +1,17 @@
 #
-#       Makefile built after reading the excellent introduction at
+#       2026-07-01	Peter Schranz
+#		From now on only the following hardware is supported
 #
-#	       https://web.mit.edu/gnu/doc/html/make_2.html
+#		Q-BUS	DISK Emulator Version 5-1
+#		QBUS64	DISK Emulator Version 5-1a
+#
+#		All other versions and prototypes have either been modified to
+#		comply or have been discarded.
 #
 main : qbusw
-#	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
-#	 -I ../include  \
-#	 -I ../avrasminclude \
-#	 -i AVR128DB48def.inc \
-#	 -d main.obj  \
-#	 -e main.eep \
-#	 -D mscpemulation \
-#	 -D qbus51 \
-#	  main.asm
 	  
 .PHONY : install, readflash, verify, mscp, rlv
 
-#
-#	QBUS64 Hardware Version 4.0
-#
-mscp :
-	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
-	 -I ../include  \
-	 -I ../avrinclude \
-	 -i AVR128DB48def.inc \
-	 -d main.obj  \
-	 -e main.eep \
-	 -D mscpemulation \
-	  main.asm
 #
 #	QBUS Hardware Version 5.1
 #
@@ -40,6 +24,7 @@ qbus :
 	 -e main.eep \
 	 -D mscpemulation \
 	 -D qbus51 \
+	 -D lasttag='"'$(shell git tag  | sed -n '1p')'"' \
 	  main.asm
 #
 #	Q-BUS Hardware Version 5.1 using wine to run latest avrasm2 from Microchip Studio
@@ -53,32 +38,7 @@ qbusw :
 	 -e main.eep \
 	 -D mscpemulation \
 	 -D qbus51 \
-	  main.asm
-#
-#	QBUS64 Hardware Version 5.1
-#
-qbus64 :
-	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
-	 -I ../include  \
-	 -I ../avrinclude \
-	 -i AVR128DB48def.inc \
-	 -d main.obj  \
-	 -e main.eep \
-	 -D mscpemulation \
-	 -D qbus64 \
-	  main.asm
-#
-#	QBUS64 Hardware Version 5.1 using wine to run latest avrasm2 from Microchip Studio
-#
-qbus64w :
-	MVK_CONFIG_LOG_LEVEL=0 wine ~/windows.exe/avrasm2.exe -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
-	 -I ../avrasminclude \
-	 -I ../include  \
-	 -i AVR128DB48def.inc \
-	 -d main.obj  \
-	 -e main.eep \
-	 -D mscpemulation \
-	 -D qbus64 \
+	 -D lasttag='"'$(shell git tag  | sed -n '1p')'"' \
 	  main.asm
 #
 #	RLV12 Emulation
@@ -91,7 +51,7 @@ rlv :
 	 -d main.obj  \
 	 -e main.eep \
 	 -D rlv12emulation \
-	 -D lasttag=$(shell git tag  | sed -n '1p') \
+	 -D lasttag='"'$(shell git tag  | sed -n '1p')'"' \
 	  main.asm
 
 install :
