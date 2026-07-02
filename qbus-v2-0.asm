@@ -603,9 +603,9 @@ qbus_rom010:
 qbus_rom020:
 	sbrs	zl, 0
 	breq	qbus_rom030
-	INTEXIT	log_dato|log_rom
+	INTEXIT	log_romrd
 qbus_rom030:
-	INTEXIT	log_dati|log_rom
+	INTEXIT	log_romwr
 	
 #endif
 
@@ -807,7 +807,7 @@ qbus_rom:
 	lds	zh, log_pointer+1	; 3
 	std	Z+2, yl			; 1
 	std	Z+3, yh			; 1
-	ldi	yl, log_dati|log_rom	; 1
+	ldi	yl, log_romrd		; 1
 	std	Z+0, yl			; 1
 	adiw	zh:zl, 4		; 2
 	sbrc	zh, log_overflow
@@ -835,7 +835,7 @@ qbus_romo:
 	std	Z+3, yh			; 
 	in	yl, dataportin		; Next Register is ROM address
 	std	Z+1, yl
-	ldi	yl, log_dato|log_rom
+	ldi	yl, log_romwr
 	std	Z+0, yl
 	cbi	b_RD
 	ldi	yl, 0xFF

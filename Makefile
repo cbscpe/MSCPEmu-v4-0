@@ -54,6 +54,20 @@ rlv :
 	 -D lasttag='"'$(shell git tag  | sed -n '1p')'"' \
 	  main.asm
 
+#
+#	RLV12 Emulation using wine to run latest avrasm2 from Microchip Studio
+#
+rlvw :
+	MVK_CONFIG_LOG_LEVEL=0 wine ~/windows.exe/avrasm2.exe -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
+	 -I ../include  \
+	 -I ../avrasminclude \
+	 -i AVR128DB48def.inc \
+	 -d main.obj  \
+	 -e main.eep \
+	 -D rlv12emulation \
+	 -D lasttag='"'$(shell git tag  | sed -n '1p')'"' \
+	  main.asm
+
 install :
 	avrdude -p AVR128DB48 -c atmelice_updi -U flash:w:main.hex
 	

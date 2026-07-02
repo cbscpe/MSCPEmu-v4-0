@@ -303,6 +303,17 @@
 ;
 #define	log_command	0x80
 ;
+;	Function Codes
+;
+#define command_maint   0x00
+#define command_wrtchk  0x01
+#define command_getstat 0x02
+#define command_seek    0x03
+#define command_readhdr 0x04
+#define command_write   0x05
+#define command_read    0x06
+#define command_readnc  0x07
+;
 ;	0xax -reserved
 ;
 

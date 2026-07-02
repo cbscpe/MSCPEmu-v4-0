@@ -41,8 +41,6 @@
 .def	ucbl	= r14
 .def	ucbh	= r15
 
-	.db	'lasttag'
-
 ;--------------------------------------------------------------------------
 ;
 ;	Software Triggered Pin Change Interrupt 
@@ -773,45 +771,45 @@ rlv12_readdata:				; Read for SD-Cards
 	cbr	r16, (1<<P__Nocheck)
 	std	Y+P_Flag, r16		; Check CRC
 rlv12_readdata010:
-	sbis	FLAGS_LOG, log__turbo	; 
-	rjmp	rlv12_readdata060
+;	sbis	FLAGS_LOG, log__turbo	; 
+;	rjmp	rlv12_readdata060
 ;
 ;	Check if the sectors we need to read are contiguous. In this case
 ;	we can use Read Multiple Block which is way faster then reading
 ;	several single blocks
 ;
-	ldd	r16, Y+P_Flag
-	sbrs	r16, P__Contig		; Do we have a contiguous area to read?
-	rjmp	rlv12_readdata020	; no so read individual blocks
-	LEDON
-	logtr	0x8C, wdcl, wdch
-	movw	r25:r24, yh:yl		; IO Parameter Block
-	call	SD_CARD_MULTIPLE	; Read in one go with SD-Card read and
-	rjmp	rlv12_readdone		; DMA write interleaved and then finish
+;	ldd	r16, Y+P_Flag
+;	sbrs	r16, P__Contig		; Do we have a contiguous area to read?
+;	rjmp	rlv12_readdata020	; no so read individual blocks
+;	LEDON
+;	logtr	0x8C, wdcl, wdch
+;	movw	r25:r24, yh:yl		; IO Parameter Block
+;	call	SD_CARD_MULTIPLE	; Read in one go with SD-Card read and
+;	rjmp	rlv12_readdone		; DMA write interleaved and then finish
 ;
 ;	When we do not have a contiguous area we need to translate each 
 ;	logical block number to the physical block number individually
 ;
-rlv12_readdata020:
-	logtr	0x88, wdcl, wdch
-rlv12_readdata030:
-	LEDON
-	movw	r25:r24, yh:yl		; IO Parameter Block
-	call	SD_CARD_TURBO
-	ldd	r16, Y+P_Flag		; Skipping the first 256 bytes is only
-	cbr	r16, (1<<P__Skip)	; required for the first block in a
-	std	Y+P_Flag, r16		; read command
-	ldd	wdcl, Y+P_Wordcount+0	; Retrieve updated word count
-	ldd	wdch, Y+P_Wordcount+1
-	cp	wdcl, zero
-	cpc	wdch, zero		; Any Words to tranfer left
-	brne	rlv12_readdata040	; Yes more to go
-	logtr	0x8B, wdcl, wdch
-	rjmp	rlv12_readdone		; Done
-rlv12_readdata040:
-	rcall	rlv12_rwnextsector	; next sector might not be adjacent
-	logtr	0x89, wdcl, wdch
-	rjmp	rlv12_readdata030	; Check for Turbo
+;rlv12_readdata020:
+;	logtr	0x88, wdcl, wdch
+;rlv12_readdata030:
+;	LEDON
+;	movw	r25:r24, yh:yl		; IO Parameter Block
+;	call	SD_CARD_TURBO
+;	ldd	r16, Y+P_Flag		; Skipping the first 256 bytes is only
+;	cbr	r16, (1<<P__Skip)	; required for the first block in a
+;	std	Y+P_Flag, r16		; read command
+;	ldd	wdcl, Y+P_Wordcount+0	; Retrieve updated word count
+;	ldd	wdch, Y+P_Wordcount+1
+;	cp	wdcl, zero
+;	cpc	wdch, zero		; Any Words to tranfer left
+;	brne	rlv12_readdata040	; Yes more to go
+;	logtr	0x8B, wdcl, wdch
+;	rjmp	rlv12_readdone		; Done
+;rlv12_readdata040:
+;	rcall	rlv12_rwnextsector	; next sector might not be adjacent
+;	logtr	0x89, wdcl, wdch
+;	rjmp	rlv12_readdata030	; Check for Turbo
 ;
 ;	Read does not satisfy the conditions for direct transfer
 ;
