@@ -46,7 +46,7 @@ qbusw :
 rlv :
 	avrasm2 -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
 	 -I ../include  \
-	 -I ../avrasminclude \
+	 -I ../avrinclude \
 	 -i AVR128DB48def.inc \
 	 -d main.obj  \
 	 -e main.eep \
@@ -59,8 +59,8 @@ rlv :
 #
 rlvw :
 	MVK_CONFIG_LOG_LEVEL=0 wine ~/windows.exe/avrasm2.exe -fI -o main.hex  -m main.map  -l main.lss  -S main.tmp  -W+ie \
-	 -I ../include  \
 	 -I ../avrasminclude \
+	 -I ../include  \
 	 -i AVR128DB48def.inc \
 	 -d main.obj  \
 	 -e main.eep \
