@@ -667,18 +667,6 @@ cmdmemtesterror:
 	.db	0x83, 0x82, CR, LF, 0, 0
 	ret
 
-#ifdef mscpemulation
-;--------------------------------------------------------------------------
-;
-;	poll - manually fake a IP read, only to be used during debugging
-;	
-cmdpoll:
-	ldi	r24, low(mscpipr)
-	ldi	r25, high(mscpipr)
-	call	unblock
-	clc
-	ret
-#endif
 ;--------------------------------------------------------------------------
 ;
 ;	controller [ready|busy] - clears or sets the CRDY bit which 
