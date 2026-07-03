@@ -51,6 +51,7 @@ rlv :
 	 -d main.obj  \
 	 -e main.eep \
 	 -D rlv12emulation \
+	 -D qbus51 \
 	 -D lasttag='"'$(shell git tag  | sed -n '1p')'"' \
 	  main.asm
 
@@ -65,6 +66,7 @@ rlvw :
 	 -d main.obj  \
 	 -e main.eep \
 	 -D rlv12emulation \
+	 -D qbus51 \
 	 -D lasttag='"'$(shell git tag  | sed -n '1p')'"' \
 	  main.asm
 
