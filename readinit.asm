@@ -4,7 +4,7 @@
 ;
 ;	A quick and dirty hack to implement the read and execute the
 ;	startup configuration file RLV12.INI, of course for a MSCP
-;	emulation it should be the MSCP.INI. This is work in progress
+;	emulation it will be MSCP.INI. This is work in progress
 ;
 readinit:;(uint_t8 action)
 	push	r4
@@ -15,10 +15,10 @@ readinit:;(uint_t8 action)
 	push	xh
 	push	yl
 	push	yh
-	mov	r6, r24			; Get 
+	mov	r6, r24			; Save Parameter 
 	ldi	r24, low(256)
 	ldi	r25, high(256)
-	call	malloc
+	call	malloc			; Fetch a command line buffer
 	sbiw	r25:r24, 0
 	brne	readinit005
 	call	mprint
@@ -131,6 +131,9 @@ readinit040:
 	st	X, r24
 	rcall	readshow
 	movw	xh:xl, r5:r4
+	ld	r24, X
+	cpi	r24, ';'		; Skip comments
+	breq	readinit020
 	ldi	zl, low(2*commandlist)	; Parser table
 	ldi	zh, high(2*commandlist)
 	sts	tpflags, zero

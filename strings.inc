@@ -1,6 +1,10 @@
 .equ ReadInitName = (PC - 0x8000) * 2 + 0x8000
+#ifdef rlv12emulation
 	.db	"RLV12.INI", NULL
-	
+#endif
+#ifdef mscpemulation
+	.db	"MSCP.INI", NULL, NULL
+#endif	
 .equ ReadInitSection = (PC - 0x8000) * 2 + 0x8000
 	.db	"[RLV12.INI]", NULL
 

@@ -3,7 +3,12 @@ commandlist:
 ;
 ;		Element		Action		Next
 ;
+#ifdef rlv12emulation
 	.dw	kw_rlv12init,	0,		cmd_rlv12init
+#endif
+#ifdef mscpemulation
+	.dw	kw_mscpinit,	0,		cmd_mscpinit
+#endif
 	.dw	kw_insert,	0,		cmd_insert		; Selection of possible keywords
 	.dw	kw_cd,		0,		cmd_cd
 	.dw	kw_hallo,	0,		cmd_halloworld
@@ -75,9 +80,16 @@ cmd_dmareg1:
 ;
 ;	Match INI Keyword
 ;
+#ifdef rlv12emulation
 cmd_rlv12init:
 	.dw	kw_eol,		0,		cmd_done
 	.dw	0
+#endif
+#ifdef mscpemulation
+cmd_mscpinit:
+	.dw	kw_eol,		0,		cmd_done
+	.dw	0
+#endif
 
 cmd_sdinit:
 	.dw	kw_eol,		cmdsdinit,	cmd_done
