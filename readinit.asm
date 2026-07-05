@@ -161,7 +161,12 @@ readinit099:
 	sts	pprint+0, r24
 	call	print
 	.db	CR, LF
+#ifdef rlv12emulation
 	.db	"Init - Error 0x", 0x80, " reading RLV12.INI"
+#endif
+#ifdef mscpemulation
+	.db	"Init - Error 0x", 0x80, " reading MSCP.INI "
+#endif
 	.db	CR, LF, 0, 0
 	movw	r25:r24, yh:yl
 	call	ReadFileClose

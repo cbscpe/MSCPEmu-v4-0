@@ -753,9 +753,13 @@ main:
 	call	print
 	.db	CR, LF, "Entering RTOS on Universal Disk Emulator ", CR, LF, 0
 #ifdef mscpemulation
+	call	print
+	.db	"Running MSCP Emulation Firmware", CR, LF, 0
 	call	mscp_reset
 #endif
 #ifdef rlv12emulation
+	call	print
+	.db	"Running RLV12 Emulation Firmware ", CR, LF, 0
 	call	rlv12_reset
 #endif
 ;

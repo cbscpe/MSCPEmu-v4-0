@@ -5,8 +5,6 @@
 #ifdef mscpemulation
 	.db	"MSCP.INI", NULL, NULL
 #endif	
-.equ ReadInitSection = (PC - 0x8000) * 2 + 0x8000
-	.db	"[RLV12.INI]", NULL
 
 .equ CommandName = (PC - 0x8000) * 2 + 0x8000
 	.db	"Maint  ", 0

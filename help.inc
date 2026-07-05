@@ -8,14 +8,22 @@
 .equ hello = (PC - 0x8000) * 2 + 0x8000
 ;	"----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8"
 .db	CR, LF, CR, LF
-#ifdef cpldif
-.db	"Universal Disk Emulator V2 Vers 1.0.1   ",__DATE__ ," ", __TIME__, CR, LF
-.db	"CPLD Interface active ", CR, LF
-#else
-.db	"Universal Disk Emulator V2 Vers 1.0.1   ",__DATE__ ,"  CPLD Interface disabled  ", CR, LF
+.db	"Universal Disk Emulator V5-1 ", __DATE__ ," ", __TIME__ , " ", CR, LF
+#ifdef mscpemulation
+	.db	"Running MSCP Emulation Firmware ", lasttag, CR, LF
 #endif
-	.db	lasttag, CR, LF
+#ifdef rlv12emulation
+	.db	"Running RLV12 Emulation Firmware ", lasttag, " ",  CR, LF
+#endif
+#ifdef cpldif
+.db	"CPLD Interface ", cpldif/10+'0', cpldif%10+'0', " active", CR, LF
+#else
+.db	"  CPLD Interface disabled  ", CR, LF
+#endif
 .dw	0
+
+
+
 
 .equ help = (PC - 0x8000) * 2 + 0x8000
 .db	CR, LF, CR, LF

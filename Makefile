@@ -24,7 +24,7 @@ qbus :
 	 -e main.eep \
 	 -D mscpemulation \
 	 -D qbus51 \
-	 -D lasttag='"'$(shell git tag  | sed -n '1p')'"' \
+	 -D lasttag='"'$(shell git describe --tags --abbrev=0 )'"' \
 	  main.asm
 #
 #	Q-BUS Hardware Version 5.1 using wine to run latest avrasm2 from Microchip Studio
@@ -38,7 +38,7 @@ qbusw :
 	 -e main.eep \
 	 -D mscpemulation \
 	 -D qbus51 \
-	 -D lasttag='"'$(shell git tag  | sed -n '1p')'"' \
+	 -D lasttag='"'$(shell git describe --tags --abbrev=0 )'"' \
 	  main.asm
 #
 #	RLV12 Emulation
@@ -52,7 +52,7 @@ rlv :
 	 -e main.eep \
 	 -D rlv12emulation \
 	 -D qbus51 \
-	 -D lasttag='"'$(shell git tag  | sed -n '1p')'"' \
+	 -D lasttag='"'$(shell git describe --tags --abbrev=0 )'"' \
 	  main.asm
 
 #
@@ -67,7 +67,7 @@ rlvw :
 	 -e main.eep \
 	 -D rlv12emulation \
 	 -D qbus51 \
-	 -D lasttag='"'$(shell git tag  | sed -n '1p')'"' \
+	 -D lasttag='"'$(shell git describe --tags --abbrev=0 )'"' \
 	  main.asm
 
 install :

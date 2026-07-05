@@ -53,10 +53,18 @@ msgnl	msgtypeerr, "Type - open error:%x"
 msgnl	msgcdfnf, "CD - directory not found"
 msgnl	msgcdnad, "CD - not a directory"
 msgnl	msgreadinitall, "Init - Failed to allocated Buffer"
+#ifdef rlv12emulation
 msgnl	msgreadinitinv, "Init - RLV12.INI not a valid file"
 msgnl	msgreadinitfnf, "Init - RLV12.INI not found"
 msgnl	msgreadinitope, "Init - Error %x opening file RLV12.INI "
 msgnl	msgreadinitopn, "Init - RLV12.INI successfully opened"
+#endif
+#ifdef mscpemulation
+msgnl	msgreadinitinv, "Init - MSCP.INI not a valid file"
+msgnl	msgreadinitfnf, "Init - MSCP.INI not found"
+msgnl	msgreadinitope, "Init - Error %x opening file MSCP.INI "
+msgnl	msgreadinitopn, "Init - MSCP.INI successfully opened"
+#endif
 msgnl	msgreadinitovr, "Init - Fatal buffer overflow!"
 msgnl	msgdismountopn, "Dismount - Volume %c still has open files"
 msg	msgdriveunk, "  Drive Type not defined."
