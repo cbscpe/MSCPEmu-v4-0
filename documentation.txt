@@ -616,14 +616,6 @@ then I created the repository on github
 ```
 peter@MacBook-Air-von-Peter MSCPEmu-v4-0 % gh repo create
 ? What would you like to do?  [Use arrows to move, type to filter]
-> Create a new repository on github.com from scratch
-  Create a new repository on github.com from a template repository
-  Push an existing local repository to github.com
-? What would you like to do?  [Use arrows to move, type to filter]
-  Create a new repository on github.com from scratch
-> Create a new repository on github.com from a template repository
-  Push an existing local repository to github.com
-? What would you like to do?  [Use arrows to move, type to filter]
   Create a new repository on github.com from scratch
   Create a new repository on github.com from a template repository
 > Push an existing local repository to github.com
@@ -672,7 +664,7 @@ And then of course you have to push it
 
 	git push origin --tags
 
-At least I added a readme.md for github
+At last I added a readme.md for github
 	git add readme.md
 	git commit -m "Add README.MD"
 	git push origin
