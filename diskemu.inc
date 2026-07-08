@@ -84,21 +84,7 @@
 ;
 ;	Q-Bridge CPLD Version
 ;
-#ifdef qbus51
-.include	"portdefsqbus51.inc"	; CPLD Interface 4.0 QBUS PCB Version 5.0
-#else
-#ifdef qbus50
-.include	"portdefs40qbus.inc"	; CPLD Interface 4.0 QBUS PCB Version 5.0
-#else
-#ifdef qbus64
-.include	"portdefsqbus64.inc"	; CPLD Interface 4.0 PDP-11/Hack Version 5.1
-#else
-.include	"portdefs40.inc"	; CPLD Interface 4.0 PDP-11/Hack Version 4.0
-#endif
-#endif
-#endif
-;.include	"portdefs22b.inc"	; CPLD Interface 2.2 RLV12 Emu 2.0 Adapter B
-;.include	"portdefs22c.inc"	; CPLD Interface 2.2 RLV12 Emu 2.0 Adapter C
+.include	"portdefsqbus51.inc"	; CPLD Interface 4.0 DISK Emulator 5.1
 ;
 ;--------------------------------------------------------------------------
 ;	
@@ -277,17 +263,16 @@
 ;	0x5x - DMA Address
 ;	
 ;	+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-;	|  code |A21|A20|A19|A18|A17|A16|A15|A14|A13|A12|A11|A10| A9| A8| A7| A6| A5| A4| A3| A2| A1|DIR|
+;	|   ID  |A21|A20|A19|A18|A17|A16|A15|A14|A13|A12|A11|A10| A9| A8| A7| A6| A5| A4| A3| A2| A1|DIR|
 ;	+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 ;
-;	code	description
-;	  0	descriptor DMA address
-;	  1	packet DMA address
-;	  2	Write Flag DMA Address / Read Previous Descriptor DMA Address
-;	  3	-reserved-
+;	ID	description
+;	 0	descriptor DMA address
+;	 1	packet DMA address
+;	 2	Write Flag DMA Address / Read Previous Descriptor DMA Address
+;	 3	Data Transfer DMA Address
 ;
 #define	log_dmapoll	0x50
-#define	log_dmaio	0x51
 ;
 ;	0x6x - reserved
 ;
@@ -375,13 +360,13 @@
 .equ	log__dma	= 3		; DMA Address poll job
 .equ	log__trace	= 4		; Log Debug Traces
 .equ	log__iack	= 5		; Log Interrupt Ack and bus INIT
-.equ	log__pbn	= 6		; Log physical block number
+.equ	log__blocknbr	= 6		; Log Block Number
 .equ	log__reg	= 7		; Log Device Register IO
 ;
-;#define logging (1<<log__pbn) | (0<<log__trace) | (1<<log__reg) | (1<<log__iack)
-;#define logging (0<<log__pbn) | (0<<log__trace) | (0<<log__reg) | (1<<log__iack)
-;#define logging (1<<log__pbn) | (1<<log__trace) | (1<<log__reg) | (1<<log__iack)
-#define logging (1<<log__pbn) | (1<<log__trace) | (0<<log__reg) | (1<<log__iack) | (1<<log__dma)
+;#define logging (1<<log__blocknbr) | (0<<log__trace) | (1<<log__reg) | (1<<log__iack)
+;#define logging (0<<log__blocknbr) | (0<<log__trace) | (0<<log__reg) | (1<<log__iack)
+;#define logging (1<<log__blocknbr) | (1<<log__trace) | (1<<log__reg) | (1<<log__iack)
+#define logging (1<<log__blocknbr) | (1<<log__trace) | (0<<log__reg) | (1<<log__iack) | (1<<log__dma)
 .if (log_begin & 0xFF >0)
 	.error " Invalid non-circular buffer size"
 .endif
@@ -493,7 +478,7 @@ notrace:
 	.endmacro
 
 	.macro	logpbn; 4 registers with byte1, byte2, byte3 and byte4 of PBN
-	sbis    FLAGS_LOG, log__pbn
+	sbis    FLAGS_LOG, log__blocknbr
 	rjmp	notrace
 	push	zl
 	push	zh
@@ -520,7 +505,7 @@ notrace:
 	.endmacro
 	
 	.macro	loglbn; 4 registers with byte1, byte2, byte3 and byte4 of LBN
-	sbis    FLAGS_LOG, log__pbn
+	sbis    FLAGS_LOG, log__blocknbr
 	rjmp	notrace
 	push	zl
 	push	zh

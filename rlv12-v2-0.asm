@@ -970,8 +970,7 @@ rlv12_rwnextsector:
 	std	Y+P_Sector+1, r17
 	std	Y+P_Sector+2, r18
 	std	Y+P_Sector+3, r19
-	sbis	FLAGS_LOG, log__pbn	; PBN Logging requested
-	ret				; Nope just return
+	logpbn	r16, r17, r18, r19
 	ret
 
 rlv12_rwnextsector010:
@@ -994,6 +993,7 @@ rlv12_rwnextsector010:
 	ldd	r17, Y+P_Sector+1
 	ldd	r18, Y+P_Sector+2
 	ldd	r19, Y+P_Sector+3
+	logpbn	r16, r17, r18, r19
 	ret				; attached to the FCB
 ;----------------------------------------------------------------------------
 ;
@@ -1054,6 +1054,7 @@ rlv12_rwsetup:
 	lds	r17, BARH
 	lds	r18, BAEL
 	dmaaddr	r16, r17, r18
+	logdma	0x03, r16, r17, r18
 ;
 	ldd	r18, Y+ucb_status
 	cbr	r18, (1<<ucb__seek)
@@ -1082,6 +1083,8 @@ rlv12_rwsetup:
 	adc	r17, zero
 	clr	r18
 	clr	r19			; r16..19 32-bit sector of partition
+	loglbn	r16, r17, r18, r19
+
 ;
 ;	Translate logical block number to physical block number on SD-Card
 ;

@@ -35,14 +35,13 @@
 ;
 ;	Lollipop shaped logging buffer
 ;
-;	The buffer is split in one half reserved for initial logging
-;	and the second half is used for circular buffer
+;	The buffer is split in one part reserved for initial logging
+;	and the second part is used for circular buffer
 ;
-
 logprint:
 	ldi	r24, low(log_begin/4)	; Number of initial/permanent entries
 	ldi	r25, high(log_begin/4)
-	sbiw	r25:r24, 0
+	sbiw	r25:r24, 0		; No permanent entries configured
 	breq	logprint100
 	ldi	yl, low(log_buffer)	; They always start here
 	ldi	yh, high(log_buffer)
@@ -124,14 +123,13 @@ logentry010:
 ;	then we have the logprintentry dispatcher and then another
 ;	set of printing routines
 ;	
-#ifdef mscpemulation
 ;--------------------------------------------------------------------------
 ;
 ;	0x50	Poll DMA Address
 ;
-logprint5x:
+logprintdma:
 	cpi	r16, 0x50		; for the moment just a hack
-	breq	logprint5x010
+	breq	logprintdma010
 	ret				; nothing to print
 ;
 ;	the log entry is a 32-bit value with the following fields
@@ -141,7 +139,7 @@ logprint5x:
 ;
 ;	First we collect the direction and ID to form an index
 ;
-logprint5x010:
+logprintdma010:
 	clr	zl			; prepare index to text
 	clr	zh
 	bst	r17, 0			; Save direction bit
@@ -158,19 +156,18 @@ logprint5x010:
 	andi	r19, 0x3f		; Remove ID bit from address
 	sts	pprint+3, r19		; write it back
 
-	subi	zl, low(-poll_dma_text)
-	sbci	zh, high(-poll_dma_text)
+	subi	zl, low(-dma_text)
+	sbci	zh, high(-dma_text)
 	
 	ldi	r16, 32
-logprint5x020:
+logprintdma020:
 	ld	r24, Z+
 	call	serout
 	dec	r16
-	brne	logprint5x020
+	brne	logprintdma020
 	call	print
 	.db	0xb1, CR, LF, 0
 	ret
-#endif
 ;--------------------------------------------------------------------------
 ;
 ;	Prints log entry and then zeroize it
@@ -209,12 +206,7 @@ logprinttbl:
 	rjmp	logprintrom		; 2
 	rjmp	logprintdato		; 3
 	rjmp	logprintdati		; 4
-#ifdef mscpemulation
-	rjmp	logprint5x		; 5
-#endif
-#ifdef rlv12emulation
-	rjmp	logprintnoop		; 5
-#endif
+	rjmp	logprintdma		; 5
 	rjmp	logprintnoop		; 6
 	rjmp	logprintnoop		; 7
 	rjmp	logprintcommand		; 8
@@ -623,11 +615,11 @@ logblocknbrs:
 	lds	r18, tpflags
 	sbrc	r18, tp__no
 	rjmp	logpbnno
-	sbi	FLAGS_LOG, log__pbn
+	sbi	FLAGS_LOG, log__blocknbr
 	clc
 	ret
 logpbnno:
-	cbi	FLAGS_LOG, log__pbn
+	cbi	FLAGS_LOG, log__blocknbr
 	clc
 	ret
 
@@ -650,7 +642,7 @@ logstatus:
 ;
 	call	print
 	.db	"Logging LBN/PBN ................:", NULL
-	bst	r18, log__pbn
+	bst	r18, log__blocknbr
 	rcall	logstatusonoff
 ;
 	call	print
@@ -659,7 +651,7 @@ logstatus:
 	rcall	logstatusonoff
 ;
 	call	print
-	.db	"Logging poll DMA Addresses  ....:", NULL
+	.db	"Logging DMA Addresses  .........:", NULL
 	bst	r18, log__dma
 	rcall	logstatusonoff
 ;

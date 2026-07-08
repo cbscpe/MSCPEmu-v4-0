@@ -33,6 +33,17 @@
 	.db	"Read   ", 0
 	.db	"ReadNC ", 0
 
+.equ dma_text = (PC - 0x8000) * 2 + 0x8000
+		;----+----1----+----2----+----3--
+	.db	"Poll DMA Put Descriptor ......: "
+	.db	"Poll DMA Get Descriptor ......: "
+	.db	"Poll DMA Put Packet ..........: "
+	.db	"Poll DMA Get Packet ..........: "
+	.db	"Poll DMA Write Flag ..........: "
+	.db	"Poll DMA Read Prev. Descr. ...: "
+	.db	"Data DMA Write Address........: "
+	.db	"Data DMA Read Address.........: "
+
 #ifdef rlv12emulation
 .equ REGName = (PC - 0x8000) * 2 + 0x8000
 	.db	"CSR", 0
@@ -129,15 +140,5 @@
 	.db	" 56 "," 57 "," 58 "," 59 "	;/* 56-59 */
 	.db	" 60 "," 61 "," 62 "," 63 "	;/* 60-63 */
 
-.equ poll_dma_text = (PC - 0x8000) * 2 + 0x8000
-		;----+----1----+----2----+----3--
-	.db	"Poll DMA Put Descriptor ......: "
-	.db	"Poll DMA Get Descriptor ......: "
-	.db	"Poll DMA Put Packet ..........: "
-	.db	"Poll DMA Get Packet ..........: "
-	.db	"Poll DMA Write Flag ..........: "
-	.db	"Poll DMA Read Prev. Descr. ...: "
-	.db	"Poll DMA undefined ...........: "
-	.db	"Poll DMA undefined ...........: "
 #endif
 
