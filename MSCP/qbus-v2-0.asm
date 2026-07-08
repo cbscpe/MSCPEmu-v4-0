@@ -494,7 +494,7 @@ qbus_dato_sa_s3:
 qbus_dati_sa_s4:
 
 	lds	yl, sa_s1+0		;
-	ldi	yl, low(040327)		; 040327
+	ldi	yl, low(step4)		; 040327
 	ldi	yh, high(step4)
 	DATI
 	INTEXIT	log_dati|log_sas4

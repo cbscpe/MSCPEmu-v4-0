@@ -255,12 +255,13 @@
 /*
  *	Initialisation
 #define	step1		005500
+#define	step4		040463
  *
  */
 #define	step1		005000
 #define	step2		010000
 #define	step3		020000
-#define	step4		040463
+#define	step4		040327
 
 #define	s1wr		040000
 #define	s1wr_bp		6
