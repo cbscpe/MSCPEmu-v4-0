@@ -266,6 +266,7 @@ cmd_logging:
 	.dw	kw_register,	0,		cmd_logregister
 	.dw	kw_interrupt,	0,		cmd_loginterrupt
 	.dw	kw_dma,		0,		cmd_logdma
+	.dw	kw_softint,	0,		cmd_logsoftint
 	.dw	kw_units,	0,		cmd_logunits
 	.dw	kw_attdev, 	a_dev,		cmd_logunit
 	.dw	kw_attunit, 	a_dev,		cmd_logunit
@@ -290,6 +291,10 @@ cmd_loginterrupt:
 
 cmd_logdma:
 	.dw	kw_eol,		logdmalog, 	cmd_done
+	.dw	0
+
+cmd_logsoftint:
+	.dw	kw_eol,		logsoftlog,	cmd_done
 	.dw	0
 
 cmd_logunits:
@@ -551,6 +556,7 @@ kw_opcodes:	P_KEYWORD	"OPCodes"
 kw_sdclbn:	P_KEYWORD	"Lbn"
 kw_sdcaddr:	P_KEYWORD	"Address"
 kw_dma:		P_KEYWORD	"DMA"
+kw_softint:	P_KEYWORD	"SOFTware"
 
 cmd_sdread:
 	.dw	kw_sdclbn,	0,		cmd_sdread010

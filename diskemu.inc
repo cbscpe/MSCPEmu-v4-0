@@ -216,6 +216,9 @@
 ;
 #define	log_iack	0x10
 #define	log_init	0x11
+#define log_b_go	0x12
+#define log_b_ip	0x13
+#define log_b_sa	0x14
 ;
 ;	0x2x - ROM
 ;
@@ -356,7 +359,7 @@
 ;
 ;			  0		; reserved
 ;			  1		; reserved
-;			  2		; reserved
+.equ	log__softint	= 2		; Software Interrupts
 .equ	log__dma	= 3		; DMA Address poll job
 .equ	log__trace	= 4		; Log Debug Traces
 .equ	log__iack	= 5		; Log Interrupt Ack and bus INIT

@@ -247,10 +247,29 @@ logprintromwr:
 	ret
 
 logprintint:
-	cpi	r16, log_iack
-	breq	logprintiack
-	cpi	r16, log_init
-	breq	logprintinit
+	mov	zl, r16
+	andi	zl, 0x0F
+	clr	zh
+	subi	zl, low(-logprintinttbl)
+	sbci	zh, high(-logprintinttbl)
+	ijmp
+	
+logprintinttbl:
+	rjmp	logprintiack
+	rjmp	logprintinit
+	rjmp	logprintsoftgo
+	rjmp	logprintsoftip
+	rjmp	logprintsoftsa
+	ret
+	ret
+	ret
+	ret
+	ret
+	ret
+	ret
+	ret
+	ret
+	ret
 	ret
 
 logprintiack:
@@ -263,6 +282,27 @@ logprintinit:
 		;----+----1----+----2----+----3
 	.db	"INIT    (", 0x81, ") Input 0x", 0x82, ", INTFLAGS 0x", 0x83, CR, LF, 0
 	ret
+
+logprintsoftgo:
+	call	print
+		;----+----1----+----2----+----3
+	.db	"GO      (", 0x81, ") CSR     ", 0xa2, CR, LF, 0
+	ret
+
+logprintsoftip:
+	call	print
+		;----+----1----+----2----+----3
+	.db	"IP      (", 0x81, ") MSCP    ", 0x82, ", Port B 0x", 0x83, CR, LF, 0
+	ret
+
+logprintsoftsa:
+	call	print
+		;----+----1----+----2----+----3
+	.db	"SA      (", 0x81, ") MSCP    ", 0x82, ", Port B 0x", 0x83, CR, LF, 0
+	ret
+
+
+
 logprintdato:
 	lds	r16, pprint+0
 ;	sbrc	r16, 0		; log_rom
@@ -496,6 +536,18 @@ logprintcyl060:
 ;
 ;
 ;
+logsoftlog:
+	lds	r18, tpflags
+	sbrc	r18, tp__no
+	rjmp	logsoftlogno
+	sbi	FLAGS_LOG, log__softint
+	clc
+	ret
+logsoftlogno:
+	cbi	FLAGS_LOG, log__softint
+	clc
+	ret
+
 logdmalog:
 	lds	r18, tpflags
 	sbrc	r18, tp__no
@@ -653,6 +705,11 @@ logstatus:
 	call	print
 	.db	"Logging DMA Addresses  .........:", NULL
 	bst	r18, log__dma
+	rcall	logstatusonoff
+;
+	call	print
+	.db	"Logging Software Interrupts ....:", NULL
+	bst	r18, log__softint
 	rcall	logstatusonoff
 ;
 	call	print

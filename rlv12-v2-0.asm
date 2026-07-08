@@ -61,9 +61,28 @@ go_:
 	push	zl			; have at least one additional cpu cycle!
 	push	yh
 	push	yl
-	lds	yl, CSRL
-	lds	yh, CSRH
-	logtr	0x1F, yl, yh
+
+	sbis	FLAGS_LOG, log__softint
+	rjmp	go_010
+
+	cli
+	lds	zl, log_pointer+0	;;;
+	lds	zh, log_pointer+1	;;;
+	ldi	yl, log_b_go		;;;
+	st	Z+, yl			;;;
+	lds	yl, timestamp		;;;
+	st	Z+, yl			;;;
+	lds	yl, CSRL		;;;
+	st	Z+, yl			;;;
+	lds	yh, CSRH		;;;
+	st	Z+, yh			;;;
+	sbrc	zh, log_overflow	;;;
+	ldi	zh, high(log_buffer+log_begin)
+	sts	log_pointer+0, zl	;;;
+	sts	log_pointer+1, zh	;;;
+	sei	
+
+go_010:
 	sbi	f_GO			; Acknowledge interrupt
 	ldi	zl, low(rlvlock)
 	ldi	zh, high(rlvlock)

@@ -67,22 +67,28 @@ poll_:
 	push	yh
 	push	yl
 	sbi	f_IP			; Acknowledge interrupt
+
+	sbis	FLAGS_LOG, log__softint
+	rjmp	poll_005
+
 	cli
-	lds	zl, log_pointer+0	; 3 Logging is done only if log__reg is set
-	lds	zh, log_pointer+1	; 3
-	ldi	yl, log_trace
-	st	Z+, yl
-	ldi	yl, 0x1E
-	st	Z+, yl
-	ldi	yl, (1<<IP)
-	st	Z+, yl
-	in	yl, VPORTB_OUT
-	st	Z+, yl
-	sbrc	zh, log_overflow	; 2/1
+	lds	zl, log_pointer+0	;;;
+	lds	zh, log_pointer+1	;;;
+	ldi	yl, log_b_ip		;;;
+	st	Z+, yl			;;;
+	lds	yl, timestamp		;;;
+	st	Z+, yl			;;;
+	lds	yl, mscpstatus		;;;
+	st	Z+, yl			;;;
+	in	yh, VPORTB_OUT		;;;
+	st	Z+, yh			;;;
+	sbrc	zh, log_overflow	;;;
 	ldi	zh, high(log_buffer+log_begin)
-	sts	log_pointer+0, zl	; 2
-	sts	log_pointer+1, zh	; 2
+	sts	log_pointer+0, zl	;;;
+	sts	log_pointer+1, zh	;;;
 	sei	
+
+poll_005:
 	ldi	zl, low(mscpipr)
 	ldi	zh, high(mscpipr)
 	jmp	unblocki
@@ -104,23 +110,27 @@ poll_010:
 	push	yl
 	sbi	f_SA			; Acknowledge interrupt
 
+	sbis	FLAGS_LOG, log__softint
+	rjmp	poll_015
+
 	cli
-	lds	zl, log_pointer+0	; 3 Logging is done only if log__reg is set
-	lds	zh, log_pointer+1	; 3
-	ldi	yl, log_trace
-	st	Z+, yl
-	ldi	yl, 0x1E
-	st	Z+, yl
-	ldi	yl, (1<<SA)
-	st	Z+, yl
-	in	yl, VPORTB_OUT
-	st	Z+, yl
-	sbrc	zh, log_overflow	; 2/1
+	lds	zl, log_pointer+0	;;;
+	lds	zh, log_pointer+1	;;;
+	ldi	yl, log_b_sa		;;;
+	st	Z+, yl			;;;
+	lds	yl, timestamp		;;;
+	st	Z+, yl			;;;
+	lds	yl, mscpstatus		;;;
+	st	Z+, yl			;;;
+	in	yh, VPORTB_OUT		;;;
+	st	Z+, yh			;;;
+	sbrc	zh, log_overflow	;;;
 	ldi	zh, high(log_buffer+log_begin)
-	sts	log_pointer+0, zl	; 2
-	sts	log_pointer+1, zh	; 2
+	sts	log_pointer+0, zl	;;;
+	sts	log_pointer+1, zh	;;;
 	sei	
 
+poll_015:
 	ldi	zl, low(mscpsaw)
 	ldi	zh, high(mscpsaw)
 	jmp	unblocki
