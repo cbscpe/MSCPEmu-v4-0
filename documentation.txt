@@ -668,3 +668,16 @@ At last I added a readme.md for github
 	git add readme.md
 	git commit -m "Add README.MD"
 	git push origin
+
+
+### What has changed
+
+To see what has changed in a file the following command will
+show all patches
+
+git log v1.0.0..HEAD -p -- MSCP/dorw.asm  
+
+To see which files have been changed the following command gives
+a list
+
+git log --name-only --pretty="" v1.0.0..HEAD | sort -u
