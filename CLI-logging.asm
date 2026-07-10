@@ -170,6 +170,7 @@ logprintdma020:
 	ret
 	
 logprintmscp:
+#ifdef mscpemulation
 ;
 ;	r17	opcode
 ;	r19:r18	unit
@@ -188,6 +189,7 @@ logprintmscp:
 	sts	pprint+6, r20
 	call	print
 	.db	"MSCP Command (", 0x94, 0x95, 0x96, ") Unit:", 0xa2, CR, LF, 0
+#endif
 	ret
 
 
@@ -325,6 +327,7 @@ logprintsoftsa:
 	ret
 
 logprintsas1:
+#ifdef mscpemulation
 	ldi	r16, '0'
 	sbrc	r18, s1ie_bp
 	inc	r16
@@ -356,6 +359,7 @@ logprintsas1:
 	call	print
 		;----+----1----+----2----+----3
 	.db	"State 1 (",0x81, "), 0x", 0x83, 0x82, " WR:", 0x95, " IE:", 0x94, " Vector:", 0xa6, " RSize:", 0x98, " CSize: ", 0x99, CR, LF, 0
+#endif
 	ret
 
 logprintdato:
