@@ -219,6 +219,7 @@
 #define log_b_go	0x12
 #define log_b_ip	0x13
 #define log_b_sa	0x14
+#define log_sa_s1	0x15
 ;
 ;	0x2x - ROM
 ;
@@ -279,7 +280,7 @@
 ;
 ;	0x6x - reserved
 ;
-
+#define	log_mscp	0x60
 ;
 ;	0x7x - reserved
 ;
@@ -351,14 +352,14 @@
 ;
 .equ	log_buffer	= 0x7000
 .equ	log_buffersize	= 0x1000
-.equ	log_begin	= 0x0C00
+.equ	log_begin	= 0x0000
 .equ	log_size	= log_buffersize - log_begin
 .equ	log_overflow	= 7		; the 7th bit of the high byte address
 ;
 ;	FLAGS_LOG definitions for logging
 ;
 ;			  0		; reserved
-;			  1		; reserved
+.equ	log__verbose	= 1		; Verbose Trace Output
 .equ	log__softint	= 2		; Software Interrupts
 .equ	log__dma	= 3		; DMA Address poll job
 .equ	log__trace	= 4		; Log Debug Traces
@@ -454,6 +455,34 @@ notrace:
 ;
 	.macro	logtr; trace-id, regtracevaluelow, regtracevaluehigh
 	sbis	FLAGS_LOG, log__trace
+	rjmp	notrace
+	push	zl			; Save Z first
+	push	zh
+	push	r17			; Save temporary registers
+	push	r16
+	ldi	r16, log_trace
+	ldi	r17, @0
+	cli				;;;
+	lds	zl, log_pointer+0	;;;  3 Logging
+	lds	zh, log_pointer+1	;;;  3 Logging
+	st	Z+, r16			;;;  2
+	st	Z+, r17			;;;  2
+	pop	r16			;;;  1 Restore r16/r17 here in case that
+	pop	r17			;;;  1 they are used as the trace values
+	st	Z+, @1			;;;  2
+	st	Z+, @2			;;;  2
+	sbrc	zh, log_overflow	;;;  2/1
+	ldi	zh, high(log_buffer+log_begin)
+	sts	log_pointer+0, zl	;;;  2
+	sts	log_pointer+1, zh	;;;  2
+	sei				;;;  1	-> 23 cycles ~1usec
+	pop	zh			; Restore Z registers
+	pop	zl
+notrace:
+	.endmacro
+
+	.macro	logvb; trace-id, regtracevaluelow, regtracevaluehigh
+	sbis	FLAGS_LOG, log__verbose
 	rjmp	notrace
 	push	zl			; Save Z first
 	push	zh

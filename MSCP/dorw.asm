@@ -411,7 +411,7 @@ mscp_rd:
 	ldd	r21, Y+rwc_buff+1	; bit for DMA, so as the buffer address is
 	ldd	r22, Y+rwc_buff+2	; even it already is suitable for DMA write
 	dmaaddr r20, r21, r22		; Start Address of DMA transfer
-	logdma	0x03, r20, r21, r21	; 
+	logdma	0x03, r20, r21, r22	; 
 ;
 	ldd	wcntl, Y+rwc_bcnt+0	; Get Byte Count, which is at this moment
 	ldd	wcnth, Y+rwc_bcnt+1	; verified to be valid

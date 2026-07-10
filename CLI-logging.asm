@@ -168,6 +168,29 @@ logprintdma020:
 	call	print
 	.db	0xb1, CR, LF, 0
 	ret
+	
+logprintmscp:
+;
+;	r17	opcode
+;	r19:r18	unit
+;
+	mov	xl, r17
+	lsl	xl
+	lsl	xl
+	clr	xh
+	subi	xl, low(-mscp_names)
+	sbci	xh, high(-mscp_names)
+	ld	r20, X+
+	sts	pprint+4, r20
+	ld	r20, X+
+	sts	pprint+5, r20
+	ld	r20, X+
+	sts	pprint+6, r20
+	call	print
+	.db	"MSCP Command (", 0x94, 0x95, 0x96, ") Unit:", 0xa2, CR, LF, 0
+	ret
+
+
 ;--------------------------------------------------------------------------
 ;
 ;	Prints log entry and then zeroize it
@@ -207,7 +230,7 @@ logprinttbl:
 	rjmp	logprintdato		; 3
 	rjmp	logprintdati		; 4
 	rjmp	logprintdma		; 5
-	rjmp	logprintnoop		; 6
+	rjmp	logprintmscp		; 6
 	rjmp	logprintnoop		; 7
 	rjmp	logprintcommand		; 8
 	rjmp	logprintcommand		; 9
@@ -260,7 +283,7 @@ logprintinttbl:
 	rjmp	logprintsoftgo
 	rjmp	logprintsoftip
 	rjmp	logprintsoftsa
-	ret
+	rjmp	logprintsas1
 	ret
 	ret
 	ret
@@ -301,7 +324,39 @@ logprintsoftsa:
 	.db	"SA      (", 0x81, ") MSCP    ", 0x82, ", Port B 0x", 0x83, CR, LF, 0
 	ret
 
-
+logprintsas1:
+	ldi	r16, '0'
+	sbrc	r18, s1ie_bp
+	inc	r16
+	sts	pprint+4, r16	; IE Flag
+	ldi	r16, '0'
+	sbrc	r19, s1wr_bp
+	inc	r16
+	sts	pprint+5, r16	; WR Flag
+	mov	r16, r18
+	andi	r16, s1iv_gm		; Mask Vector/4 
+	clr	r17			; Convert to 16-bit Vector value
+	lsl	r16			; 
+	rol	r17
+	lsl	r16
+	rol	r17
+	sts	pprint+6, r16		; Vector
+	sts	pprint+7, r17
+	mov	r16, r19
+	andi	r16, 0x07
+	ori	r16, '0'
+	sts	pprint+8, r16		; Response Ring Size
+	mov	r16, r19
+	lsr	r16
+	lsr	r16
+	lsr	r16
+	andi	r16, 0x07
+	ori	r16, '0'
+	sts	pprint+9, r16		; Command Ring Size
+	call	print
+		;----+----1----+----2----+----3
+	.db	"State 1 (",0x81, "), 0x", 0x83, 0x82, " WR:", 0x95, " IE:", 0x94, " Vector:", 0xa6, " RSize:", 0x98, " CSize: ", 0x99, CR, LF, 0
+	ret
 
 logprintdato:
 	lds	r16, pprint+0
@@ -548,6 +603,18 @@ logsoftlogno:
 	clc
 	ret
 
+logverblog:
+	lds	r18, tpflags
+	sbrc	r18, tp__no
+	rjmp	logverblogno
+	sbi	FLAGS_LOG, log__verbose
+	clc
+	ret
+logverblogno:
+	cbi	FLAGS_LOG, log__verbose
+	clc
+	ret
+
 logdmalog:
 	lds	r18, tpflags
 	sbrc	r18, tp__no
@@ -700,6 +767,11 @@ logstatus:
 	call	print
 	.db	"Logging Trace ..................:", NULL
 	bst	r18, log__trace
+	rcall	logstatusonoff
+;
+	call	print
+	.db	"Logging Verbose ................:", NULL
+	bst	r18, log__verbose
 	rcall	logstatusonoff
 ;
 	call	print

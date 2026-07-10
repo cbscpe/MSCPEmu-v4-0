@@ -29,33 +29,6 @@ recordend	scc, next		; 38.
 
 .equ	rs_scc	= scc_next - pkt_data
 
-/*
-DBG(136791432)> RQ TRACE: txt=0020, 0000, 0000, 0000, 0000, 0000, 0084, 0000
-DBG(136791432)> RQ TRACE: txt=0000, 8000, 0078, 0103, 0000, 0000, 0000, 0113
-DBG(136791432)> RQ TRACE: txt=0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000
-
-0x74B4 Trace ID 0x90, Bytes 0x20 0x00 Word 000040	0020
-0x74B8 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000
-
-0x74BC Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000	command reference number
-0x74C0 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000
-0x74C4 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000	reserved
-0x74C8 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000
-0x74CC Trace ID 0x9F, Bytes 0x84 0x00 Word 000204	0084	opcode / flags
-0x74D0 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000	status
-0x74D4 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000	version
-0x74D8 Trace ID 0x9F, Bytes 0xD0 0x80 Word 100320	8000	controller flags
-0x74DC Trace ID 0x9F, Bytes 0x78 0x00 Word 000170	0078	controller timeout
-0x74E0 Trace ID 0x9F, Bytes 0x03 0x01 Word 000403	0103	software / hardware version
-0x74E4 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000	controller id
-0x74E8 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000
-0x74EC Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000
-0x74F0 Trace ID 0x9F, Bytes 0x13 0x01 Word 000423	0113
-0x74F4 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000	maximum byte count
-0x74F8 Trace ID 0x9F, Bytes 0x00 0x00 Word 000000	0000
-
- */
-
 do_scc:					; Set Controller Characteristics
 	push	yl
 	push	yh

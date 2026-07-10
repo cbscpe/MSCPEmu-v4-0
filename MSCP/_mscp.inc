@@ -254,11 +254,11 @@
 #define		er_dnr		bit0
 /*
  *	Initialisation
-#define	step1		005500
+#define	step1		005000
 #define	step4		040463
  *
  */
-#define	step1		005000
+#define	step1		005500
 #define	step2		010000
 #define	step3		020000
 #define	step4		040327
@@ -281,10 +281,10 @@
 #define mscp_s1		1*4		; 0x04
 #define mscp_s2		2*4		; 0x08
 #define mscp_s3		3*4		; 0x0C
-#define mscp_s4		4*4		; 0x00
-#define mscp_wr		5*4		; 0x04
+#define mscp_s4		4*4		; 0x10
+#define mscp_wr		5*4		; 0x14
 #define mscp_go		6*4		; 0x18
-#define mscp_fatal	7*4		; 0x0C
+#define mscp_fatal	7*4		; 0x1C
 
 /*
  *	device information

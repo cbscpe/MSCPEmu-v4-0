@@ -261,7 +261,7 @@ do_gus070:
 do_gus910:
 	ld	r16, X+
 	ld	r17, X+
-	logtr	0x4F, r16, r17
+	logvb	0x4F, r16, r17
 	sbiw	r25:r24, 2
 	brne	do_gus910
 	movw	r25:r24, yh:yl

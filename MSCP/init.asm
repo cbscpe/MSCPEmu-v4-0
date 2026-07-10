@@ -122,9 +122,21 @@ init_s1:
 	cbr	r18, (1<<ucb__onl)
 	sts	unittable+ucb_size*3+ucb_status, r18	;
 
-	cli
+	cli				;;;
+	lds	zl, log_pointer+0	;;;  3 Logging
+	lds	zh, log_pointer+1	;;;  3 Logging
+	ldi	r20, log_sa_s1		;;;
+	lds	r21, timestamp		;;;
+	st	Z+, r20			;;;  2
+	st	Z+, r21			;;;  2
 	lds	r20, sa_s1+0		;;; Get SA value written by host
 	lds	r21, sa_s1+1		;;;
+	st	Z+, r20			;;;  2
+	st	Z+, r21			;;;  2
+	sbrc	zh, log_overflow	;;;  2/1
+	ldi	zh, high(log_buffer+log_begin)
+	sts	log_pointer+0, zl	;;;  2
+	sts	log_pointer+1, zh	;;;  2
 	sei				;;;
 ;
 ;	Step 1 response
@@ -174,8 +186,7 @@ init110:					; a software interrupt we still check
 	sts	credits, r16
 	ldi	r16, 60 + 1
 	sts	ha_time, r16
-
-
+;
 ;	Calculate vector address
 ;
 	mov	r16, r20		; Get low-byte of S1 response
@@ -187,6 +198,7 @@ init110:					; a software interrupt we still check
 	rol	r17
 	sts	vector+0, r16		; Save it
 	sts	vector+1, r17
+
 ;
 ;	Calculate command ring size and mask
 ;
@@ -212,19 +224,19 @@ init130:
 ;
 ;	If the ring size is 0, then the number of ring entries is 2**0=1, each
 ;	ring entry has 4 bytes, therefore the size of the ring is 4 bytes
-;	MASK is 0xFFF4
+;	MASK is 0x0000
 ;
 ;	If the ring size is 1, then the number of ring entries is 2**1=4, each
 ;	ring entry has 4 bytes, therefore the size of the ring is 8 bytes
-;	MASK is 0FFF8
+;	MASK is 0x0004
 ;
 ;	If the ring size is 2, then the number of ring entries is 2**2=4, each
 ;	ring entry has 4 bytes, therefore the size of the ring is 16 bytes
-;	MASK is 0xFFF0
+;	MASK is 0x000C
 ;
 ;	If the ring size is 3, then the number of ring entries is 2**3=8, each
-;	ring entry has 4 byutes, therefore the size of the ring is 32 bytes
-;	MASK is 0xFFE0
+;	ring entry has 4 bytes, therefore the size of the ring is 32 bytes
+;	MASK is 0x001C
 	
 	subi	r16, low(1)		; convert size to overflow mask
 	sbci	r17, high(1)		; possible values are 0,1,3,7,15,31,63,127

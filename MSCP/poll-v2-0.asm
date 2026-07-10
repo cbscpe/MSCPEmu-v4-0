@@ -247,6 +247,24 @@ poll120:
 	cpse	r23, zero		; Don't save overflow
 	st	X, r23
 	ldd	r23, Y+cmd_mod+0	;
+;
+;	Quick Hack
+;
+	cli				;;;
+	lds	zl, log_pointer+0	;;;  3 Logging
+	lds	zh, log_pointer+1	;;;  3 Logging
+	ldi	xl, log_mscp		;;;
+	st	Z+, xl			;;;  2
+	st	Z+, r22			;;;  2
+	st	Z+, r20			;;;  2
+	st	Z+, r21			;;;  2
+	sbrc	zh, log_overflow	;;;  2/1
+	ldi	zh, high(log_buffer+log_begin)
+	sts	log_pointer+0, zl	;;;  2
+	sts	log_pointer+1, zh	;;;  2
+	sei				;;;  1	-> 23 cycles ~1usec
+
+
 	logtr	0x71, r22, r23		; Opcode / Modifiers
 	logtr	0x7F, r20, r21		; Unit
 	logtr	0x7F, r18, r19		; Packet Type / Connection ID
